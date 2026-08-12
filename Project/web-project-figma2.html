@@ -374,6 +374,11 @@
                 cover;
         }
 
+        .project-cover picture {
+            display: block;
+            width: 100%;
+        }
+
 
 
         /* =========================================
@@ -654,6 +659,12 @@
         .project-documentation-item.is-large img {
             min-height:
                 500px;
+        }
+
+        .project-documentation-item picture {
+            display: block;
+            width: 100%;
+            height: 100%;
         }
 
 
@@ -1031,10 +1042,22 @@
 
                 <div class="project-cover">
 
-                    <img
-                        src="../Image/web.png"
-                        alt="Web Project Preview"
-                    >
+                    <picture>
+
+                        <source
+                            media="(max-width: 650px)"
+                            srcset="../Image/web-mobile.webp"
+                            type="image/webp"
+                        >
+
+                        <img
+                            src="../Image/web.png"
+                            alt="Web Project Preview"
+                            loading="lazy"
+                            decoding="async"
+                        >
+
+                    </picture>
 
                 </div>
 
@@ -1178,10 +1201,22 @@
                         "
                     >
 
-                        <img
-                            src="../Image/madrd 4.png"
-                            alt="Project Documentation 1"
-                        >
+                        <picture>
+
+                            <source
+                                media="(max-width: 650px)"
+                                srcset="../Image/madrd-4-mobile.webp"
+                                type="image/webp"
+                            >
+
+                            <img
+                                src="../Image/madrd 4.png"
+                                alt="Project Documentation 1"
+                                loading="lazy"
+                                decoding="async"
+                            >
+
+                        </picture>
 
                     </div>
 
@@ -1198,6 +1233,8 @@
                         <img
                             src="../Image/madrid 2.png"
                             alt="Project Documentation 2"
+                            loading="lazy"
+                            decoding="async"
                         >
 
                     </div>
@@ -1213,10 +1250,22 @@
                         "
                     >
 
-                        <img
-                            src="../Image/madrid 5.png"
-                            alt="Project Documentation 3"
-                        >
+                        <picture>
+
+                            <source
+                                media="(max-width: 650px)"
+                                srcset="../Image/madrid-5-mobile.webp"
+                                type="image/webp"
+                            >
+
+                            <img
+                                src="../Image/madrid 5.png"
+                                alt="Project Documentation 3"
+                                loading="lazy"
+                                decoding="async"
+                            >
+
+                        </picture>
 
                     </div>
 
