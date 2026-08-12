@@ -2257,6 +2257,23 @@ updateAboutSlider();
 
     let previousTime = null;
 
+    /*
+        Watchdog: pada sebagian browser mobile,
+        pointerup/pointercancel tidak selalu
+        terpicu di elemen ini kalau sentuhan
+        dialihkan browser jadi native scroll
+        halaman (misalnya scroll vertikal yang
+        jarinya sempat menyentuh area carousel).
+
+        Tanpa ini, carousel bisa "macet" pause
+        selamanya karena resume() tidak pernah
+        dipanggil. Watchdog memaksa resume
+        setelah jeda singkat kalau tidak ada
+        sinyal release yang masuk.
+    */
+
+    let pauseWatchdog = null;
+
 
     /*
         Cache lebar total set asli
@@ -2537,6 +2554,17 @@ updateAboutSlider();
 
         paused = true;
 
+
+        clearTimeout(
+            pauseWatchdog
+        );
+
+        pauseWatchdog =
+            setTimeout(
+                resume,
+                2500
+            );
+
     }
 
 
@@ -2545,6 +2573,11 @@ updateAboutSlider();
         paused = false;
 
         previousTime = null;
+
+
+        clearTimeout(
+            pauseWatchdog
+        );
 
     }
 
@@ -2575,6 +2608,12 @@ updateAboutSlider();
 
     projectGrid.addEventListener(
         "pointercancel",
+        resume
+    );
+
+
+    projectGrid.addEventListener(
+        "pointerleave",
         resume
     );
 

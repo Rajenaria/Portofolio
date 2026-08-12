@@ -8128,10 +8128,9 @@ a.footer-contact-item:hover {
 
 
     .simple-hero-photo {
-        width: 185px;
-        height: 185px;
+        width: min(88vw, 360px);
 
-        margin: 0;
+        margin: 0 auto;
 
         position: relative;
 
@@ -8140,18 +8139,19 @@ a.footer-contact-item:hover {
         align-items: flex-end;
         justify-content: center;
 
-        border-radius: 50%;
-
-        overflow: hidden;
-
-        background:
-            #ede9fe;
-
         transform: none;
     }
 
 
-    /* HAPUS SHAPE DESKTOP */
+    /* GLOW HALUS, BUKAN LINGKARAN SOLID */
+
+    .simple-hero-visual::before {
+        width: min(80vw, 300px);
+        height: min(80vw, 300px);
+
+        transform:
+            translate(-50%, -45%);
+    }
 
     .simple-hero-photo::before,
     .simple-hero-photo::after {
@@ -8160,8 +8160,11 @@ a.footer-contact-item:hover {
 
 
     .simple-hero-photo img {
-        width: 100%;
-        height: 100%;
+        width: 92%;
+        max-width: 340px;
+
+        height: auto;
+        max-height: 420px;
 
         display: block;
 
@@ -8486,15 +8489,17 @@ a.footer-contact-item:hover {
 
     .simple-hero-photo {
         width: min(88vw, 360px);
-        height: min(88vw, 360px);
         margin: 0 auto;
-        border-radius: 50%;
-        background: #eee9fb;
         display: flex;
         justify-content: center;
-        align-items: center;
-        overflow: hidden;
+        align-items: flex-end;
         position: relative;
+    }
+
+    .simple-hero-visual::before {
+        width: min(80vw, 300px);
+        height: min(80vw, 300px);
+        transform: translate(-50%, -45%);
     }
 
     .simple-hero-photo::before,
@@ -8503,13 +8508,13 @@ a.footer-contact-item:hover {
     }
 
     .simple-hero-photo img {
-        width: 75%;
-        max-width: 262px;
+        width: 92%;
+        max-width: 340px;
         height: auto;
+        max-height: 420px;
         display: block;
         object-fit: contain;
-        object-position: center center;
-        transform: translateY(8px);
+        object-position: center bottom;
     }
 
     /* =========================
