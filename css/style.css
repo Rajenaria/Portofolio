@@ -8318,3 +8318,68 @@ a.footer-contact-item:hover {
     }
 
 }
+/* =========================================
+   FINAL PROJECT IMAGE SIZE FIX
+========================================= */
+
+#projectGrid .project-card {
+    overflow: hidden;
+}
+
+
+/* AREA GAMBAR CARD */
+
+#projectGrid .project-image {
+    width: 100% !important;
+    height: 230px !important;
+
+    min-height: 230px !important;
+    max-height: 230px !important;
+
+    flex-shrink: 0;
+
+    overflow: hidden;
+
+    background-color: #f1f5f9;
+}
+
+
+/* GAMBAR */
+
+#projectGrid .project-image img {
+    width: 100% !important;
+    height: 100% !important;
+
+    max-width: 100% !important;
+    max-height: 100% !important;
+
+    display: block;
+
+    object-fit: cover !important;
+    object-position: center !important;
+
+    pointer-events: none;
+
+    user-select: none;
+    -webkit-user-drag: none;
+}
+@media (max-width: 1000px) {
+
+    #projectGrid .project-image {
+        height: 210px !important;
+        min-height: 210px !important;
+        max-height: 210px !important;
+    }
+
+}
+
+
+@media (max-width: 650px) {
+
+    #projectGrid .project-image {
+        height: 220px !important;
+        min-height: 220px !important;
+        max-height: 220px !important;
+    }
+
+}
