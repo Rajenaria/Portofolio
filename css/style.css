@@ -8399,17 +8399,18 @@ a.footer-contact-item:hover {
    RESPONSIVE IMAGE <picture> WRAPPERS
 
    img elements above were wrapped in <picture>
-   for mobile WebP sources. These rules keep the
-   picture element itself from affecting layout,
-   so sizing stays identical to the plain <img>
-   it replaced.
+   for mobile WebP sources. display:contents makes
+   the picture element itself invisible to layout,
+   so the img inside participates directly in the
+   parent's flex/sizing exactly as it did before
+   being wrapped (needed for flex-centered photos
+   like the hero, whose mobile CSS centers the img
+   itself via justify-content).
 ========================================= */
 
 .simple-hero-photo picture,
 .simple-about-photo picture,
 .about-org-photo picture,
 .project-image picture {
-    display: block;
-    width: 100%;
-    height: 100%;
+    display: contents;
 }
