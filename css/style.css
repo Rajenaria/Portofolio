@@ -6350,6 +6350,903 @@ nav.nav-scrolled {
 #projectGrid .project-card {
     scroll-snap-align: none !important;
 }
+
+/* =========================================================
+   GUESTBOOK V2
+   NEW LAYOUT - ISOLATED FROM OLD GUESTBOOK STYLE
+========================================================= */
+
+.guestbook-v2 {
+    width: 100%;
+
+    padding:
+        110px 0
+        105px;
+
+    background-color: #f8fafc;
+
+    overflow: hidden;
+}
+
+
+/* =========================================================
+   CONTAINER
+========================================================= */
+
+.guestbook-v2-container {
+    width: var(--page-width);
+    max-width: var(--page-max-width);
+
+    margin: 0 auto;
+}
+
+
+/* =========================================================
+   HEADING
+========================================================= */
+
+.guestbook-v2-heading {
+    max-width: 680px;
+
+    margin:
+        0 auto
+        52px;
+
+    text-align: center;
+}
+
+
+/* PURPLE ACCENT */
+
+.guestbook-v2-accent {
+    width: 54px;
+    height: 4px;
+
+    display: block;
+
+    margin:
+        0 auto
+        18px;
+
+    border-radius: 999px;
+
+    background-color: #6d28d9;
+}
+
+
+/* LABEL */
+
+.guestbook-v2-label {
+    margin:
+        0 0
+        13px;
+
+    font-size: 11px;
+    font-weight: 700;
+
+    letter-spacing: 2.6px;
+
+    color: #6d28d9;
+}
+
+
+/* TITLE */
+
+.guestbook-v2-heading h2 {
+    margin:
+        0 0
+        17px;
+
+    font-size:
+        clamp(
+            38px,
+            4vw,
+            58px
+        );
+
+    font-weight: 700;
+
+    line-height: 1.08;
+
+    letter-spacing: -1.5px;
+
+    color: #0f172a;
+}
+
+
+/* DESCRIPTION */
+
+.guestbook-v2-description {
+    max-width: 570px;
+
+    margin: 0 auto;
+
+    font-size: 14px;
+
+    line-height: 1.8;
+
+    color: #64748b;
+}
+
+
+/* =========================================================
+   FORM WRAPPER
+========================================================= */
+
+.guestbook-v2-form-wrapper {
+    width:
+        min(
+            100%,
+            720px
+        );
+
+    margin:
+        0 auto
+        90px;
+}
+
+
+/* =========================================================
+   FORM CARD
+========================================================= */
+
+.guestbook-v2-form {
+    width: 100%;
+
+    padding: 20px;
+
+    background-color: #ffffff;
+
+    border:
+        1px solid
+        #e2e8f0;
+
+    border-radius: 18px;
+
+    box-shadow:
+        0 20px 50px
+        rgba(
+            15,
+            23,
+            42,
+            0.055
+        );
+}
+
+
+/* =========================================================
+   NAME + BUTTON ROW
+========================================================= */
+
+.guestbook-v2-form-top {
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        auto;
+
+    gap: 10px;
+
+    margin-bottom: 10px;
+}
+
+
+/* =========================================================
+   INPUT
+========================================================= */
+
+.guestbook-v2-form-top input {
+    width: 100%;
+    height: 48px;
+
+    padding:
+        0 16px;
+
+    border:
+        1px solid
+        #e2e8f0;
+
+    border-radius: 10px;
+
+    outline: none;
+
+    background-color: #f8fafc;
+
+    font-family: inherit;
+
+    font-size: 13px;
+
+    color: #0f172a;
+
+    transition:
+        border-color 0.25s ease,
+        background-color 0.25s ease,
+        box-shadow 0.25s ease;
+}
+
+
+.guestbook-v2-form-top input::placeholder {
+    color: #94a3b8;
+}
+
+
+.guestbook-v2-form-top input:focus {
+    border-color: #6d28d9;
+
+    background-color: #ffffff;
+
+    box-shadow:
+        0 0 0 4px
+        rgba(
+            109,
+            40,
+            217,
+            0.07
+        );
+}
+
+
+/* =========================================================
+   SUBMIT
+========================================================= */
+
+.guestbook-v2-submit {
+    height: 48px;
+
+    min-width: 112px;
+
+    display: inline-flex;
+
+    justify-content: center;
+    align-items: center;
+
+    gap: 7px;
+
+    padding:
+        0 20px;
+
+    border: none;
+
+    border-radius: 10px;
+
+    background-color: #6d28d9;
+
+    font-family: inherit;
+
+    font-size: 12px;
+    font-weight: 600;
+
+    color: #ffffff;
+
+    cursor: pointer;
+
+    transition:
+        background-color 0.25s ease,
+        transform 0.25s ease,
+        box-shadow 0.25s ease;
+}
+
+
+.guestbook-v2-submit span {
+    font-size: 15px;
+
+    transition:
+        transform 0.25s ease;
+}
+
+
+.guestbook-v2-submit:hover {
+    background-color: #5b21b6;
+
+    transform:
+        translateY(-1px);
+
+    box-shadow:
+        0 10px 22px
+        rgba(
+            109,
+            40,
+            217,
+            0.18
+        );
+}
+
+
+.guestbook-v2-submit:hover span {
+    transform:
+        translateX(3px);
+}
+
+
+.guestbook-v2-submit:disabled {
+    opacity: 0.6;
+
+    cursor: not-allowed;
+
+    transform: none;
+
+    box-shadow: none;
+}
+
+
+/* =========================================================
+   MESSAGE
+========================================================= */
+
+.guestbook-v2-message-wrapper {
+    position: relative;
+}
+
+
+.guestbook-v2-message-wrapper textarea {
+    width: 100%;
+
+    min-height: 125px;
+
+    display: block;
+
+    padding:
+        15px 16px
+        32px;
+
+    border:
+        1px solid
+        #e2e8f0;
+
+    border-radius: 10px;
+
+    outline: none;
+
+    resize: vertical;
+
+    background-color: #f8fafc;
+
+    font-family: inherit;
+
+    font-size: 13px;
+
+    line-height: 1.7;
+
+    color: #0f172a;
+
+    transition:
+        border-color 0.25s ease,
+        background-color 0.25s ease,
+        box-shadow 0.25s ease;
+}
+
+
+.guestbook-v2-message-wrapper
+textarea::placeholder {
+
+    color: #94a3b8;
+}
+
+
+.guestbook-v2-message-wrapper
+textarea:focus {
+
+    border-color: #6d28d9;
+
+    background-color: #ffffff;
+
+    box-shadow:
+        0 0 0 4px
+        rgba(
+            109,
+            40,
+            217,
+            0.07
+        );
+}
+
+
+/* CHARACTER COUNTER */
+
+.guestbook-v2-counter {
+    position: absolute;
+
+    right: 13px;
+    bottom: 10px;
+
+    font-size: 10px;
+    font-weight: 500;
+
+    color: #94a3b8;
+
+    pointer-events: none;
+}
+
+
+/* =========================================================
+   TURNSTILE
+========================================================= */
+
+.guestbook-v2-turnstile {
+    margin-top: 14px;
+}
+
+
+/* =========================================================
+   STATUS
+========================================================= */
+
+.guestbook-v2-status {
+    min-height: 0;
+
+    margin:
+        12px 0
+        0;
+
+    font-size: 12px;
+
+    line-height: 1.6;
+
+    color: #64748b;
+}
+
+
+.guestbook-v2-status:empty {
+    display: none;
+}
+
+
+/* =========================================================
+   COMMUNITY SECTION
+========================================================= */
+
+.guestbook-v2-community {
+    width: 100%;
+}
+
+
+/* HEADER */
+
+.guestbook-v2-community-head {
+    display: flex;
+
+    justify-content: space-between;
+    align-items: flex-end;
+
+    gap: 30px;
+
+    margin-bottom: 26px;
+}
+
+
+/* LABEL */
+
+.guestbook-v2-community-label {
+    margin:
+        0 0
+        7px;
+
+    font-size: 10px;
+    font-weight: 700;
+
+    letter-spacing: 2px;
+
+    color: #6d28d9;
+}
+
+
+/* TITLE */
+
+.guestbook-v2-community-head h3 {
+    margin: 0;
+
+    font-size: 27px;
+    font-weight: 700;
+
+    color: #0f172a;
+}
+
+
+/* COUNT */
+
+.guestbook-v2-count {
+    display: inline-flex;
+
+    align-items: center;
+
+    min-height: 31px;
+
+    padding:
+        0 13px;
+
+    border:
+        1px solid
+        #ddd6fe;
+
+    border-radius: 999px;
+
+    background-color: #f5f3ff;
+
+    font-size: 10px;
+    font-weight: 600;
+
+    color: #6d28d9;
+}
+
+
+/* =========================================================
+   COMMENT GRID
+========================================================= */
+
+.guestbook-v2-grid {
+    width: 100%;
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            3,
+            minmax(0, 1fr)
+        );
+
+    gap: 16px;
+}
+
+
+/* =========================================================
+   COMMENT CARD
+   THIS WILL BE GENERATED BY JAVASCRIPT LATER
+========================================================= */
+
+.guestbook-v2-comment {
+    min-width: 0;
+
+    padding: 20px;
+
+    background-color: #ffffff;
+
+    border:
+        1px solid
+        #e2e8f0;
+
+    border-radius: 15px;
+
+    transition:
+        transform 0.25s ease,
+        border-color 0.25s ease,
+        box-shadow 0.25s ease;
+}
+
+
+.guestbook-v2-comment:hover {
+    transform:
+        translateY(-3px);
+
+    border-color: #ddd6fe;
+
+    box-shadow:
+        0 14px 30px
+        rgba(
+            15,
+            23,
+            42,
+            0.055
+        );
+}
+
+
+/* COMMENT HEADER */
+
+.guestbook-v2-comment-head {
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    margin-bottom: 14px;
+}
+
+
+/* AVATAR */
+
+.guestbook-v2-avatar {
+    width: 34px;
+    height: 34px;
+
+    flex-shrink: 0;
+
+    display: flex;
+
+    justify-content: center;
+    align-items: center;
+
+    border-radius: 50%;
+
+    background-color: #ede9fe;
+
+    font-size: 12px;
+    font-weight: 700;
+
+    text-transform: uppercase;
+
+    color: #6d28d9;
+}
+
+
+/* NAME */
+
+.guestbook-v2-comment-name {
+    min-width: 0;
+
+    margin: 0;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+
+    font-size: 12px;
+    font-weight: 700;
+
+    color: #0f172a;
+}
+
+
+/* DATE */
+
+.guestbook-v2-comment-date {
+    display: block;
+
+    margin-top: 3px;
+
+    font-size: 9px;
+
+    color: #94a3b8;
+}
+
+
+/* MESSAGE */
+
+.guestbook-v2-comment-message {
+    margin: 0;
+
+    overflow-wrap: anywhere;
+
+    white-space: pre-wrap;
+
+    font-size: 12px;
+
+    line-height: 1.75;
+
+    color: #475569;
+}
+
+
+/* =========================================================
+   EMPTY STATE
+========================================================= */
+
+.guestbook-v2-empty {
+    grid-column:
+        1 / -1;
+
+    width: 100%;
+
+    padding:
+        46px 20px;
+
+    text-align: center;
+
+    border:
+        1px dashed
+        #cbd5e1;
+
+    border-radius: 16px;
+
+    background-color:
+        rgba(
+            255,
+            255,
+            255,
+            0.6
+        );
+}
+
+
+.guestbook-v2-empty-icon {
+    width: 38px;
+    height: 38px;
+
+    display: flex;
+
+    justify-content: center;
+    align-items: center;
+
+    margin:
+        0 auto
+        14px;
+
+    border-radius: 50%;
+
+    background-color: #ede9fe;
+
+    font-size: 14px;
+
+    color: #6d28d9;
+}
+
+
+.guestbook-v2-empty h4 {
+    margin:
+        0 0
+        7px;
+
+    font-size: 14px;
+    font-weight: 700;
+
+    color: #0f172a;
+}
+
+
+.guestbook-v2-empty p {
+    margin: 0;
+
+    font-size: 11px;
+
+    color: #94a3b8;
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 900px) {
+
+    .guestbook-v2 {
+        padding:
+            90px 0;
+    }
+
+
+    .guestbook-v2-container {
+        width: 88%;
+    }
+
+
+    .guestbook-v2-grid {
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(0, 1fr)
+            );
+    }
+
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 650px) {
+
+    .guestbook-v2 {
+        padding:
+            75px 0;
+    }
+
+
+    .guestbook-v2-container {
+        width: 90%;
+    }
+
+
+    .guestbook-v2-heading {
+        margin-bottom: 38px;
+    }
+
+
+    .guestbook-v2-heading h2 {
+        font-size: 37px;
+
+        letter-spacing: -1px;
+    }
+
+
+    .guestbook-v2-description {
+        font-size: 13px;
+    }
+
+
+    /* FORM */
+
+    .guestbook-v2-form-wrapper {
+        margin-bottom: 65px;
+    }
+
+
+    .guestbook-v2-form {
+        padding: 15px;
+
+        border-radius: 16px;
+    }
+
+
+    .guestbook-v2-form-top {
+        grid-template-columns:
+            minmax(0, 1fr)
+            92px;
+
+        gap: 8px;
+    }
+
+
+    .guestbook-v2-submit {
+        min-width: 92px;
+
+        padding:
+            0 12px;
+    }
+
+
+    .guestbook-v2-message-wrapper
+    textarea {
+
+        min-height: 115px;
+    }
+
+
+    /* COMMUNITY */
+
+    .guestbook-v2-community-head {
+        align-items: flex-start;
+
+        gap: 15px;
+    }
+
+
+    .guestbook-v2-community-head h3 {
+        font-size: 22px;
+    }
+
+
+    /* COMMENTS */
+
+    .guestbook-v2-grid {
+        grid-template-columns: 1fr;
+
+        gap: 12px;
+    }
+
+
+    .guestbook-v2-comment {
+        padding: 18px;
+    }
+
+}
+
+
+/* =========================================================
+   VERY SMALL MOBILE
+========================================================= */
+
+@media (max-width: 400px) {
+
+    .guestbook-v2-form-top {
+        grid-template-columns: 1fr;
+    }
+
+
+    .guestbook-v2-submit {
+        width: 100%;
+    }
+
+
+    .guestbook-v2-community-head {
+        flex-direction: column;
+
+        align-items: flex-start;
+    }
+
+}
 /* =========================================
    PREMIUM FOOTER
 ========================================= */
@@ -7740,7 +8637,7 @@ a.footer-contact-item:hover {
 }
 
 
-@media (min-width: 768px) and (max-width: 900px) {
+@media (min-width: 768px) and (max-width: 1024px) {
 
     .portfolio-nav-links,
     .portfolio-nav-contact {
@@ -7780,6 +8677,112 @@ a.footer-contact-item:hover {
         border-radius: 10px;
 
         background: #475569;
+    }
+
+}
+
+
+/* ======================================================
+   TABLET NAV — HAMBURGER → X + DROPDOWN
+
+   Same behavior as the mobile hamburger menu above, just
+   scoped to 768–1024px so the toggle button added by the
+   block above (currently limited to 768–900px) actually
+   opens something. Without this, iPad Pro 12.9" / iPad
+   Air 13" (both 1024px wide in portrait) show a hamburger
+   icon that does nothing when tapped.
+====================================================== */
+
+@media (min-width: 768px) and (max-width: 1024px) {
+
+    .portfolio-nav.is-mobile-open .mobile-nav-toggle span:nth-child(1) {
+        transform: translateY(5.5px) rotate(45deg);
+    }
+
+    .portfolio-nav.is-mobile-open .mobile-nav-toggle span:nth-child(2) {
+        opacity: 0;
+    }
+
+    .portfolio-nav.is-mobile-open .mobile-nav-toggle span:nth-child(3) {
+        transform: translateY(-5.5px) rotate(-45deg);
+    }
+
+    .mobile-nav-menu {
+        width: 100%;
+        max-height: 0;
+        padding: 0 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        opacity: 0;
+        visibility: hidden;
+        overflow: hidden;
+        border-top: 1px solid transparent;
+        transition:
+            max-height 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+            opacity 0.3s ease,
+            padding 0.4s ease,
+            border-color 0.3s ease,
+            visibility 0.3s ease;
+    }
+
+    .portfolio-nav.is-mobile-open .mobile-nav-menu {
+        max-height: 420px;
+        padding: 10px 16px 17px;
+        opacity: 1;
+        visibility: visible;
+        border-top-color: #f1f5f9;
+    }
+
+    .mobile-nav-menu > a {
+        width: 100%;
+        min-height: 48px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 0 6px;
+        border-bottom: 1px solid #f1f5f9;
+        color: #475569;
+        font-size: 12px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: color 0.25s ease, padding-left 0.25s ease;
+    }
+
+    .mobile-nav-menu > a > span {
+        min-width: 20px;
+        font-size: 8px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        color: #a78bfa;
+    }
+
+    .mobile-nav-menu > a:hover {
+        padding-left: 10px;
+        color: #6d28d9;
+    }
+
+    .mobile-nav-menu .mobile-nav-contact {
+        min-height: 46px;
+        margin-top: 12px;
+        padding: 0 16px;
+        justify-content: space-between;
+        border: none;
+        border-radius: 12px;
+        background: #0f172a;
+        color: #ffffff;
+    }
+
+    .mobile-nav-menu .mobile-nav-contact:hover {
+        padding-left: 16px;
+        background: #6d28d9;
+        color: #ffffff;
+    }
+
+    .mobile-nav-menu .mobile-nav-contact span {
+        min-width: auto;
+        font-size: 14px;
+        color: #ffffff;
     }
 
 }
@@ -8413,4 +9416,2519 @@ a.footer-contact-item:hover {
 .about-org-photo picture,
 .project-image picture {
     display: contents;
+}
+/* =========================================================
+   GUESTBOOK V2 - SIGNATURE REVEAL ANIMATION
+========================================================= */
+
+/* initial state */
+
+.guestbook-v2-heading,
+.guestbook-v2-form-wrapper,
+.guestbook-v2-community {
+    opacity: 0;
+
+    transform:
+        translateY(28px);
+}
+
+
+/* =========================================================
+   HEADING REVEAL
+========================================================= */
+
+.guestbook-v2.is-visible
+.guestbook-v2-heading {
+    animation:
+        guestbookFadeUp
+        0.75s
+        cubic-bezier(0.22, 1, 0.36, 1)
+        forwards;
+}
+
+
+/* PURPLE ACCENT */
+
+.guestbook-v2-accent {
+    position: relative;
+
+    transform:
+        scaleX(0);
+
+    transform-origin:
+        center;
+}
+
+
+.guestbook-v2.is-visible
+.guestbook-v2-accent {
+    animation:
+        guestbookAccentReveal
+        0.8s
+        cubic-bezier(0.22, 1, 0.36, 1)
+        0.15s
+        forwards;
+}
+
+
+/* SMALL PULSE */
+
+.guestbook-v2-accent::after {
+    content: "";
+
+    position: absolute;
+
+    inset: -6px;
+
+    border-radius: inherit;
+
+    background-color:
+        rgba(109, 40, 217, 0.20);
+
+    opacity: 0;
+
+    transform:
+        scale(0.8);
+
+    pointer-events: none;
+}
+
+
+.guestbook-v2.is-visible
+.guestbook-v2-accent::after {
+    animation:
+        guestbookAccentPulse
+        1.6s
+        ease
+        0.7s
+        1;
+}
+
+
+/* =========================================================
+   FORM REVEAL
+========================================================= */
+
+.guestbook-v2.is-visible
+.guestbook-v2-form-wrapper {
+    animation:
+        guestbookFadeUp
+        0.8s
+        cubic-bezier(0.22, 1, 0.36, 1)
+        0.18s
+        forwards;
+}
+
+
+/* FORM SPOTLIGHT */
+
+.guestbook-v2-form {
+    position: relative;
+
+    overflow: hidden;
+}
+
+
+.guestbook-v2-form::after {
+    content: "";
+
+    width: 180px;
+    height: 180%;
+
+    position: absolute;
+
+    top: -40%;
+    left: -220px;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(109, 40, 217, 0.08),
+            rgba(109, 40, 217, 0.16),
+            rgba(109, 40, 217, 0.08),
+            transparent
+        );
+
+    transform:
+        rotate(15deg);
+
+    pointer-events: none;
+
+    opacity: 0;
+}
+
+
+.guestbook-v2.is-visible
+.guestbook-v2-form::after {
+    animation:
+        guestbookSpotlight
+        1.15s
+        cubic-bezier(0.22, 1, 0.36, 1)
+        0.7s
+        forwards;
+}
+
+
+/* =========================================================
+   COMMUNITY REVEAL
+========================================================= */
+
+.guestbook-v2.is-visible
+.guestbook-v2-community {
+    animation:
+        guestbookFadeUp
+        0.8s
+        cubic-bezier(0.22, 1, 0.36, 1)
+        0.35s
+        forwards;
+}
+
+
+/* =========================================================
+   COMMENT CARDS STAGGER
+========================================================= */
+
+.guestbook-v2.is-visible
+.guestbook-v2-comment {
+    animation:
+        guestbookCardReveal
+        0.65s
+        cubic-bezier(0.22, 1, 0.36, 1)
+        both;
+}
+
+
+.guestbook-v2.is-visible
+.guestbook-v2-comment:nth-child(1) {
+    animation-delay: 0.45s;
+}
+
+
+.guestbook-v2.is-visible
+.guestbook-v2-comment:nth-child(2) {
+    animation-delay: 0.55s;
+}
+
+
+.guestbook-v2.is-visible
+.guestbook-v2-comment:nth-child(3) {
+    animation-delay: 0.65s;
+}
+
+
+.guestbook-v2.is-visible
+.guestbook-v2-comment:nth-child(4) {
+    animation-delay: 0.75s;
+}
+
+
+.guestbook-v2.is-visible
+.guestbook-v2-comment:nth-child(5) {
+    animation-delay: 0.85s;
+}
+
+
+.guestbook-v2.is-visible
+.guestbook-v2-comment:nth-child(6) {
+    animation-delay: 0.95s;
+}
+
+
+/* =========================================================
+   EMPTY STATE
+========================================================= */
+
+.guestbook-v2.is-visible
+.guestbook-v2-empty {
+    animation:
+        guestbookCardReveal
+        0.7s
+        cubic-bezier(0.22, 1, 0.36, 1)
+        0.48s
+        both;
+}
+
+
+/* =========================================================
+   KEYFRAMES
+========================================================= */
+
+@keyframes guestbookFadeUp {
+
+    from {
+        opacity: 0;
+
+        transform:
+            translateY(28px);
+    }
+
+    to {
+        opacity: 1;
+
+        transform:
+            translateY(0);
+    }
+
+}
+
+
+@keyframes guestbookAccentReveal {
+
+    from {
+        transform:
+            scaleX(0);
+    }
+
+    to {
+        transform:
+            scaleX(1);
+    }
+
+}
+
+
+@keyframes guestbookAccentPulse {
+
+    0% {
+        opacity: 0;
+
+        transform:
+            scale(0.8);
+    }
+
+    35% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+
+        transform:
+            scale(1.8);
+    }
+
+}
+
+
+@keyframes guestbookSpotlight {
+
+    0% {
+        left: -220px;
+
+        opacity: 0;
+    }
+
+    15% {
+        opacity: 1;
+    }
+
+    75% {
+        opacity: 1;
+    }
+
+    100% {
+        left:
+            calc(100% + 220px);
+
+        opacity: 0;
+    }
+
+}
+
+
+@keyframes guestbookCardReveal {
+
+    from {
+        opacity: 0;
+
+        transform:
+            translateY(20px)
+            scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+
+        transform:
+            translateY(0)
+            scale(1);
+    }
+
+}
+
+
+/* =========================================================
+   ACCESSIBILITY
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .guestbook-v2-heading,
+    .guestbook-v2-form-wrapper,
+    .guestbook-v2-community,
+    .guestbook-v2-comment,
+    .guestbook-v2-empty,
+    .guestbook-v2-accent {
+
+        opacity: 1;
+
+        transform: none;
+
+        animation: none !important;
+    }
+
+
+    .guestbook-v2-form::after,
+    .guestbook-v2-accent::after {
+
+        display: none;
+    }
+
+}
+/* =========================================================
+   GUESTBOOK INTERACTIVE PARTICLES
+   TABLET + DESKTOP ONLY
+========================================================= */
+
+.guestbook-v2 {
+    position: relative;
+    overflow: hidden;
+}
+
+.guestbook-v2-container {
+    position: relative;
+    z-index: 2;
+}
+
+.guestbook-v2-particle {
+    position: absolute;
+
+    left: var(--particle-x);
+    top: var(--particle-y);
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    font-size: var(--particle-size);
+
+    color:
+        rgba(
+            109,
+            40,
+            217,
+            var(--particle-opacity)
+        );
+
+    line-height: 1;
+
+    user-select: none;
+    pointer-events: none;
+
+    filter:
+        drop-shadow(
+            0 5px 10px
+            rgba(109, 40, 217, 0.12)
+        );
+
+    will-change: transform;
+}
+
+
+/* jangan tampilkan di HP */
+
+@media (max-width: 767px) {
+
+    .guestbook-v2-particles {
+        display: none;
+    }
+
+}
+
+
+/* accessibility */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .guestbook-v2-particles {
+        display: none;
+    }
+
+}
+/* =========================================================
+   GUESTBOOK PLANE CURSOR
+   DESKTOP / POINTER DEVICE ONLY
+========================================================= */
+
+.guestbook-plane-cursor {
+    width: 34px;
+    height: 34px;
+
+    position: fixed;
+
+    left: 0;
+    top: 0;
+
+    z-index: 99999;
+
+    display: none;
+
+    justify-content: center;
+    align-items: center;
+
+    pointer-events: none;
+
+    font-size: 27px;
+
+    color: #6d28d9;
+
+    opacity: 0;
+
+    transform:
+        translate(-50%, -50%)
+        rotate(-8deg);
+
+    filter:
+        drop-shadow(
+            0 5px 8px
+            rgba(109, 40, 217, 0.22)
+        );
+
+    will-change:
+        left,
+        top,
+        transform,
+        opacity;
+}
+
+
+/* saat cursor berada di area tombol */
+
+.guestbook-plane-cursor.is-active {
+    display: flex;
+
+    opacity: 1;
+}
+
+
+/* sembunyikan cursor asli */
+
+.guestbook-v2-submit.plane-hover {
+    cursor: none;
+}
+
+
+/* =========================================================
+   SMALL TRAIL
+========================================================= */
+
+.guestbook-plane-cursor::after {
+    content: "";
+
+    width: 25px;
+    height: 2px;
+
+    position: absolute;
+
+    right: 25px;
+    top: 17px;
+
+    border-radius: 999px;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(109, 40, 217, 0.28)
+        );
+
+    opacity: 0;
+
+    transform:
+        scaleX(0);
+
+    transform-origin: right;
+}
+
+
+.guestbook-plane-cursor.is-active::after {
+    opacity: 1;
+
+    transform:
+        scaleX(1);
+
+    transition:
+        transform 0.25s ease,
+        opacity 0.25s ease;
+}
+
+
+/* =========================================================
+   TAKE OFF
+========================================================= */
+
+.guestbook-plane-cursor.is-flying {
+    display: flex;
+
+    opacity: 1;
+
+    transition:
+        left 1.05s
+            cubic-bezier(0.22, 0.75, 0.25, 1),
+        top 1.05s
+            cubic-bezier(0.22, 0.75, 0.25, 1),
+        transform 1.05s
+            cubic-bezier(0.22, 0.75, 0.25, 1),
+        opacity 0.25s ease 0.8s;
+}
+
+
+.guestbook-plane-cursor.is-flying::after {
+    width: 70px;
+
+    opacity: 1;
+}
+
+
+/* =========================================================
+   ONLY REAL POINTER DEVICES
+========================================================= */
+
+@media (hover: none), (pointer: coarse) {
+
+    .guestbook-plane-cursor {
+        display: none !important;
+    }
+
+
+    .guestbook-v2-submit {
+        cursor: pointer !important;
+    }
+
+}
+
+
+/* ACCESSIBILITY */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .guestbook-plane-cursor {
+        display: none !important;
+    }
+
+}
+/* =========================================
+   GUESTBOOK STATUS
+========================================= */
+
+.guestbook-v2-status.is-error {
+    color: #dc2626;
+}
+
+.guestbook-v2-status.is-success {
+    color: #16a34a;
+}
+/* =========================================================
+   CONTACT + GUESTBOOK
+   COMBINED SECTION
+========================================================= */
+
+.contact-guestbook {
+    position: relative;
+
+    width: 100%;
+
+    padding:
+        105px 0
+        110px;
+
+    background-color: #f8fafc;
+
+    overflow: hidden;
+}
+
+
+/* =========================================================
+   CONTAINER
+========================================================= */
+
+.contact-guestbook-container {
+    position: relative;
+
+    z-index: 2;
+
+    width: var(--page-width);
+
+    max-width: var(--page-max-width);
+
+    margin: 0 auto;
+}
+
+
+/* =========================================================
+   MAIN GRID
+========================================================= */
+
+.contact-guestbook-grid {
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 0.82fr)
+        minmax(0, 1.18fr);
+
+    gap: clamp(
+        55px,
+        6vw,
+        100px
+    );
+
+    align-items: start;
+}
+
+
+/* =========================================================
+   LEFT SIDE
+   CONTACT
+========================================================= */
+
+.contact-guestbook-left {
+    min-width: 0;
+}
+
+
+/* =========================================================
+   CONTACT HEADING
+========================================================= */
+
+.contact-guestbook-heading {
+    max-width: 500px;
+
+    margin-bottom: 42px;
+}
+
+
+.contact-guestbook-accent {
+    display: block;
+
+    width: 52px;
+    height: 4px;
+
+    margin-bottom: 18px;
+
+    border-radius: 999px;
+
+    background-color: #6d28d9;
+}
+
+
+.contact-guestbook-label {
+    margin:
+        0 0
+        12px;
+
+    font-size: 10px;
+    font-weight: 700;
+
+    letter-spacing: 2.4px;
+
+    color: #6d28d9;
+}
+
+
+.contact-guestbook-heading h2 {
+    margin:
+        0 0
+        17px;
+
+    font-size:
+        clamp(
+            38px,
+            4.5vw,
+            58px
+        );
+
+    line-height: 1.05;
+
+    letter-spacing: -1.5px;
+
+    color: #0f172a;
+}
+
+
+.contact-guestbook-description {
+    max-width: 450px;
+
+    margin: 0;
+
+    font-size: 14px;
+
+    line-height: 1.8;
+
+    color: #64748b;
+}
+
+
+/* =========================================================
+   CONTACT LINKS
+========================================================= */
+
+.contact-guestbook-links {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 11px;
+}
+
+
+/* CONTACT CARD */
+
+.contact-guestbook-link {
+    position: relative;
+
+    width: 100%;
+
+    min-height: 78px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 14px;
+
+    padding:
+        14px 17px;
+
+    border:
+        1px solid
+        #e2e8f0;
+
+    border-radius: 15px;
+
+    background-color: #ffffff;
+
+    text-decoration: none;
+
+    overflow: hidden;
+
+    transition:
+        transform 0.25s ease,
+        border-color 0.25s ease,
+        box-shadow 0.25s ease,
+        background-color 0.25s ease;
+}
+
+
+.contact-guestbook-link:hover {
+    transform:
+        translateY(-3px);
+
+    border-color: #ddd6fe;
+
+    background-color: #ffffff;
+
+    box-shadow:
+        0 13px 30px
+        rgba(15, 23, 42, 0.055);
+}
+
+
+/* ICON */
+
+.contact-guestbook-link-icon {
+    width: 43px;
+    height: 43px;
+
+    flex-shrink: 0;
+
+    display: flex;
+
+    justify-content: center;
+    align-items: center;
+
+    border-radius: 12px;
+
+    background-color: #ede9fe;
+
+    color: #6d28d9;
+
+    transition:
+        transform 0.25s ease,
+        background-color 0.25s ease,
+        color 0.25s ease;
+}
+
+
+.contact-guestbook-link-icon iconify-icon {
+    font-size: 21px;
+}
+
+
+.contact-guestbook-link:hover
+.contact-guestbook-link-icon {
+    transform:
+        scale(1.05);
+
+    background-color: #6d28d9;
+
+    color: #ffffff;
+}
+
+
+/* INFO */
+
+.contact-guestbook-link-info {
+    min-width: 0;
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 3px;
+}
+
+
+.contact-guestbook-link-label {
+    font-size: 9px;
+    font-weight: 700;
+
+    letter-spacing: 1.3px;
+
+    color: #94a3b8;
+}
+
+
+.contact-guestbook-link-value {
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+
+    font-size: 12px;
+    font-weight: 600;
+
+    color: #0f172a;
+}
+
+
+/* ARROW */
+
+.contact-guestbook-link-arrow {
+    margin-left: auto;
+
+    flex-shrink: 0;
+
+    font-size: 17px;
+
+    color: #94a3b8;
+
+    transition:
+        transform 0.25s ease,
+        color 0.25s ease;
+}
+
+
+.contact-guestbook-link:hover
+.contact-guestbook-link-arrow {
+    transform:
+        translate(
+            2px,
+            -2px
+        );
+
+    color: #6d28d9;
+}
+
+
+/* =========================================================
+   CONTACT NOTE
+========================================================= */
+
+.contact-guestbook-note {
+    display: flex;
+
+    align-items: center;
+
+    gap: 9px;
+
+    margin-top: 23px;
+}
+
+
+.contact-guestbook-note-dot {
+    width: 7px;
+    height: 7px;
+
+    flex-shrink: 0;
+
+    border-radius: 50%;
+
+    background-color: #6d28d9;
+
+    box-shadow:
+        0 0 0 5px
+        rgba(109, 40, 217, 0.08);
+}
+
+
+.contact-guestbook-note p {
+    margin: 0;
+
+    font-size: 10px;
+
+    line-height: 1.6;
+
+    color: #94a3b8;
+}
+
+
+/* =========================================================
+   RIGHT SIDE
+   GUESTBOOK
+========================================================= */
+
+.contact-guestbook-right {
+    min-width: 0;
+}
+
+
+/* =========================================================
+   GUESTBOOK HEADING
+========================================================= */
+
+.contact-guestbook-right-heading {
+    max-width: 590px;
+
+    margin-bottom: 28px;
+}
+
+
+.contact-guestbook-right-heading h2 {
+    margin:
+        0 0
+        12px;
+
+    font-size:
+        clamp(
+            31px,
+            3vw,
+            44px
+        );
+
+    line-height: 1.1;
+
+    letter-spacing: -1px;
+
+    color: #0f172a;
+}
+
+
+.contact-guestbook-right-heading > p:last-child {
+    max-width: 520px;
+
+    margin: 0;
+
+    font-size: 13px;
+
+    line-height: 1.75;
+
+    color: #64748b;
+}
+
+
+/* =========================================================
+   GUESTBOOK FORM OVERRIDE
+========================================================= */
+
+.contact-guestbook
+.guestbook-v2-form-wrapper {
+    width: 100%;
+
+    max-width: none;
+
+    margin:
+        0 0
+        42px;
+}
+
+
+.contact-guestbook
+.guestbook-v2-form {
+    width: 100%;
+
+    padding: 17px;
+
+    border:
+        1px solid
+        #e2e8f0;
+
+    border-radius: 17px;
+
+    background-color: #ffffff;
+
+    box-shadow:
+        0 16px 38px
+        rgba(15, 23, 42, 0.045);
+}
+
+
+/* NAME + BUTTON */
+
+.contact-guestbook
+.guestbook-v2-form-top {
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        auto;
+
+    gap: 9px;
+
+    margin-bottom: 9px;
+}
+
+
+/* NAME INPUT */
+
+.contact-guestbook
+.guestbook-v2-form-top input {
+    width: 100%;
+
+    height: 47px;
+
+    padding:
+        0 15px;
+
+    border:
+        1px solid
+        #e2e8f0;
+
+    border-radius: 10px;
+
+    outline: none;
+
+    background-color: #f8fafc;
+
+    font-family: inherit;
+
+    font-size: 12px;
+
+    color: #0f172a;
+
+    transition:
+        border-color 0.25s ease,
+        box-shadow 0.25s ease,
+        background-color 0.25s ease;
+}
+
+
+.contact-guestbook
+.guestbook-v2-form-top input::placeholder {
+    color: #94a3b8;
+}
+
+
+.contact-guestbook
+.guestbook-v2-form-top input:focus {
+    border-color: #6d28d9;
+
+    background-color: #ffffff;
+
+    box-shadow:
+        0 0 0 4px
+        rgba(109, 40, 217, 0.07);
+}
+
+
+/* SUBMIT */
+
+.contact-guestbook
+.guestbook-v2-submit {
+    min-width: 105px;
+
+    height: 47px;
+
+    display: inline-flex;
+
+    justify-content: center;
+    align-items: center;
+
+    gap: 7px;
+
+    padding:
+        0 18px;
+
+    border: none;
+
+    border-radius: 10px;
+
+    background-color: #6d28d9;
+
+    font-family: inherit;
+
+    font-size: 11px;
+    font-weight: 600;
+
+    color: #ffffff;
+
+    cursor: pointer;
+
+    transition:
+        background-color 0.25s ease,
+        transform 0.25s ease,
+        box-shadow 0.25s ease;
+}
+
+
+.contact-guestbook
+.guestbook-v2-submit:hover {
+    background-color: #5b21b6;
+
+    transform:
+        translateY(-1px);
+
+    box-shadow:
+        0 9px 20px
+        rgba(109, 40, 217, 0.18);
+}
+
+
+/* MESSAGE */
+
+.contact-guestbook
+.guestbook-v2-message-wrapper {
+    position: relative;
+}
+
+
+.contact-guestbook
+.guestbook-v2-message-wrapper textarea {
+    width: 100%;
+
+    min-height: 118px;
+
+    display: block;
+
+    padding:
+        14px 15px
+        31px;
+
+    border:
+        1px solid
+        #e2e8f0;
+
+    border-radius: 10px;
+
+    outline: none;
+
+    resize: vertical;
+
+    background-color: #f8fafc;
+
+    font-family: inherit;
+
+    font-size: 12px;
+
+    line-height: 1.7;
+
+    color: #0f172a;
+
+    transition:
+        border-color 0.25s ease,
+        box-shadow 0.25s ease,
+        background-color 0.25s ease;
+}
+
+
+.contact-guestbook
+.guestbook-v2-message-wrapper textarea::placeholder {
+    color: #94a3b8;
+}
+
+
+.contact-guestbook
+.guestbook-v2-message-wrapper textarea:focus {
+    border-color: #6d28d9;
+
+    background-color: #ffffff;
+
+    box-shadow:
+        0 0 0 4px
+        rgba(109, 40, 217, 0.07);
+}
+
+
+/* COUNTER */
+
+.contact-guestbook
+.guestbook-v2-counter {
+    position: absolute;
+
+    right: 12px;
+    bottom: 9px;
+
+    font-size: 9px;
+
+    color: #94a3b8;
+
+    pointer-events: none;
+}
+
+
+/* STATUS */
+
+.contact-guestbook
+.guestbook-v2-status {
+    min-height: 0;
+
+    margin:
+        10px 0
+        0;
+
+    font-size: 11px;
+
+    line-height: 1.6;
+}
+
+
+/* =========================================================
+   COMMUNITY HEADER
+========================================================= */
+
+.contact-guestbook
+.guestbook-v2-community {
+    width: 100%;
+
+    min-width: 0;
+}
+
+
+.contact-guestbook
+.guestbook-v2-community-head {
+    display: flex;
+
+    justify-content: space-between;
+    align-items: flex-end;
+
+    gap: 20px;
+
+    margin-bottom: 18px;
+}
+
+
+.contact-guestbook
+.guestbook-v2-community-label {
+    margin:
+        0 0
+        6px;
+
+    font-size: 9px;
+    font-weight: 700;
+
+    letter-spacing: 1.8px;
+
+    color: #6d28d9;
+}
+
+
+.contact-guestbook
+.guestbook-v2-community-head h3 {
+    margin: 0;
+
+    font-size: 22px;
+
+    line-height: 1.2;
+
+    color: #0f172a;
+}
+
+
+/* =========================================================
+   SLIDER HEADER RIGHT
+========================================================= */
+
+.guestbook-slider-header-right {
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+}
+
+
+/* COUNT */
+
+.contact-guestbook
+.guestbook-v2-count {
+    min-height: 30px;
+
+    display: inline-flex;
+
+    align-items: center;
+
+    padding:
+        0 11px;
+
+    border:
+        1px solid
+        #ddd6fe;
+
+    border-radius: 999px;
+
+    background-color: #f5f3ff;
+
+    white-space: nowrap;
+
+    font-size: 9px;
+    font-weight: 600;
+
+    color: #6d28d9;
+}
+
+
+/* =========================================================
+   SLIDER CONTROLS
+========================================================= */
+
+.guestbook-slider-controls {
+    display: flex;
+
+    align-items: center;
+
+    gap: 6px;
+}
+
+
+.guestbook-slider-button {
+    width: 31px;
+    height: 31px;
+
+    display: flex;
+
+    justify-content: center;
+    align-items: center;
+
+    padding: 0;
+
+    border:
+        1px solid
+        #e2e8f0;
+
+    border-radius: 50%;
+
+    background-color: #ffffff;
+
+    font-family: inherit;
+
+    font-size: 13px;
+
+    color: #475569;
+
+    cursor: pointer;
+
+    transition:
+        background-color 0.25s ease,
+        border-color 0.25s ease,
+        color 0.25s ease,
+        transform 0.25s ease;
+}
+
+
+.guestbook-slider-button:hover {
+    border-color: #6d28d9;
+
+    background-color: #6d28d9;
+
+    color: #ffffff;
+
+    transform:
+        translateY(-1px);
+}
+
+
+/* =========================================================
+   COMMENT SLIDER
+========================================================= */
+
+.contact-guestbook
+.guestbook-v2-grid {
+    width: 100%;
+
+    min-width: 0;
+
+    display: flex;
+
+    gap: 12px;
+
+    overflow-x: auto;
+    overflow-y: hidden;
+
+    padding:
+        2px 2px
+        7px;
+
+    scroll-snap-type:
+        x mandatory;
+
+    scroll-behavior:
+        smooth;
+
+    overscroll-behavior-x:
+        contain;
+
+    -webkit-overflow-scrolling:
+        touch;
+
+    scrollbar-width:
+        none;
+
+    cursor: grab;
+}
+
+
+.contact-guestbook
+.guestbook-v2-grid::-webkit-scrollbar {
+    display: none;
+}
+
+
+.contact-guestbook
+.guestbook-v2-grid:active {
+    cursor: grabbing;
+}
+
+
+/* =========================================================
+   COMMENT CARD
+========================================================= */
+
+.contact-guestbook
+.guestbook-v2-comment {
+    flex:
+        0 0
+        calc(
+            (100% - 12px) / 2
+        );
+
+    min-width: 0;
+
+    padding: 16px;
+
+    scroll-snap-align: start;
+
+    background-color: #ffffff;
+
+    border:
+        1px solid
+        #e2e8f0;
+
+    border-radius: 14px;
+
+    transition:
+        transform 0.25s ease,
+        border-color 0.25s ease,
+        box-shadow 0.25s ease;
+}
+
+
+.contact-guestbook
+.guestbook-v2-comment:hover {
+    transform:
+        translateY(-2px);
+
+    border-color: #ddd6fe;
+
+    box-shadow:
+        0 10px 24px
+        rgba(15, 23, 42, 0.05);
+}
+
+
+/* COMMENT HEADER */
+
+.contact-guestbook
+.guestbook-v2-comment-head {
+    display: flex;
+
+    align-items: center;
+
+    gap: 9px;
+
+    margin-bottom: 11px;
+}
+
+
+/* AVATAR */
+
+.contact-guestbook
+.guestbook-v2-avatar {
+    width: 30px;
+    height: 30px;
+
+    flex-shrink: 0;
+
+    display: flex;
+
+    justify-content: center;
+    align-items: center;
+
+    border-radius: 50%;
+
+    background-color: #ede9fe;
+
+    font-size: 10px;
+    font-weight: 700;
+
+    color: #6d28d9;
+}
+
+
+/* NAME */
+
+.contact-guestbook
+.guestbook-v2-comment-name {
+    max-width: 170px;
+
+    margin: 0;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+
+    font-size: 11px;
+    font-weight: 700;
+
+    color: #0f172a;
+}
+
+
+/* DATE */
+
+.contact-guestbook
+.guestbook-v2-comment-date {
+    display: block;
+
+    margin-top: 2px;
+
+    font-size: 8px;
+
+    color: #94a3b8;
+}
+
+
+/* MESSAGE */
+
+.contact-guestbook
+.guestbook-v2-comment-message {
+    margin: 0;
+
+    overflow-wrap: anywhere;
+
+    white-space: pre-wrap;
+
+    font-size: 11px;
+
+    line-height: 1.7;
+
+    color: #475569;
+}
+
+
+/* =========================================================
+   EMPTY STATE
+========================================================= */
+
+.contact-guestbook
+.guestbook-v2-empty {
+    flex: 0 0 100%;
+
+    width: 100%;
+
+    padding:
+        35px 20px;
+
+    text-align: center;
+
+    border:
+        1px dashed
+        #cbd5e1;
+
+    border-radius: 14px;
+
+    background-color:
+        rgba(255, 255, 255, 0.65);
+}
+
+
+.contact-guestbook
+.guestbook-v2-empty-icon {
+    width: 35px;
+    height: 35px;
+
+    display: flex;
+
+    justify-content: center;
+    align-items: center;
+
+    margin:
+        0 auto
+        12px;
+
+    border-radius: 50%;
+
+    background-color: #ede9fe;
+
+    font-size: 13px;
+
+    color: #6d28d9;
+}
+
+
+.contact-guestbook
+.guestbook-v2-empty h4 {
+    margin:
+        0 0
+        6px;
+
+    font-size: 13px;
+
+    color: #0f172a;
+}
+
+
+.contact-guestbook
+.guestbook-v2-empty p {
+    margin: 0;
+
+    font-size: 10px;
+
+    color: #94a3b8;
+}
+
+
+/* =========================================================
+   LARGE TABLET / SMALL LAPTOP
+========================================================= */
+
+@media (max-width: 1100px) {
+
+    .contact-guestbook-grid {
+        grid-template-columns:
+            minmax(0, 0.8fr)
+            minmax(0, 1.2fr);
+
+        gap: 45px;
+    }
+
+
+    .contact-guestbook-link {
+        padding:
+            13px 14px;
+    }
+
+
+    .contact-guestbook-link-icon {
+        width: 39px;
+        height: 39px;
+    }
+
+
+    .contact-guestbook-link-value {
+        font-size: 11px;
+    }
+
+
+    .contact-guestbook
+    .guestbook-v2-comment {
+
+        flex:
+            0 0
+            76%;
+    }
+
+}
+
+
+/* =========================================================
+   TABLET PORTRAIT
+========================================================= */
+
+@media (max-width: 900px) {
+
+    .contact-guestbook {
+        padding:
+            90px 0;
+    }
+
+
+    .contact-guestbook-container {
+        width: 88%;
+    }
+
+
+    .contact-guestbook-grid {
+        grid-template-columns: 1fr;
+
+        gap: 80px;
+    }
+
+
+    .contact-guestbook-left {
+        max-width: 680px;
+
+        margin: 0 auto;
+
+        width: 100%;
+    }
+
+
+    .contact-guestbook-right {
+        width: 100%;
+
+        max-width: 760px;
+
+        margin: 0 auto;
+    }
+
+
+    .contact-guestbook-heading {
+        max-width: 600px;
+    }
+
+
+    .contact-guestbook
+    .guestbook-v2-comment {
+
+        flex:
+            0 0
+            calc(
+                (100% - 12px) / 2
+            );
+    }
+
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 650px) {
+
+    .contact-guestbook {
+        padding:
+            75px 0;
+    }
+
+
+    .contact-guestbook-container {
+        width: 90%;
+    }
+
+
+    .contact-guestbook-grid {
+        gap: 65px;
+    }
+
+
+    /* CONTACT */
+
+    .contact-guestbook-heading {
+        margin-bottom: 32px;
+    }
+
+
+    .contact-guestbook-heading h2 {
+        font-size: 38px;
+
+        letter-spacing: -1px;
+    }
+
+
+    .contact-guestbook-description {
+        font-size: 13px;
+    }
+
+
+    .contact-guestbook-link {
+        min-height: 71px;
+
+        padding:
+            12px 13px;
+
+        border-radius: 13px;
+    }
+
+
+    .contact-guestbook-link-icon {
+        width: 38px;
+        height: 38px;
+
+        border-radius: 10px;
+    }
+
+
+    .contact-guestbook-link-icon
+    iconify-icon {
+
+        font-size: 19px;
+    }
+
+
+    .contact-guestbook-link-label {
+        font-size: 8px;
+    }
+
+
+    .contact-guestbook-link-value {
+        max-width: 220px;
+
+        font-size: 10px;
+    }
+
+
+    /* GUESTBOOK */
+
+    .contact-guestbook-right-heading h2 {
+        font-size: 32px;
+    }
+
+
+    .contact-guestbook
+    .guestbook-v2-form {
+
+        padding: 14px;
+
+        border-radius: 15px;
+    }
+
+
+    .contact-guestbook
+    .guestbook-v2-form-top {
+
+        grid-template-columns:
+            minmax(0, 1fr)
+            90px;
+
+        gap: 7px;
+    }
+
+
+    .contact-guestbook
+    .guestbook-v2-submit {
+
+        min-width: 90px;
+
+        padding:
+            0 11px;
+    }
+
+
+    /* COMMUNITY HEADER */
+
+    .contact-guestbook
+    .guestbook-v2-community-head {
+
+        align-items: flex-end;
+
+        gap: 10px;
+    }
+
+
+    .guestbook-slider-header-right {
+        gap: 7px;
+    }
+
+
+    .contact-guestbook
+    .guestbook-v2-count {
+
+        display: none;
+    }
+
+
+    /* COMMENT SLIDER */
+
+    .contact-guestbook
+    .guestbook-v2-comment {
+
+        /*
+            Card berikutnya sengaja
+            sedikit terlihat agar user
+            tahu slider bisa digeser.
+        */
+
+        flex:
+            0 0
+            88%;
+    }
+
+
+    .contact-guestbook
+    .guestbook-v2-grid {
+
+        gap: 10px;
+
+        margin-right: -5%;
+    }
+
+}
+
+
+/* =========================================================
+   VERY SMALL MOBILE
+========================================================= */
+
+@media (max-width: 400px) {
+
+    .contact-guestbook-heading h2 {
+        font-size: 34px;
+    }
+
+
+    .contact-guestbook
+    .guestbook-v2-form-top {
+
+        grid-template-columns: 1fr;
+    }
+
+
+    .contact-guestbook
+    .guestbook-v2-submit {
+
+        width: 100%;
+    }
+
+
+    .contact-guestbook-link-value {
+        max-width: 175px;
+    }
+
+
+    .contact-guestbook
+    .guestbook-v2-community-head {
+
+        align-items: flex-start;
+    }
+
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .contact-guestbook *,
+    .contact-guestbook *::before,
+    .contact-guestbook *::after {
+
+        scroll-behavior: auto !important;
+    }
+
+}
+/* =========================================================
+   CONTACT SOCIAL - SIMPLE BRAND STYLE
+========================================================= */
+
+.contact-social-link {
+    width: 100%;
+
+    min-height: 66px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 11px;
+
+    padding:
+        12px 16px;
+
+    border:
+        1px solid #e2e8f0;
+
+    border-radius: 14px;
+
+    background-color: #ffffff;
+
+    text-decoration: none;
+
+    color: #0f172a;
+
+    transition:
+        transform 0.25s ease,
+        color 0.25s ease,
+        background-color 0.25s ease,
+        border-color 0.25s ease,
+        box-shadow 0.25s ease;
+}
+
+
+/* =========================================================
+   ICON
+========================================================= */
+
+.contact-social-icon {
+    width: 36px;
+    height: 36px;
+
+    display: flex;
+
+    justify-content: center;
+    align-items: center;
+
+    flex-shrink: 0;
+
+    border-radius: 10px;
+
+    background-color: #f5f3ff;
+
+    color: #6d28d9;
+
+    transition:
+        color 0.25s ease,
+        background-color 0.25s ease,
+        transform 0.25s ease;
+}
+
+
+.contact-social-icon iconify-icon {
+    font-size: 21px;
+}
+
+
+.contact-social-divider {
+    font-size: 13px;
+
+    color: #cbd5e1;
+}
+
+
+.contact-social-name {
+    font-size: 13px;
+
+    font-weight: 600;
+
+    color: inherit;
+}
+
+
+/* =========================================================
+   BRAND COLORS
+========================================================= */
+
+
+/* INSTAGRAM */
+
+.contact-social-instagram:hover {
+    color: #e1306c;
+
+    border-color:
+        rgba(225, 48, 108, 0.25);
+
+    background-color:
+        rgba(225, 48, 108, 0.035);
+
+    box-shadow:
+        0 12px 28px
+        rgba(225, 48, 108, 0.08);
+}
+
+
+.contact-social-instagram:hover
+.contact-social-icon {
+
+    color: #ffffff;
+
+    background:
+        linear-gradient(
+            135deg,
+            #833ab4,
+            #fd1d1d,
+            #fcb045
+        );
+}
+
+
+/* WHATSAPP */
+
+.contact-social-whatsapp:hover {
+    color: #16a34a;
+
+    border-color:
+        rgba(37, 211, 102, 0.30);
+
+    background-color:
+        rgba(37, 211, 102, 0.04);
+
+    box-shadow:
+        0 12px 28px
+        rgba(37, 211, 102, 0.08);
+}
+
+
+.contact-social-whatsapp:hover
+.contact-social-icon {
+
+    color: #ffffff;
+
+    background-color: #25d366;
+}
+
+
+/* EMAIL */
+
+.contact-social-email:hover {
+    color: #ea4335;
+
+    border-color:
+        rgba(234, 67, 53, 0.25);
+
+    background-color:
+        rgba(234, 67, 53, 0.035);
+
+    box-shadow:
+        0 12px 28px
+        rgba(234, 67, 53, 0.07);
+}
+
+
+.contact-social-email:hover
+.contact-social-icon {
+
+    color: #ffffff;
+
+    background-color: #ea4335;
+}
+
+
+/* LINKEDIN */
+
+.contact-social-linkedin:hover {
+    color: #0a66c2;
+
+    border-color:
+        rgba(10, 102, 194, 0.25);
+
+    background-color:
+        rgba(10, 102, 194, 0.035);
+
+    box-shadow:
+        0 12px 28px
+        rgba(10, 102, 194, 0.08);
+}
+
+
+.contact-social-linkedin:hover
+.contact-social-icon {
+
+    color: #ffffff;
+
+    background-color: #0a66c2;
+}
+
+
+/* =========================================================
+   HOVER LIFT
+========================================================= */
+
+.contact-social-link:hover {
+    transform:
+        translateY(-2px);
+}
+
+
+/* =========================================================
+   ICON SHAKE
+   seperti getaran bell
+========================================================= */
+
+.contact-social-link:hover
+.contact-social-icon {
+
+    animation:
+        contactIconShake
+        0.55s
+        ease;
+}
+
+
+@keyframes contactIconShake {
+
+    0% {
+        transform:
+            rotate(0deg);
+    }
+
+    15% {
+        transform:
+            rotate(-10deg)
+            scale(1.05);
+    }
+
+    30% {
+        transform:
+            rotate(9deg)
+            scale(1.05);
+    }
+
+    45% {
+        transform:
+            rotate(-7deg)
+            scale(1.05);
+    }
+
+    60% {
+        transform:
+            rotate(5deg)
+            scale(1.05);
+    }
+
+    75% {
+        transform:
+            rotate(-3deg);
+    }
+
+    100% {
+        transform:
+            rotate(0deg);
+    }
+
+}
+
+
+/* =========================================================
+   COMMENT AREA WITHOUT HEADING
+========================================================= */
+
+.contact-guestbook
+.guestbook-v2-community {
+
+    margin-top: 34px;
+
+    width: 100%;
+
+    min-width: 0;
+}
+
+
+/* =========================================================
+   COMMENT SLIDER
+========================================================= */
+
+.contact-guestbook
+.guestbook-v2-grid {
+
+    width: 100%;
+
+    display: flex;
+
+    gap: 12px;
+
+    overflow-x: auto;
+    overflow-y: hidden;
+
+    padding:
+        3px 2px
+        8px;
+
+    scroll-snap-type:
+        x mandatory;
+
+    scroll-behavior:
+        smooth;
+
+    overscroll-behavior-x:
+        contain;
+
+    scrollbar-width:
+        none;
+
+    -webkit-overflow-scrolling:
+        touch;
+
+    cursor: grab;
+}
+
+
+.contact-guestbook
+.guestbook-v2-grid::-webkit-scrollbar {
+
+    display: none;
+}
+
+
+.contact-guestbook
+.guestbook-v2-grid:active {
+
+    cursor: grabbing;
+}
+
+
+/* =========================================================
+   COMMENT CARDS
+========================================================= */
+
+.contact-guestbook
+.guestbook-v2-comment {
+
+    flex:
+        0 0
+        calc(
+            (100% - 12px) / 2
+        );
+
+    scroll-snap-align:
+        start;
+}
+
+
+/* =========================================================
+   SLIDER DOT / NAVBAR
+========================================================= */
+
+.guestbook-slider-dots {
+
+    min-height: 18px;
+
+    display: flex;
+
+    justify-content: center;
+    align-items: center;
+
+    flex-wrap: wrap;
+
+    gap: 7px;
+
+    margin-top: 16px;
+}
+
+
+/* inactive */
+
+.guestbook-slider-dot {
+
+    width: 7px;
+    height: 7px;
+
+    padding: 0;
+
+    border: none;
+
+    border-radius: 999px;
+
+    background-color: #cbd5e1;
+
+    cursor: pointer;
+
+    transition:
+        width 0.3s ease,
+        background-color 0.3s ease,
+        transform 0.3s ease;
+}
+
+
+/* hover */
+
+.guestbook-slider-dot:hover {
+
+    transform:
+        scale(1.25);
+
+    background-color: #a78bfa;
+}
+
+
+/* active becomes small rectangle */
+
+.guestbook-slider-dot.is-active {
+
+    width: 24px;
+
+    background-color: #6d28d9;
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 650px) {
+
+    .contact-social-link {
+        min-height: 62px;
+
+        padding:
+            11px 13px;
+    }
+
+
+    .contact-social-icon {
+        width: 34px;
+        height: 34px;
+    }
+
+
+    .contact-social-name {
+        font-size: 12px;
+    }
+
+
+    /*
+        Satu komentar hampir penuh.
+        Comment berikutnya sedikit terlihat.
+    */
+
+    .contact-guestbook
+    .guestbook-v2-comment {
+
+        flex:
+            0 0
+            88%;
+    }
+
+
+    .guestbook-slider-dots {
+
+        margin-top: 13px;
+    }
+
+}
+
+
+/* =========================================================
+   TOUCH DEVICES
+
+   Jangan paksa animasi hover/getar
+========================================================= */
+
+@media (hover: none) {
+
+    .contact-social-link:hover
+    .contact-social-icon {
+
+        animation: none;
+    }
+
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .contact-social-link:hover
+    .contact-social-icon {
+
+        animation: none;
+    }
+
 }

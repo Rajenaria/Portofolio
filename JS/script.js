@@ -2596,3 +2596,614 @@ updateAboutSlider();
     startLoop();
 
 })();
+/* =========================================
+   GUESTBOOK REVEAL ANIMATION
+========================================= */
+
+const guestbookSection =
+    document.querySelector(".guestbook-v2");
+
+if (guestbookSection) {
+
+    const guestbookObserver =
+        new IntersectionObserver(
+            (entries, observer) => {
+
+                entries.forEach((entry) => {
+
+                    if (!entry.isIntersecting) return;
+
+                    entry.target.classList.add(
+                        "is-visible"
+                    );
+
+                    observer.unobserve(
+                        entry.target
+                    );
+
+                });
+
+            },
+            {
+                threshold: 0.18
+            }
+        );
+
+    guestbookObserver.observe(
+        guestbookSection
+    );
+
+}
+/* =========================================
+   GUESTBOOK MAGNETIC PARTICLES
+========================================= */
+
+(() => {
+
+    const guestbook =
+        document.querySelector(".guestbook-v2");
+
+    const particleContainer =
+        document.getElementById("guestbookParticles");
+
+
+    if (!guestbook || !particleContainer) {
+        return;
+    }
+
+
+    /* hanya tablet / desktop */
+
+    const fullLayout =
+        window.matchMedia("(min-width: 768px)");
+
+    if (!fullLayout.matches) {
+        return;
+    }
+
+
+    /* =====================================
+       PARTICLE CONFIG
+    ===================================== */
+
+const particleData = [
+
+    {
+        x: 7,
+        y: 18,
+        size: 22,
+        opacity: 0.22,
+        icon: "✦"
+    },
+
+    {
+        x: 15,
+        y: 68,
+        size: 18,
+        opacity: 0.16,
+        icon: "✧"
+    },
+
+    {
+        x: 25,
+        y: 35,
+        size: 14,
+        opacity: 0.16,
+        icon: "⋆"
+    },
+
+    {
+        x: 36,
+        y: 82,
+        size: 18,
+        opacity: 0.13,
+        icon: "★"
+    },
+
+    {
+        x: 48,
+        y: 13,
+        size: 16,
+        opacity: 0.17,
+        icon: "✧"
+    },
+
+    {
+        x: 61,
+        y: 76,
+        size: 20,
+        opacity: 0.15,
+        icon: "✦"
+    },
+
+    {
+        x: 71,
+        y: 27,
+        size: 15,
+        opacity: 0.14,
+        icon: "⋆"
+    },
+
+    {
+        x: 82,
+        y: 69,
+        size: 18,
+        opacity: 0.17,
+        icon: "✧"
+    },
+
+    {
+        x: 91,
+        y: 18,
+        size: 21,
+        opacity: 0.19,
+        icon: "✦"
+    },
+
+    {
+        x: 94,
+        y: 52,
+        size: 17,
+        opacity: 0.14,
+        icon: "✉"
+    }
+
+];
+
+
+    const particles = [];
+
+
+    /* =====================================
+       CREATE PARTICLES
+    ===================================== */
+
+    particleData.forEach((data) => {
+
+        const element =
+            document.createElement("span");
+
+        element.className =
+            "guestbook-v2-particle";
+
+        element.textContent = data.icon;
+        
+        element.style.setProperty(
+            "--particle-x",
+            `${data.x}%`
+        );
+
+        element.style.setProperty(
+            "--particle-y",
+            `${data.y}%`
+        );
+
+        element.style.setProperty(
+            "--particle-size",
+            `${data.size}px`
+        );
+
+        element.style.setProperty(
+            "--particle-opacity",
+            data.opacity
+        );
+
+
+        particleContainer.appendChild(
+            element
+        );
+
+
+        particles.push({
+
+            element,
+
+            x: 0,
+            y: 0,
+
+            targetX: 0,
+            targetY: 0
+
+        });
+
+    });
+
+
+    /* =====================================
+       POINTER INTERACTION
+    ===================================== */
+
+    guestbook.addEventListener(
+        "pointermove",
+        (event) => {
+
+            const rect =
+                guestbook.getBoundingClientRect();
+
+
+            particles.forEach((particle) => {
+
+                const particleRect =
+                    particle.element.getBoundingClientRect();
+
+
+                const particleX =
+                    particleRect.left +
+                    particleRect.width / 2;
+
+
+                const particleY =
+                    particleRect.top +
+                    particleRect.height / 2;
+
+
+                const dx =
+                    particleX -
+                    event.clientX;
+
+
+                const dy =
+                    particleY -
+                    event.clientY;
+
+
+                const distance =
+                    Math.sqrt(
+                        dx * dx +
+                        dy * dy
+                    );
+
+
+                const radius = 150;
+
+
+                if (distance < radius) {
+
+                    const force =
+                        (radius - distance) /
+                        radius;
+
+
+                    const angle =
+                        Math.atan2(dy, dx);
+
+
+                    const strength =
+                        force * 55;
+
+
+                    particle.targetX =
+                        Math.cos(angle) *
+                        strength;
+
+
+                    particle.targetY =
+                        Math.sin(angle) *
+                        strength;
+
+                } else {
+
+                    particle.targetX = 0;
+                    particle.targetY = 0;
+
+                }
+
+            });
+
+        }
+    );
+
+
+    /* ketika cursor keluar */
+
+    guestbook.addEventListener(
+        "pointerleave",
+        () => {
+
+            particles.forEach(
+                (particle) => {
+
+                    particle.targetX = 0;
+                    particle.targetY = 0;
+
+                }
+            );
+
+        }
+    );
+
+
+    /* =====================================
+       SMOOTH SPRING ANIMATION
+    ===================================== */
+
+    function animateParticles() {
+
+        particles.forEach(
+            (particle) => {
+
+                particle.x +=
+                    (particle.targetX -
+                        particle.x) *
+                    0.09;
+
+
+                particle.y +=
+                    (particle.targetY -
+                        particle.y) *
+                    0.09;
+
+
+                particle.element.style.transform =
+                    `translate3d(
+                        ${particle.x}px,
+                        ${particle.y}px,
+                        0
+                    )`;
+
+            }
+        );
+
+
+        requestAnimationFrame(
+            animateParticles
+        );
+
+    }
+
+
+    animateParticles();
+
+})();
+/* =========================================
+   GUESTBOOK PLANE CURSOR
+========================================= */
+
+(() => {
+
+    const button =
+        document.getElementById(
+            "guestbookSubmit"
+        );
+
+    const plane =
+        document.getElementById(
+            "guestbookPlaneCursor"
+        );
+
+
+    if (!button || !plane) {
+        return;
+    }
+
+
+    /* hanya perangkat mouse / trackpad */
+
+    const canHover =
+        window.matchMedia(
+            "(hover: hover) and (pointer: fine)"
+        );
+
+    if (!canHover.matches) {
+        return;
+    }
+
+
+    let mouseX = 0;
+    let mouseY = 0;
+
+    let flying = false;
+
+
+    /* =====================================
+       TRACK CURSOR
+    ===================================== */
+
+    button.addEventListener(
+        "pointermove",
+        (event) => {
+
+            if (flying) return;
+
+            mouseX = event.clientX;
+            mouseY = event.clientY;
+
+
+            plane.style.left =
+                `${mouseX}px`;
+
+            plane.style.top =
+                `${mouseY}px`;
+
+        }
+    );
+
+
+    /* =====================================
+       ENTER BUTTON
+    ===================================== */
+
+    button.addEventListener(
+        "pointerenter",
+        (event) => {
+
+            if (flying) return;
+
+
+            mouseX = event.clientX;
+            mouseY = event.clientY;
+
+
+            plane.style.left =
+                `${mouseX}px`;
+
+            plane.style.top =
+                `${mouseY}px`;
+
+
+            button.classList.add(
+                "plane-hover"
+            );
+
+
+            plane.classList.add(
+                "is-active"
+            );
+
+        }
+    );
+
+
+    /* =====================================
+       LEAVE BUTTON
+    ===================================== */
+
+    button.addEventListener(
+        "pointerleave",
+        () => {
+
+            if (flying) return;
+
+
+            button.classList.remove(
+                "plane-hover"
+            );
+
+
+            plane.classList.remove(
+                "is-active"
+            );
+
+        }
+    );
+
+
+    /* =====================================
+       FLY ANIMATION
+    ===================================== */
+
+    function flyGuestbookPlane() {
+
+        if (flying) return;
+
+
+        flying = true;
+
+
+        button.classList.remove(
+            "plane-hover"
+        );
+
+
+        plane.classList.add(
+            "is-active"
+        );
+
+
+        /*
+            sedikit angkat dulu
+        */
+
+        plane.style.transform =
+            `
+            translate(-50%, -50%)
+            translateY(-8px)
+            rotate(-12deg)
+            scale(1.08)
+            `;
+
+
+        requestAnimationFrame(() => {
+
+            requestAnimationFrame(() => {
+
+                plane.classList.add(
+                    "is-flying"
+                );
+
+
+                /*
+                    terbang ke kanan atas
+                    sampai keluar viewport
+                */
+
+                plane.style.left =
+                    `${window.innerWidth + 130}px`;
+
+                plane.style.top =
+                    `${Math.max(
+                        -100,
+                        mouseY - 180
+                    )}px`;
+
+                plane.style.transform =
+                    `
+                    translate(-50%, -50%)
+                    rotate(-18deg)
+                    scale(0.92)
+                    `;
+
+            });
+
+        });
+
+
+        /* reset setelah keluar */
+
+        window.setTimeout(
+            () => {
+
+                plane.classList.remove(
+                    "is-active",
+                    "is-flying"
+                );
+
+
+                plane.style.transition =
+                    "none";
+
+
+                flying = false;
+
+
+                requestAnimationFrame(() => {
+
+                    plane.style.transform = "";
+
+                    plane.style.transition = "";
+
+                });
+
+            },
+            1250
+        );
+
+    }
+
+
+    // /* =====================================
+    //    PREVIEW SAAT KLIK
+
+    //    NANTI kita pindahkan ke
+    //    "pesan berhasil dikirim"
+    // ===================================== */
+
+    // button.addEventListener(
+    //     "click",
+    //     () => {
+
+    //         flyGuestbookPlane();
+
+    //     }
+    // );
+
+
+    /*
+        Supaya fungsi ini nanti bisa
+        dipanggil dari logic Supabase.
+    */
+
+    window.flyGuestbookPlane =
+        flyGuestbookPlane;
+
+})();
