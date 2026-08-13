@@ -2409,7 +2409,7 @@ nav {
     inset: 0;
 
     background-image:
-        url("../Image/background.png");
+        url("../assets/images/backgrounds/background.png");
 
     background-repeat: no-repeat;
 
@@ -2435,7 +2435,7 @@ nav {
 
     .education-modern::before {
         background-image:
-            url("../Image/background-mobile.webp");
+            url("../assets/images/backgrounds/background-mobile.webp");
     }
 
 }
@@ -12044,4 +12044,4 @@ a.footer-contact-item:hover {
         animation: none;
     }
 
-}
+}

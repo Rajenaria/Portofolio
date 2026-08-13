@@ -1,6 +1,6 @@
 /**
  * Development utility: generates lightweight mobile WebP versions of the
- * large images in Image/ used by the site's <picture> mobile sources.
+ * large images in assets/images/ used by the site's <picture> mobile sources.
  *
  * Run with:
  *   node scripts/optimize-mobile-images.js
@@ -17,7 +17,7 @@ const fs = require("fs");
 const path = require("path");
 const sharp = require("sharp");
 
-const IMAGE_DIR = path.join(__dirname, "..", "Image");
+const IMAGE_DIR = path.join(__dirname, "..", "assets", "images");
 
 // category: maxWidth (px) = upper bound for the resized mobile image,
 // targetKB = soft file-size budget used to step quality down if needed.
@@ -28,26 +28,28 @@ const CATEGORIES = {
     background: { maxWidth: 1280, targetKB: 500 },
 };
 
-// Explicit manifest rather than "convert everything in Image/": small
-// icons/logos and unreferenced files are intentionally left out (see the
-// optimization report for the full list and reasoning).
+// Explicit manifest rather than "convert everything in assets/images/":
+// small icons/logos and unreferenced files are intentionally left out (see
+// the optimization report for the full list and reasoning). Paths are
+// relative to IMAGE_DIR and include the assets/images/<subfolder> the file
+// actually lives in.
 const MANIFEST = [
-    { src: "hadow.png", out: "hadow-mobile.webp", category: "hero-profile" },
-    { src: "Profil 1.png", out: "profil-1-mobile.webp", category: "hero-profile" },
+    { src: "profile/hadow.png", out: "profile/hadow-mobile.webp", category: "hero-profile" },
+    { src: "profile/Profil 1.png", out: "profile/profil-1-mobile.webp", category: "hero-profile" },
 
-    { src: "web.png", out: "web-mobile.webp", category: "project-thumbnail" },
-    { src: "ticket.png", out: "ticket-mobile.webp", category: "project-thumbnail" },
-    { src: "project 3.png", out: "project-3-mobile.webp", category: "project-thumbnail" },
+    { src: "projects/web.png", out: "projects/web-mobile.webp", category: "project-thumbnail" },
+    { src: "projects/ticket.png", out: "projects/ticket-mobile.webp", category: "project-thumbnail" },
+    { src: "projects/project 3.png", out: "projects/project-3-mobile.webp", category: "project-thumbnail" },
 
-    { src: "aslab 1.jpeg", out: "aslab-1-mobile.webp", category: "documentation" },
-    { src: "aslab 2.jpeg", out: "aslab-2-mobile.webp", category: "documentation" },
-    { src: "himpunan 1.jpeg", out: "himpunan-1-mobile.webp", category: "documentation" },
-    { src: "himpunan 4.jpeg", out: "himpunan-4-mobile.webp", category: "documentation" },
-    { src: "marketing 1.jpeg", out: "marketing-1-mobile.webp", category: "documentation" },
-    { src: "madrd 4.png", out: "madrd-4-mobile.webp", category: "documentation" },
-    { src: "madrid 5.png", out: "madrid-5-mobile.webp", category: "documentation" },
+    { src: "experience/aslab 1.jpeg", out: "experience/aslab-1-mobile.webp", category: "documentation" },
+    { src: "experience/aslab 2.jpeg", out: "experience/aslab-2-mobile.webp", category: "documentation" },
+    { src: "experience/himpunan 1.jpeg", out: "experience/himpunan-1-mobile.webp", category: "documentation" },
+    { src: "experience/himpunan 4.jpeg", out: "experience/himpunan-4-mobile.webp", category: "documentation" },
+    { src: "experience/marketing 1.jpeg", out: "experience/marketing-1-mobile.webp", category: "documentation" },
+    { src: "projects/madrd 4.png", out: "projects/madrd-4-mobile.webp", category: "documentation" },
+    { src: "projects/madrid 5.png", out: "projects/madrid-5-mobile.webp", category: "documentation" },
 
-    { src: "background.png", out: "background-mobile.webp", category: "background" },
+    { src: "backgrounds/background.png", out: "backgrounds/background-mobile.webp", category: "background" },
 ];
 
 function formatKB(bytes) {

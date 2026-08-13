@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Development utility: keeps Image/ stocked with lightweight mobile WebP
-versions of every large photo, and (optionally) wraps plain <img> tags
+Development utility: keeps assets/images/ stocked with lightweight mobile
+WebP versions of every large photo, and (optionally) wraps plain <img> tags
 in the site's HTML with a <picture><source media="(max-width:650px)">
 so new images get the same "mobile WebP / desktop original" behavior
 as the existing ones, without any manual editing.
@@ -9,10 +9,11 @@ as the existing ones, without any manual editing.
 Usage (run from the project root, with the venv active):
 
     python scripts/optimize-mobile-images.py
-        Scan Image/, create/update mobile WebP files for anything that
-        needs it, and print a dry-run report of which <img> tags in the
-        HTML *could* be wrapped in <picture> (nothing is written to the
-        HTML files in this mode).
+        Scan assets/images/ (recursively, across its profile/education/
+        experience/projects/branding/backgrounds subfolders), create/update
+        mobile WebP files for anything that needs it, and print a dry-run
+        report of which <img> tags in the HTML *could* be wrapped in
+        <picture> (nothing is written to the HTML files in this mode).
 
     python scripts/optimize-mobile-images.py --apply-html
         Same as above, but also rewrites the HTML files to wrap the
@@ -32,13 +33,14 @@ First-time setup (already done in this repo's .venv):
     python -m venv .venv
     ./.venv/Scripts/python.exe -m pip install -r requirements.txt
 
-Workflow after adding a new image, e.g. Image/project-ai.png:
-    1. Drop the file into Image/.
-    2. Reference it normally in the HTML: <img src="Image/project-ai.png" ...>
+Workflow after adding a new image, e.g. assets/images/projects/project-ai.png:
+    1. Drop the file into the matching assets/images/<category>/ subfolder.
+    2. Reference it normally in the HTML:
+       <img src="assets/images/projects/project-ai.png" ...>
     3. Run: python scripts/optimize-mobile-images.py --apply-html
-    4. Done — the new image gets a project-ai-mobile.webp and the <img>
-       is wrapped in <picture> automatically. Re-run any time; anything
-       already up to date is skipped.
+    4. Done — the new image gets a project-ai-mobile.webp next to it and
+       the <img> is wrapped in <picture> automatically. Re-run any time;
+       anything already up to date is skipped.
 """
 
 import argparse
@@ -55,11 +57,12 @@ except ImportError:
     )
 
 ROOT = Path(__file__).resolve().parent.parent
-IMAGE_DIR = ROOT / "Image"
+IMAGE_DIR = ROOT / "assets" / "images"
 
 # Images at or under this file size are treated as small icons/logos and
-# left alone (matches every icon/logo already in Image/, which are all
-# well under this line; every real photo in the repo is well above it).
+# left alone (matches every icon/logo already in assets/images/branding/,
+# which are all well under this line; every real photo in the repo is well
+# above it).
 MIN_SIZE_KB = 150
 
 # Images with both dimensions at or under this are also treated as
@@ -77,8 +80,8 @@ SOURCE_EXTENSIONS = {".png", ".jpg", ".jpeg"}
 MOBILE_BREAKPOINT_CSS = "(max-width: 650px)"
 
 # HTML files this script is allowed to scan/rewrite for the auto-wrap
-# feature. Uses a glob so new Project/*.html pages are picked up too.
-HTML_GLOBS = ["index.html", "Project/*.html"]
+# feature. Uses a glob so new projects/*.html pages are picked up too.
+HTML_GLOBS = ["index.html", "projects/*.html"]
 
 
 def format_size(num_bytes: int) -> str:
@@ -113,7 +116,10 @@ def should_skip_small(path: Path) -> bool:
 
 
 def iter_source_images():
-    for path in sorted(IMAGE_DIR.iterdir()):
+    # Recursive: images live under assets/images/<category>/ subfolders
+    # (profile, education, experience, projects, branding, backgrounds),
+    # not directly under IMAGE_DIR.
+    for path in sorted(IMAGE_DIR.rglob("*")):
         if not path.is_file():
             continue
         if path.suffix.lower() not in SOURCE_EXTENSIONS:
@@ -166,7 +172,7 @@ def run_image_pass() -> dict:
     for use by the HTML audit pass."""
 
     if not IMAGE_DIR.is_dir():
-        sys.exit(f"Image directory not found: {IMAGE_DIR}")
+        sys.exit(f"Images directory not found: {IMAGE_DIR}")
 
     mobile_map = {}
     any_output = False
@@ -176,15 +182,19 @@ def run_image_pass() -> dict:
             continue
 
         mobile_name = mobile_name_for(src_path.name)
-        mobile_path = IMAGE_DIR / mobile_name
+        # Mobile webp lives next to its source, in the same category
+        # subfolder (assets/images/<category>/), not flattened into IMAGE_DIR.
+        mobile_path = src_path.parent / mobile_name
         mobile_map[src_path] = mobile_path
+
+        rel_src = src_path.relative_to(IMAGE_DIR)
 
         if not mobile_path.exists():
             before = src_path.stat().st_size
             after = encode_mobile_webp(src_path, mobile_path)
             print_report_line(
                 "NEW",
-                src_path.name,
+                str(rel_src),
                 f"{format_size(before)} -> {mobile_name} {format_size(after)}",
             )
             any_output = True
@@ -193,16 +203,16 @@ def run_image_pass() -> dict:
         if src_path.stat().st_mtime > mobile_path.stat().st_mtime:
             encode_mobile_webp(src_path, mobile_path)
             print_report_line(
-                "UPDATED", src_path.name, "original changed, mobile regenerated"
+                "UPDATED", str(rel_src), "original changed, mobile regenerated"
             )
             any_output = True
             continue
 
-        print_report_line("SKIP", src_path.name, "mobile version already up-to-date")
+        print_report_line("SKIP", str(rel_src), "mobile version already up-to-date")
         any_output = True
 
     if not any_output:
-        print("No source images found in Image/ (or everything was filtered out).\n")
+        print("No source images found in assets/images/ (or everything was filtered out).\n")
 
     return mobile_map
 
@@ -233,15 +243,20 @@ def extract_src(img_tag_text: str):
 
 
 def resolve_mobile_srcset(src_value: str):
-    """"Image/foo.png" -> ("Image/", "foo.png") ; "../Image/foo.png" -> ("../Image/", "foo.png")"""
-    m = re.match(r"^(.*Image/)([^/]+)$", src_value)
+    """"assets/images/profile/foo.png" -> "assets/images/profile/foo-mobile.webp"
+    ; "../assets/images/profile/foo.png" -> "../assets/images/profile/foo-mobile.webp"
+    (mobile file lives next to its source, in the same category subfolder)"""
+    m = re.match(r"^(.*assets/images/)(.+)$", src_value)
     if not m:
         return None
-    prefix, filename = m.group(1), m.group(2)
+    prefix, rel_path = m.group(1), m.group(2)
+    rel_dir = rel_path.rsplit("/", 1)[0] if "/" in rel_path else ""
+    filename = rel_path.rsplit("/", 1)[-1]
     mobile_name = mobile_name_for(filename)
-    if not (IMAGE_DIR / mobile_name).exists():
+    mobile_rel = f"{rel_dir}/{mobile_name}" if rel_dir else mobile_name
+    if not (IMAGE_DIR / mobile_rel).exists():
         return None
-    return f"{prefix}{mobile_name}"
+    return f"{prefix}{mobile_rel}"
 
 
 def build_wrapped_block(original_text: str, indent: str, mobile_srcset: str) -> str:
@@ -338,7 +353,7 @@ def main():
     args = parser.parse_args()
 
     if not args.html_only:
-        print("Optimizing mobile images in Image/\n" + "-" * 34)
+        print("Optimizing mobile images in assets/images/\n" + "-" * 34)
         run_image_pass()
 
     if not args.images_only:
