@@ -48,6 +48,224 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
+       MOUSE DRAG TO SCROLL (COMMENT SLIDER)
+
+       Trackpad/touch sudah bisa geser secara native.
+       Ini supaya user mouse biasa (tanpa trackpad)
+       juga bisa klik-tahan lalu geser kartu komentar,
+       bukan cuma berubah jadi cursor "grab" doang.
+    ===================================================== */
+
+    (function setupCommentDragScroll() {
+
+        if (!commentsList) {
+            return;
+        }
+
+
+        let isDragging = false;
+
+        let startX = 0;
+
+        let startScrollLeft = 0;
+
+        let dragDistance = 0;
+
+        let hasDragged = false;
+
+        let activePointerId = null;
+
+        let suppressClickUntil = 0;
+
+
+        commentsList.addEventListener(
+            "pointerdown",
+            (event) => {
+
+                /*
+                    Kalau klik tombol pin, dot,
+                    atau elemen interaktif lain,
+                    jangan mulai drag.
+                */
+
+                if (
+                    event.target.closest(
+                        "a, button, input, textarea, select, label"
+                    )
+                ) {
+                    return;
+                }
+
+
+                if (
+                    event.pointerType === "mouse" &&
+                    event.button !== 0
+                ) {
+                    return;
+                }
+
+
+                isDragging = true;
+
+                hasDragged = false;
+
+                activePointerId =
+                    event.pointerId;
+
+                startX =
+                    event.clientX;
+
+                startScrollLeft =
+                    commentsList.scrollLeft;
+
+                dragDistance = 0;
+
+
+                commentsList.classList.add(
+                    "is-dragging"
+                );
+
+
+                try {
+
+                    commentsList.setPointerCapture(
+                        event.pointerId
+                    );
+
+                } catch (error) {
+
+                    /* browser fallback */
+
+                }
+
+            }
+        );
+
+
+        commentsList.addEventListener(
+            "pointermove",
+            (event) => {
+
+                if (
+                    !isDragging ||
+                    event.pointerId !== activePointerId
+                ) {
+                    return;
+                }
+
+
+                dragDistance =
+                    event.clientX -
+                    startX;
+
+
+                if (
+                    Math.abs(
+                        dragDistance
+                    ) > 6
+                ) {
+
+                    hasDragged = true;
+
+                }
+
+
+                commentsList.scrollLeft =
+                    startScrollLeft -
+                    dragDistance;
+
+            }
+        );
+
+
+        function stopDragging(event) {
+
+            if (!isDragging) {
+                return;
+            }
+
+
+            if (
+                event &&
+                activePointerId !== null &&
+                event.pointerId !== activePointerId
+            ) {
+                return;
+            }
+
+
+            const draggedThisGesture =
+                hasDragged;
+
+
+            isDragging = false;
+
+            activePointerId = null;
+
+
+            commentsList.classList.remove(
+                "is-dragging"
+            );
+
+
+            if (draggedThisGesture) {
+
+                suppressClickUntil =
+                    performance.now() + 200;
+
+            }
+
+
+            hasDragged = false;
+
+        }
+
+
+        commentsList.addEventListener(
+            "pointerup",
+            stopDragging
+        );
+
+        commentsList.addEventListener(
+            "pointercancel",
+            stopDragging
+        );
+
+        commentsList.addEventListener(
+            "pointerleave",
+            stopDragging
+        );
+
+
+        /*
+            Cegah klik (pin/dot) ke-trigger
+            tidak sengaja setelah user
+            benar-benar melakukan drag.
+        */
+
+        commentsList.addEventListener(
+            "click",
+            (event) => {
+
+                if (
+                    performance.now() <
+                    suppressClickUntil
+                ) {
+
+                    event.preventDefault();
+
+                    event.stopPropagation();
+
+                }
+
+            },
+            true
+        );
+
+    })();
+
+
+    /* =====================================================
        SUPABASE CONFIG
     ===================================================== */
 

@@ -10905,6 +10905,18 @@ a.footer-contact-item:hover {
 }
 
 
+.contact-guestbook
+.guestbook-v2-grid.is-dragging {
+    cursor: grabbing;
+
+    scroll-behavior: auto;
+
+    scroll-snap-type: none;
+
+    user-select: none;
+}
+
+
 /* =========================================================
    COMMENT CARD
 ========================================================= */
