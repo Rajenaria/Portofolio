@@ -11031,6 +11031,14 @@ a.footer-contact-item:hover {
 .guestbook-v2-comment-message {
     margin: 0;
 
+    max-height: 130px;
+
+    overflow-y: auto;
+
+    overscroll-behavior-y: contain;
+
+    -webkit-overflow-scrolling: touch;
+
     overflow-wrap: anywhere;
 
     white-space: pre-wrap;
@@ -11040,6 +11048,94 @@ a.footer-contact-item:hover {
     line-height: 1.7;
 
     color: #475569;
+
+    scrollbar-width: thin;
+    scrollbar-color: #c4b5fd transparent;
+}
+
+
+.contact-guestbook
+.guestbook-v2-comment-message::-webkit-scrollbar {
+    width: 4px;
+}
+
+
+.contact-guestbook
+.guestbook-v2-comment-message::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+
+.contact-guestbook
+.guestbook-v2-comment-message::-webkit-scrollbar-thumb {
+    background-color: #c4b5fd;
+    border-radius: 999px;
+}
+
+
+/* PIN BUTTON */
+
+.contact-guestbook
+.guestbook-v2-comment-pin {
+    flex-shrink: 0;
+
+    margin-left: auto;
+
+    width: 26px;
+    height: 26px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    padding: 0;
+
+    border: none;
+
+    border-radius: 50%;
+
+    background-color: transparent;
+
+    font-size: 12px;
+    line-height: 1;
+
+    cursor: pointer;
+
+    opacity: 0.35;
+
+    transition:
+        opacity 0.2s ease,
+        background-color 0.2s ease,
+        transform 0.2s ease;
+}
+
+
+.contact-guestbook
+.guestbook-v2-comment-pin:hover {
+    opacity: 0.8;
+
+    background-color: #f1f5f9;
+}
+
+
+.contact-guestbook
+.guestbook-v2-comment-pin.is-active {
+    opacity: 1;
+
+    background-color: #ede9fe;
+
+    transform: rotate(-20deg);
+}
+
+
+/* PINNED CARD */
+
+.contact-guestbook
+.guestbook-v2-comment.is-pinned {
+    border-color: #c4b5fd;
+
+    background-color: #faf5ff;
 }
 
 

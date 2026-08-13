@@ -212,6 +212,134 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
+       PINNED COMMENTS
+
+       Pin disimpan per-browser (localStorage),
+       supaya tidak perlu ubah backend.
+    ===================================================== */
+
+    const PINNED_STORAGE_KEY =
+        "guestbookPinnedComments";
+
+    let lastLoadedComments = [];
+
+
+    function getPinnedIds() {
+
+        try {
+
+            const raw =
+                localStorage.getItem(
+                    PINNED_STORAGE_KEY
+                );
+
+            const ids =
+                raw
+                    ? JSON.parse(raw)
+                    : [];
+
+            return Array.isArray(ids)
+                ? ids
+                : [];
+
+        } catch (error) {
+
+            return [];
+
+        }
+
+    }
+
+
+    function savePinnedIds(ids) {
+
+        try {
+
+            localStorage.setItem(
+                PINNED_STORAGE_KEY,
+                JSON.stringify(ids)
+            );
+
+        } catch (error) {
+
+            /* localStorage tidak tersedia, abaikan */
+
+        }
+
+    }
+
+
+    function isCommentPinned(id) {
+
+        return getPinnedIds().includes(id);
+
+    }
+
+
+    function togglePinComment(id) {
+
+        const pinnedIds =
+            getPinnedIds();
+
+        const index =
+            pinnedIds.indexOf(id);
+
+
+        if (index === -1) {
+
+            pinnedIds.unshift(id);
+
+        } else {
+
+            pinnedIds.splice(index, 1);
+
+        }
+
+
+        savePinnedIds(pinnedIds);
+
+        renderComments(lastLoadedComments);
+
+    }
+
+
+    function sortWithPinnedFirst(comments) {
+
+        const pinnedIds =
+            getPinnedIds();
+
+        const pinned = [];
+        const rest = [];
+
+
+        comments.forEach((comment) => {
+
+            if (pinnedIds.includes(comment.id)) {
+
+                pinned.push(comment);
+
+            } else {
+
+                rest.push(comment);
+
+            }
+
+        });
+
+
+        pinned.sort(
+            (a, b) =>
+                pinnedIds.indexOf(a.id) -
+                pinnedIds.indexOf(b.id)
+        );
+
+
+        return pinned.concat(rest);
+
+    }
+
+
+    /* =====================================================
        EMPTY COMMENTS
     ===================================================== */
 
@@ -271,6 +399,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
             return;
         }
+
+
+        /*
+            Simpan comments asli (belum diurutkan pin)
+            supaya togglePinComment bisa render ulang.
+        */
+
+        lastLoadedComments = comments;
 
 
         /*
@@ -459,7 +595,11 @@ function setupCommentSlider() {
            CREATE CARD
         ========================= */
 
-        comments.forEach((comment) => {
+        const sortedComments =
+            sortWithPinnedFirst(comments);
+
+
+        sortedComments.forEach((comment) => {
 
 
             /* CARD */
@@ -472,6 +612,19 @@ function setupCommentSlider() {
 
             card.className =
                 "guestbook-v2-comment";
+
+
+            if (
+                isCommentPinned(
+                    comment.id
+                )
+            ) {
+
+                card.classList.add(
+                    "is-pinned"
+                );
+
+            }
 
 
             /* HEADER */
@@ -575,6 +728,57 @@ function setupCommentSlider() {
                 comment.message;
 
 
+            /* PIN BUTTON */
+
+            const pinButton =
+                document.createElement(
+                    "button"
+                );
+
+
+            pinButton.type =
+                "button";
+
+
+            pinButton.className =
+                "guestbook-v2-comment-pin";
+
+
+            pinButton.setAttribute(
+                "aria-label",
+                "Sematkan komentar ini"
+            );
+
+
+            pinButton.textContent =
+                "📌";
+
+
+            if (
+                isCommentPinned(
+                    comment.id
+                )
+            ) {
+
+                pinButton.classList.add(
+                    "is-active"
+                );
+
+            }
+
+
+            pinButton.addEventListener(
+                "click",
+                () => {
+
+                    togglePinComment(
+                        comment.id
+                    );
+
+                }
+            );
+
+
             /* =========================
                ASSEMBLE CARD
             ========================= */
@@ -587,7 +791,8 @@ function setupCommentSlider() {
 
             head.append(
                 avatar,
-                meta
+                meta,
+                pinButton
             );
 
 
