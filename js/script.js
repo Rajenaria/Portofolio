@@ -631,39 +631,9 @@ if (contactSocialPanel) {
 
 /* =========================================
    5. EXPERIENCE CARD SELECTION
+   Moved to js/experience-stack.js (stacked-deck
+   controller supersedes this simple click-select).
 ========================================= */
-
-const experienceCards =
-    document.querySelectorAll(
-        ".experience-card"
-    );
-
-
-experienceCards.forEach((card) => {
-
-    card.addEventListener(
-        "click",
-        () => {
-
-            experienceCards.forEach(
-                (item) => {
-
-                    item.classList.remove(
-                        "is-selected"
-                    );
-
-                }
-            );
-
-
-            card.classList.add(
-                "is-selected"
-            );
-
-        }
-    );
-
-});
 
 
 
@@ -2631,6 +2601,240 @@ updateAboutSlider();
        (ditangani IIFE terpisah
        di atas).
     ===================================== */
+
+    /* =====================================
+       SCROLL BAR INDICATOR
+
+       Markup indikatornya sudah lama ada di
+       index.html (#projectScrollIndicator
+       dengan data-scroll-index), tapi belum
+       pernah ada JS yang menyambungkannya —
+       jadi bar-nya tidak bisa diklik dan bar
+       pertama tersangkut "is-active" terus.
+       Ini bagian yang menyambungkannya.
+
+       Carousel ini loop tak terbatas: set asli
+       diklon satu kali, dan scrollLeft dibalikkan
+       ke awal setiap kali melewati
+       cachedOriginalWidth. Jadi posisi yang
+       berarti adalah sisa bagi terhadap lebar
+       set asli — bukan scrollLeft mentah.
+    ===================================== */
+
+    const scrollIndicator =
+        document.querySelector(
+            "#projectScrollIndicator"
+        );
+
+
+    if (scrollIndicator) {
+
+        const bars =
+            Array.from(
+                scrollIndicator.querySelectorAll(
+                    ".project-scroll-bar"
+                )
+            );
+
+
+        if (bars.length > 0) {
+
+            /*
+                Tiap bar mewakili satu segmen
+                dari set asli. Dengan 6 card dan
+                3 bar: card ke-0, ke-2, dan ke-4.
+                Dihitung dari jumlah bar yang
+                benar-benar ada, jadi menambah
+                atau mengurangi bar di HTML tidak
+                membuatnya rusak.
+            */
+
+            function cardIndexForBar(barIndex) {
+
+                return Math.min(
+                    originalCards.length - 1,
+                    Math.round(
+                        barIndex *
+                        originalCards.length /
+                        bars.length
+                    )
+                );
+
+            }
+
+
+            /* ---- SOROT BAR YANG SEDANG AKTIF ---- */
+
+            let indicatorFrame = 0;
+
+
+            function updateIndicator() {
+
+                indicatorFrame = 0;
+
+
+                if (cachedOriginalWidth <= 0) {
+                    return;
+                }
+
+
+                /*
+                    Sisa bagi supaya posisi di set
+                    klon dipetakan balik ke set asli.
+                    Ditambah cachedOriginalWidth dulu
+                    supaya scrollLeft negatif (efek
+                    overscroll di iOS) tidak
+                    menghasilkan indeks negatif.
+                */
+
+                const progress =
+                    (
+                        (
+                            projectGrid.scrollLeft %
+                            cachedOriginalWidth
+                        ) +
+                        cachedOriginalWidth
+                    ) %
+                    cachedOriginalWidth /
+                    cachedOriginalWidth;
+
+
+                const activeIndex =
+                    Math.min(
+                        bars.length - 1,
+                        Math.floor(
+                            progress * bars.length
+                        )
+                    );
+
+
+                bars.forEach((bar, index) => {
+
+                    const isActive =
+                        index === activeIndex;
+
+
+                    bar.classList.toggle(
+                        "is-active",
+                        isActive
+                    );
+
+
+                    if (isActive) {
+
+                        bar.setAttribute(
+                            "aria-current",
+                            "true"
+                        );
+
+                    } else {
+
+                        bar.removeAttribute(
+                            "aria-current"
+                        );
+
+                    }
+
+                });
+
+            }
+
+
+            function scheduleIndicatorUpdate() {
+
+                if (indicatorFrame) {
+                    return;
+                }
+
+
+                indicatorFrame =
+                    requestAnimationFrame(
+                        updateIndicator
+                    );
+
+            }
+
+
+            projectGrid.addEventListener(
+                "scroll",
+                scheduleIndicatorUpdate,
+                {
+                    passive: true
+                }
+            );
+
+
+            window.addEventListener(
+                "resize",
+                scheduleIndicatorUpdate,
+                {
+                    passive: true
+                }
+            );
+
+
+            /* ---- KLIK BAR = LOMPAT KE SEGMEN ---- */
+
+            bars.forEach((bar, index) => {
+
+                bar.addEventListener(
+                    "click",
+                    () => {
+
+                        const card =
+                            originalCards[
+                                cardIndexForBar(index)
+                            ];
+
+
+                        if (!card) {
+                            return;
+                        }
+
+
+                        /*
+                            WAJIB: tanpa pause, loop
+                            rAF terus menambah
+                            scrollLeft tiap frame dan
+                            "melawan" smooth scroll ini
+                            sampai lompatannya tidak
+                            pernah sampai. pause() punya
+                            watchdog yang melanjutkan
+                            auto-scroll lagi setelah
+                            2,5 detik.
+                        */
+
+                        pause();
+
+
+                        const target =
+                            projectGrid.scrollLeft +
+                            (
+                                card.getBoundingClientRect().left -
+                                projectGrid.getBoundingClientRect().left
+                            );
+
+
+                        projectGrid.scrollTo({
+                            left: target,
+                            behavior:
+                                prefersReducedMotion
+                                    ? "auto"
+                                    : "smooth"
+                        });
+
+                    }
+                );
+
+            });
+
+
+            updateIndicator();
+
+        }
+
+    }
+
 
     startLoop();
 

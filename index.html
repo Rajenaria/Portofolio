@@ -15,24 +15,7 @@
     <!-- MAIN CSS -->
     <link
         rel="stylesheet"
-        href="css/style.css?v=2"
-    >
-
-    <!-- GOOGLE FONT -->
-    <link
-        rel="preconnect"
-        href="https://fonts.googleapis.com"
-    >
-
-    <link
-        rel="preconnect"
-        href="https://fonts.gstatic.com"
-        crossorigin
-    >
-
-    <link
-        href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap"
-        rel="stylesheet"
+        href="css/style.css?v=20"
     >
 
     <!-- DEVICON -->
@@ -105,6 +88,10 @@
                 Pendidikan
             </a>
 
+            <a href="#certificates">
+                Sertifikat
+            </a>
+
             <a href="#portfolio">
                 Portfolio
             </a>
@@ -170,8 +157,13 @@
             Pendidikan
         </a>
 
-        <a href="#portfolio">
+        <a href="#certificates">
             <span>05</span>
+            Sertifikat
+        </a>
+
+        <a href="#portfolio">
+            <span>06</span>
             Portfolio
         </a>
 
@@ -242,7 +234,7 @@
                     class="simple-hero-button simple-project-button"
                 >
 
-                    View My Projects
+                    Let Me Show U
 
                     <span>
                         →
@@ -279,23 +271,61 @@
 
             <div class="simple-hero-photo">
 
-                <picture>
+                <div
+                    class="hero-photo-stage"
+                    id="heroPhotoStage"
+                >
 
-                    <source
-                        media="(max-width: 650px)"
-                        srcset="assets/images/profile/hadow-mobile.webp"
-                        type="image/webp"
+                    <div
+                        class="hero-photo-stack"
+                        id="heroPhotoStack"
                     >
 
-                    <img
-                        src="assets/images/profile/hadow.png"
-                        alt="Rajendra Aria Nismara"
-                        draggable="false"
-                        decoding="async"
-                        fetchpriority="high"
-                    >
+                        <button
+                            type="button"
+                            class="hero-photo-card is-top"
+                            data-photo-index="0"
+                        >
 
-                </picture>
+                            <picture>
+
+                                <source
+                                    media="(max-width: 650px)"
+                                    srcset="assets/images/profile/hadow-mobile.webp"
+                                    type="image/webp"
+                                >
+
+                                <img
+                                    src="assets/images/profile/hadow.png"
+                                    alt="Rajendra Aria Nismara"
+                                    draggable="false"
+                                    decoding="async"
+                                    fetchpriority="high"
+                                >
+
+                            </picture>
+
+                        </button>
+
+                        <button
+                            type="button"
+                            class="hero-photo-card hero-photo-card-placeholder"
+                            data-photo-index="1"
+                        >
+                            <span>02</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            class="hero-photo-card hero-photo-card-placeholder"
+                            data-photo-index="2"
+                        >
+                            <span>03</span>
+                        </button>
+
+                    </div>
+
+                </div>
 
             </div>
 
@@ -1142,274 +1172,37 @@
 
     <div class="experience-container reveal">
 
-        <!-- HEADING -->
-        <div class="experience-heading">
+        <div class="experience-layout">
 
-            <p class="experience-label">
-                PENGALAMAN
-            </p>
+            <!-- LEFT: STICKY INTRO -->
+            <div class="experience-intro">
 
-            <h2>
-                Pengalaman yang Membentuk Saya
-            </h2>
-
-            <p class="experience-description">
-                Berbagai pengalaman teknis, profesional, dan organisasi
-                yang membantu saya mengembangkan kemampuan di bidang teknologi,
-                komunikasi, kerja sama tim, dan problem solving.
-            </p>
-
-        </div>
-
-
-        <!-- EXPERIENCE GRID -->
-        <div class="experience-grid">
-
-
-            <!-- =========================
-                 EXPERIENCE 01
-                 RNEST LABORATORY
-            ========================== -->
-
-            <article class="experience-card">
-
-                <div class="experience-top">
-
-                    <span class="experience-number">
-                        01
-                    </span>
-
-                    <span class="experience-type">
-                        LABORATORY
-                    </span>
-
-                </div>
-
-
-                <h3>
-                    RnEST Laboratory
-                </h3>
-
-
-                <h4>
-                    Laboratory Assistant — Koordinator PDD
-                </h4>
-
-
-                <p class="experience-location">
-                    Telkom University
+                <p class="experience-label">
+                    PENGALAMAN
                 </p>
 
+                <h2>
+                    Pengalaman yang Membentuk Saya
+                </h2>
 
-                <p class="experience-text">
-                    Melaksanakan riset dan pengembangan dalam bidang robotika
-                    dan embedded systems, menyusun modul praktikum Teknik Digital
-                    dan Mikroprosesor, serta membimbing mahasiswa dalam kegiatan
-                    praktikum. Selain itu, bertanggung jawab sebagai Koordinator
-                    Divisi PDD dalam pengelolaan desain, dokumentasi, pengumuman,
-                    dan media sosial laboratorium.
+                <p class="experience-description">
+                    Berbagai pengalaman teknis, profesional, dan organisasi
+                    yang membantu saya mengembangkan kemampuan di bidang teknologi,
+                    komunikasi, kerja sama tim, dan problem solving.
                 </p>
 
-
-                <div class="experience-tags">
-
-                    <span>Embedded System</span>
-
-                    <span>Robotics</span>
-
-                    <span>Microprocessor</span>
-
-                    <span>Documentation</span>
-
-                </div>
-
-            </article>
-
-
-
-            <!-- =========================
-                 EXPERIENCE 02
-                 TECHNO INFINITY
-            ========================== -->
-
-            <article class="experience-card">
-
-                <div class="experience-top">
-
-                    <span class="experience-number">
-                        02
-                    </span>
-
-                    <span class="experience-type">
-                        UI/UX
-                    </span>
-
-                </div>
-
-
-                <h3>
-                    Techno Infinity
-                </h3>
-
-
-                <h4>
-                    UI/UX Development
-                </h4>
-
-
-                <p class="experience-location">
-                    Bandung
-                </p>
-
-
-                <p class="experience-text">
-                    Merancang dan mengembangkan antarmuka aplikasi mulai dari
-                    pembuatan wireframe, prototipe interaktif, hingga design system.
-                    Turut berkontribusi dalam pengembangan UI/UX SIKESPADU UNPAD,
-                    termasuk dashboard, fitur input nilai, dan navigasi pengguna,
-                    serta beberapa aplikasi internal klien.
-                </p>
-
-
-                <div class="experience-tags">
-
-                    <span>Figma</span>
-
-                    <span>UI/UX</span>
-
-                    <span>Wireframe</span>
-
-                    <span>Prototype</span>
-
-                    <span>Design System</span>
-
-                </div>
-
-            </article>
-
-
-
-            <!-- =========================
-                 EXPERIENCE 03
-                 PROCODECG
-            ========================== -->
-
-            <article class="experience-card">
-
-                <div class="experience-top">
-
-                    <span class="experience-number">
-                        03
-                    </span>
-
-                    <span class="experience-type">
-                        AI • COMPUTER VISION
-                    </span>
-
-                </div>
-
-
-                <h3>
-                    ProCodeCG
-                </h3>
-
-
-                <h4>
-                    AI & Computer Vision Development
-                </h4>
-
-
-                <p class="experience-location">
-                    Bandung
-                </p>
-
-
-                <p class="experience-text">
-                    Melakukan riset dan pengembangan model YOLOv8 untuk
-                    mendeteksi truk overload berdasarkan karakteristik kendaraan
-                    dari citra video. Mengembangkan pipeline real-time object
-                    detection menggunakan Python dan OpenCV serta membuat
-                    prototype IoT menggunakan Arduino, LED indikator, dan buzzer.
-                </p>
-
-
-                <div class="experience-tags">
-
-                    <span>Python</span>
-
-                    <span>YOLOv8</span>
-
-                    <span>OpenCV</span>
-
-                    <span>Arduino</span>
-
-                    <span>Computer Vision</span>
-
-                </div>
-
-            </article>
-
-
-
-            <!-- =========================
-                 EXPERIENCE 04
-                 JAFFAR INDO COMODITY
-            ========================== -->
-
-            <article class="experience-card">
-
-                <div class="experience-top">
-
-                    <span class="experience-number">
-                        04
-                    </span>
-
-                    <span class="experience-type">
-                        MARKETING
-                    </span>
-
-                </div>
-
-
-                <h3>
-                    JAFFAR INDO COMODITY
-                </h3>
-
-
-                <h4>
-                    Executive Marketing & Distributor Albens
-                </h4>
-
-
-                <p class="experience-location">
-                    Bandung
-                </p>
-
-
-                <p class="experience-text">
-                    Menyusun materi presentasi untuk kebutuhan promosi dan strategi
-                    pemasaran, mengembangkan market plan untuk memperluas jangkauan
-                    produk, serta merancang strategi pemasaran khusus wilayah Bandung
-                    guna meningkatkan penetrasi pasar dan penjualan. Selain itu,
-                    bertanggung jawab dalam pengelolaan distribusi produk Albens
-                    di wilayah Bandung dan sekitarnya.
-                </p>
-
-
-                <div class="experience-tags">
-
-                    <span>Marketing Strategy</span>
-
-                    <span>Market Planning</span>
-
-                    <span>Presentation</span>
-
-                    <span>Distribution</span>
-
-                </div>
-
-            </article>
-
+            </div>
+
+
+            <!-- RIGHT: STICKY CARD STACK
+                 Cards are data-driven — rendered by
+                 js/experience-stack.js (loadExperiences ->
+                 renderExperienceCards -> initExperienceStack).
+                 Works with any number of records. -->
+            <div
+                class="experience-stack-col"
+                id="experienceStackCol"
+            ></div>
 
         </div>
 
@@ -1521,6 +1314,119 @@
 
             </div>
 
+
+        </div>
+
+    </div>
+
+</section>
+<!-- =========================================
+     SERTIFIKAT
+========================================= -->
+
+<section id="certificates" class="certificates-section">
+
+    <div class="certificates-container reveal">
+
+
+        <!-- =================================
+             HEADING
+        ================================== -->
+
+        <div class="certificates-heading">
+
+            <p class="certificates-label">
+                SERTIFIKAT
+            </p>
+
+            <h2>
+                Sertifikat &amp; Penghargaan
+            </h2>
+
+            <p class="certificates-description">
+                Sertifikat, hak cipta, dan pencapaian akademik yang
+                pernah saya raih.
+            </p>
+
+        </div>
+
+
+        <p class="certificates-hint">
+            (Geser untuk memutar &middot; klik kartu depan untuk detail)
+        </p>
+
+
+        <!-- =================================
+             CAROUSEL 3D
+
+             .cert-stage : pemegang perspective + overflow
+             .cert-ring  : wadah yang DIPUTAR
+             .cert-slot  : kartu, dirender oleh
+                           js/certificates.js dari array
+                           CERTIFICATES — lihat file itu
+                           untuk menambah/mengubah data.
+        ================================== -->
+
+        <div
+            class="certificates-carousel"
+            id="certificatesCarousel"
+            role="group"
+            aria-roledescription="carousel"
+            aria-label="Daftar sertifikat dan penghargaan"
+        >
+
+            <div
+                class="cert-stage"
+                id="certStage"
+            >
+
+                <div
+                    class="cert-ring"
+                    id="certRing"
+                ></div>
+
+            </div>
+
+
+            <!-- =================================
+                 KONTROL
+            ================================== -->
+
+            <div class="cert-controls">
+
+                <button
+                    class="cert-nav cert-nav-prev"
+                    id="certPrev"
+                    type="button"
+                    aria-label="Sertifikat sebelumnya"
+                >
+                    <iconify-icon
+                        icon="tabler:chevron-left"
+                        aria-hidden="true"
+                    ></iconify-icon>
+                </button>
+
+
+                <div
+                    class="cert-dots"
+                    id="certDots"
+                    aria-label="Pilih sertifikat"
+                ></div>
+
+
+                <button
+                    class="cert-nav cert-nav-next"
+                    id="certNext"
+                    type="button"
+                    aria-label="Sertifikat berikutnya"
+                >
+                    <iconify-icon
+                        icon="tabler:chevron-right"
+                        aria-hidden="true"
+                    ></iconify-icon>
+                </button>
+
+            </div>
 
         </div>
 
@@ -2372,7 +2278,7 @@
      FOOTER
 ========================================= -->
 
-<footer class="main-footer">
+<footer class="main-footer reveal">
 
     <div class="footer-container">
 
@@ -2705,8 +2611,10 @@
 
 </footer>
 
-    <script src="js/script.js"></script>
+    <script src="js/script.js?v=2"></script>
+    <script src="js/hero-photo-stack.js" defer></script>
+    <script src="js/experience-stack.js" defer></script>
+    <script src="js/certificates.js?v=12" defer></script>
 
-    
 </body>
 </html>
