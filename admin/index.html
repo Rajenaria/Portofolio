@@ -1,0 +1,112 @@
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script type="module" src="./admin.js"></script>
+
+<body>
+
+  <main class="admin-auth">
+
+    <section id="loading-screen">
+      <p>Checking session...</p>
+    </section>
+
+    <section id="login-screen" hidden>
+      <h1>Admin Login</h1>
+
+      <form id="login-form">
+        <label>
+          Email
+          <input
+            id="email"
+            type="email"
+            autocomplete="username"
+            required
+          >
+        </label>
+
+        <label>
+          Password
+          <input
+            id="password"
+            type="password"
+            autocomplete="current-password"
+            required
+          >
+        </label>
+
+        <p id="login-error"></p>
+
+        <button type="submit">
+          Sign In
+        </button>
+      </form>
+    </section>
+
+    <section id="mfa-enroll-screen" hidden>
+      <h1>Set up two-factor authentication</h1>
+
+      <p>
+        Scan this QR code using your authenticator app.
+      </p>
+
+      <img
+        id="mfa-qr"
+        alt="MFA QR Code"
+      >
+
+      <p>
+        Manual key:
+        <code id="mfa-secret"></code>
+      </p>
+
+      <input
+        id="mfa-enroll-code"
+        inputmode="numeric"
+        autocomplete="one-time-code"
+        maxlength="6"
+        placeholder="123456"
+      >
+
+      <p id="mfa-enroll-error"></p>
+
+      <button id="mfa-enable-button">
+        Enable MFA
+      </button>
+    </section>
+
+    <section id="mfa-challenge-screen" hidden>
+      <h1>Two-factor authentication</h1>
+
+      <p>
+        Enter the code from your authenticator app.
+      </p>
+
+      <input
+        id="mfa-code"
+        inputmode="numeric"
+        autocomplete="one-time-code"
+        maxlength="6"
+        placeholder="123456"
+      >
+
+      <p id="mfa-error"></p>
+
+      <button id="mfa-submit-button">
+        Verify
+      </button>
+    </section>
+
+    <section id="admin-screen" hidden>
+      <h1>Admin CMS</h1>
+
+      <p>
+        Authentication successful.
+      </p>
+
+      <button id="logout-button">
+        Logout
+      </button>
+    </section>
+
+  </main>
+
+</body>
