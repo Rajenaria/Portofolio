@@ -412,3 +412,13 @@ enabled = true
 # declarative_schema_path = "./database"
 # JSON string passed through to pg-delta SQL formatting.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":80,\"commaStyle\":\"trailing\"}"
+
+[storage.buckets.portfolio-staging]
+public = false
+file_size_limit = "5MB"
+allowed_mime_types = ["image/webp"]
+
+[storage.buckets.portfolio-media]
+public = true
+file_size_limit = "5MB"
+allowed_mime_types = ["image/webp"]
