@@ -1,5 +1,42 @@
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script type="module" src="./admin.js"></script>
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!--
+    Admin-only Content Security Policy (security audit finding H-2).
+
+    default-src 'none'  - deny everything, then allow only what this page proves it needs.
+    script-src  'self'  - the pinned, locally vendored supabase-js bundle and ./admin.js only.
+                          No 'unsafe-inline' and no 'unsafe-eval': the vendored bundle was
+                          checked and contains no eval() or new Function() call sites.
+    connect-src         - the Supabase project origin only (Auth, REST and Storage calls).
+    img-src 'self' data: - the MFA enrolment QR code is delivered as a data: URI by Supabase.
+    style-src   'self'  - same-origin stylesheets only.
+    base-uri    'none'  - blocks <base> tag injection redirecting relative script URLs.
+    form-action 'none'  - the login form is handled entirely in JS via preventDefault();
+                          nothing should ever be able to POST it to another origin.
+    object-src  'none'  - no plugins.
+
+    NOTE: frame-ancestors is intentionally omitted here because browsers ignore it when
+    delivered via <meta>. Clickjacking protection must be added at the hosting layer as a
+    real HTTP response header (frame-ancestors 'none' or X-Frame-Options: DENY).
+  -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'none';
+    script-src 'self';
+    connect-src https://hldacuppejztqzqaejsi.supabase.co;
+    img-src 'self' data:;
+    style-src 'self';
+    base-uri 'none';
+    form-action 'none';
+    object-src 'none'
+  ">
+
+  <title>Admin CMS</title>
+</head>
 
 <body>
 
@@ -109,4 +146,17 @@
 
   </main>
 
+  <!--
+    supabase-js is pinned to an exact version and served from this origin.
+    Previously this was a floating CDN reference (@supabase/supabase-js@2), which meant
+    unreviewed third-party code could change under the admin login page at any time.
+    To upgrade: npm install --save-exact @supabase/supabase-js@<version>, then copy
+    node_modules/@supabase/supabase-js/dist/umd/supabase.js to admin/vendor/ under the
+    new versioned filename and update the src below.
+  -->
+  <script src="./vendor/supabase-js-2.112.3.js"></script>
+  <script type="module" src="./admin.js"></script>
+
 </body>
+
+</html>
