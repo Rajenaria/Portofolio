@@ -6,9 +6,12 @@ import {
   listFactors,
   enrollTotp,
   verifyFactor,
-  isOwner,
-  supabaseClient,
+  isOwner
 } from "./js/core/auth.js";
+
+import {
+  supabaseClient
+} from "./js/core/supabase.js";
 
 
 const screens = {
