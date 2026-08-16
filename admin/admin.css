@@ -1,0 +1,910 @@
+/* ==========================================================================
+   PORTFOLIO ADMIN CMS — STYLESHEET
+
+   Scope: admin/ only. This file must never affect the public Portfolio V1.
+   Baseline: docs/Design/ADMIN-DASHBOARD-DESIGN.md
+
+   Design rules enforced here:
+   - light theme, white / off-white surfaces
+   - restrained blue accent, used for primary action and active state only
+   - borders instead of shadows (shadow only for the mobile drawer)
+   - no glassmorphism, no decorative gradients, no decorative animation
+   - no avatar, no notification bell, no global search
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. TOKENS
+   -------------------------------------------------------------------------- */
+
+:root {
+  --admin-bg: #F5F5F7;
+  --admin-surface: #FFFFFF;
+  --admin-surface-subtle: #FAFAFA;
+
+  --admin-text-primary: #1D1D1F;
+  --admin-text-secondary: #6E6E73;
+  --admin-text-muted: #86868B;
+
+  --admin-border: #D2D2D7;
+  --admin-border-soft: #E8E8ED;
+
+  --admin-primary: #0071E3;
+  --admin-primary-hover: #0066CC;
+
+  --admin-success: #248A3D;
+  --admin-warning: #B26A00;
+  --admin-danger: #D70015;
+  --admin-focus: #0071E3;
+
+  --admin-success-bg: #E8F5EC;
+  --admin-warning-bg: #FBF1E2;
+  --admin-danger-bg: #FCEAEC;
+  --admin-neutral-bg: #F0F0F3;
+
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+
+  --sidebar-width: 248px;
+  --content-max: 1120px;
+}
+
+/* --------------------------------------------------------------------------
+   2. BASE
+   -------------------------------------------------------------------------- */
+
+/*
+  Security-relevant: screen gating in admin.js relies entirely on the [hidden]
+  attribute. This rule guarantees no later display rule can reveal a privileged
+  section (security audit finding L-6).
+*/
+[hidden] {
+  display: none !important;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  min-height: 100vh;
+  background: var(--admin-bg);
+  color: var(--admin-text-primary);
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Helvetica,
+    Arial,
+    sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scroll lock while the mobile navigation drawer is open. */
+body.has-drawer-open {
+  overflow: hidden;
+}
+
+h1,
+h2,
+h3,
+p,
+ul,
+figure {
+  margin: 0;
+  padding: 0;
+}
+
+ul {
+  list-style: none;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img,
+svg {
+  max-width: 100%;
+}
+
+:focus-visible {
+  outline: 2px solid var(--admin-focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* --------------------------------------------------------------------------
+   3. BUTTONS
+   -------------------------------------------------------------------------- */
+
+.admin-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.admin-button-primary {
+  background: var(--admin-primary);
+  border-color: var(--admin-primary);
+  color: #FFFFFF;
+}
+
+.admin-button-primary:hover {
+  background: var(--admin-primary-hover);
+  border-color: var(--admin-primary-hover);
+}
+
+.admin-button-secondary {
+  background: var(--admin-surface);
+  border-color: var(--admin-border);
+  color: var(--admin-text-primary);
+}
+
+.admin-button-secondary:hover {
+  background: var(--admin-surface-subtle);
+}
+
+.admin-button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* --------------------------------------------------------------------------
+   4. AUTH SCREENS (login / MFA enrolment / MFA challenge)
+   -------------------------------------------------------------------------- */
+
+.admin-auth {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px 20px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 380px;
+  padding: 28px 24px;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-soft);
+  border-radius: var(--radius-lg);
+}
+
+.auth-card-status {
+  max-width: 380px;
+  text-align: center;
+}
+
+.auth-status-text {
+  color: var(--admin-text-secondary);
+  font-size: 14px;
+}
+
+.auth-eyebrow {
+  margin-bottom: 4px;
+  color: var(--admin-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.auth-title {
+  margin-bottom: 20px;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.auth-help {
+  margin-bottom: 16px;
+  color: var(--admin-text-secondary);
+  font-size: 14px;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.auth-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--admin-text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.auth-input {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--radius-md);
+  color: var(--admin-text-primary);
+  font: inherit;
+  font-size: 15px;
+}
+
+.auth-input:focus {
+  border-color: var(--admin-primary);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
+}
+
+.auth-input-code {
+  margin-bottom: 12px;
+  letter-spacing: 0.3em;
+  text-align: center;
+}
+
+.auth-qr {
+  display: block;
+  width: 180px;
+  height: 180px;
+  margin: 0 auto 16px;
+  border: 1px solid var(--admin-border-soft);
+  border-radius: var(--radius-sm);
+}
+
+.auth-code {
+  display: inline-block;
+  padding: 2px 6px;
+  background: var(--admin-surface-subtle);
+  border: 1px solid var(--admin-border-soft);
+  border-radius: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  word-break: break-all;
+}
+
+.auth-error {
+  color: var(--admin-danger);
+  font-size: 13px;
+}
+
+.auth-error:empty {
+  display: none;
+}
+
+.auth-submit {
+  width: 100%;
+}
+
+/* --------------------------------------------------------------------------
+   5. ADMIN SHELL LAYOUT
+   -------------------------------------------------------------------------- */
+
+.admin-shell {
+  display: flex;
+  align-items: flex-start;
+  min-height: 100vh;
+  background: var(--admin-bg);
+}
+
+.admin-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.admin-content {
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: var(--content-max);
+  min-width: 0;
+  padding: 28px 24px 56px;
+}
+
+.admin-content:focus {
+  outline: none;
+}
+
+/* --------------------------------------------------------------------------
+   6. SIDEBAR
+   -------------------------------------------------------------------------- */
+
+.admin-sidebar {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 var(--sidebar-width);
+  width: var(--sidebar-width);
+  background: var(--admin-surface);
+  border-right: 1px solid var(--admin-border-soft);
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--admin-border-soft);
+}
+
+.sidebar-brand-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-brand-eyebrow {
+  color: var(--admin-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.sidebar-brand-name {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.sidebar-close {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--admin-border-soft);
+  border-radius: var(--radius-sm);
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+}
+
+.sidebar-close svg {
+  width: 18px;
+  height: 18px;
+}
+
+.sidebar-nav {
+  flex: 1 1 auto;
+  padding: 16px 12px 24px;
+  overflow-y: auto;
+}
+
+.sidebar-group-label {
+  padding: 0 8px;
+  margin: 16px 0 6px;
+  color: var(--admin-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.sidebar-group-label:first-child {
+  margin-top: 0;
+}
+
+.sidebar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-left: 2px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--admin-text-secondary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.sidebar-link:hover {
+  background: var(--admin-surface-subtle);
+  color: var(--admin-text-primary);
+}
+
+.sidebar-link.is-active {
+  background: var(--admin-neutral-bg);
+  border-left-color: var(--admin-primary);
+  color: var(--admin-text-primary);
+  font-weight: 600;
+}
+
+.sidebar-link.is-active .sidebar-icon {
+  color: var(--admin-primary);
+}
+
+.sidebar-icon {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  color: var(--admin-text-muted);
+}
+
+.sidebar-link-text {
+  min-width: 0;
+}
+
+/* --------------------------------------------------------------------------
+   7. TOPBAR (tablet / mobile only)
+   -------------------------------------------------------------------------- */
+
+.admin-topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--admin-surface);
+  border-bottom: 1px solid var(--admin-border-soft);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.topbar-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--radius-sm);
+  color: var(--admin-text-primary);
+  cursor: pointer;
+}
+
+.topbar-toggle svg {
+  width: 20px;
+  height: 20px;
+}
+
+.topbar-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* --------------------------------------------------------------------------
+   8. DRAWER BACKDROP
+   -------------------------------------------------------------------------- */
+
+.admin-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(29, 29, 31, 0.4);
+}
+
+/* --------------------------------------------------------------------------
+   9. PAGE HEADER
+   -------------------------------------------------------------------------- */
+
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.page-header-text {
+  min-width: 0;
+}
+
+.page-title {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.page-subtitle {
+  margin-top: 6px;
+  color: var(--admin-text-secondary);
+  font-size: 14px;
+}
+
+.page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* --------------------------------------------------------------------------
+   10. SECTIONS / ALERTS / EMPTY STATES
+   -------------------------------------------------------------------------- */
+
+.admin-section {
+  margin-top: 32px;
+}
+
+.section-title {
+  margin-bottom: 12px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.alert-slot:empty {
+  display: none;
+}
+
+.admin-alert {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 24px;
+  padding: 16px 20px;
+  border: 1px solid var(--admin-border-soft);
+  border-radius: var(--radius-lg);
+  background: var(--admin-surface);
+}
+
+.admin-alert-error {
+  border-left: 3px solid var(--admin-danger);
+}
+
+.admin-alert-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.admin-alert-text {
+  color: var(--admin-text-secondary);
+  font-size: 14px;
+}
+
+.admin-alert .admin-button {
+  margin-top: 4px;
+}
+
+.loading-text {
+  padding: 20px 0;
+  color: var(--admin-text-secondary);
+  font-size: 14px;
+}
+
+.empty-state {
+  padding: 32px 24px;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-soft);
+  border-radius: var(--radius-lg);
+}
+
+.empty-state-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.empty-state-text {
+  margin-top: 6px;
+  max-width: 52ch;
+  color: var(--admin-text-secondary);
+  font-size: 14px;
+}
+
+/* --------------------------------------------------------------------------
+   11. KPI CARDS
+   -------------------------------------------------------------------------- */
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.kpi-card {
+  padding: 20px;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-soft);
+  border-radius: var(--radius-lg);
+}
+
+.kpi-label {
+  color: var(--admin-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.kpi-value {
+  margin-top: 8px;
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.kpi-unit {
+  margin-top: 2px;
+  color: var(--admin-text-secondary);
+  font-size: 13px;
+}
+
+.kpi-card.is-loading .kpi-value,
+.kpi-card.is-unavailable .kpi-value {
+  color: var(--admin-text-muted);
+}
+
+.kpi-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--admin-border-soft);
+}
+
+.kpi-breakdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.kpi-breakdown-label {
+  color: var(--admin-text-secondary);
+}
+
+.kpi-breakdown-value {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --------------------------------------------------------------------------
+   12. BADGES
+   -------------------------------------------------------------------------- */
+
+.status-badge,
+.type-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-badge-published,
+.status-badge-active {
+  background: var(--admin-success-bg);
+  color: var(--admin-success);
+}
+
+.status-badge-draft,
+.status-badge-inactive {
+  background: var(--admin-neutral-bg);
+  color: var(--admin-text-secondary);
+}
+
+.status-badge-archived {
+  background: var(--admin-warning-bg);
+  color: var(--admin-warning);
+}
+
+.status-badge-unknown {
+  background: var(--admin-neutral-bg);
+  color: var(--admin-text-secondary);
+}
+
+.type-badge {
+  background: var(--admin-surface-subtle);
+  border: 1px solid var(--admin-border-soft);
+  color: var(--admin-text-secondary);
+  font-weight: 500;
+}
+
+/* --------------------------------------------------------------------------
+   13. RECENT CONTENT
+   -------------------------------------------------------------------------- */
+
+.recent-list {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-soft);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.recent-items {
+  display: flex;
+  flex-direction: column;
+}
+
+.recent-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border-top: 1px solid var(--admin-border-soft);
+}
+
+.recent-items .recent-row:first-child {
+  border-top: 0;
+}
+
+/* The header row is a desktop table affordance only. */
+.recent-row-head {
+  display: none;
+}
+
+.recent-cell {
+  min-width: 0;
+}
+
+.recent-title {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.recent-cell-type,
+.recent-cell-status {
+  display: inline-flex;
+}
+
+.updated-at {
+  color: var(--admin-text-secondary);
+  font-size: 13px;
+}
+
+/* --------------------------------------------------------------------------
+   14. RESPONSIVE — TABLET AND UP
+   -------------------------------------------------------------------------- */
+
+@media (min-width: 600px) {
+  .recent-row {
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 20px;
+  }
+
+  .recent-row-head {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 20px;
+    background: var(--admin-surface-subtle);
+    border-top: 0;
+    color: var(--admin-text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .recent-cell-title {
+    flex: 1 1 auto;
+  }
+
+  .recent-cell-type {
+    flex: 0 0 110px;
+  }
+
+  .recent-cell-status {
+    flex: 0 0 110px;
+  }
+
+  .recent-cell-updated {
+    flex: 0 0 130px;
+    text-align: right;
+  }
+
+  .recent-row-head .recent-cell-updated {
+    text-align: right;
+  }
+}
+
+@media (min-width: 768px) {
+  .kpi-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* --------------------------------------------------------------------------
+   15. RESPONSIVE — MOBILE / TABLET DRAWER  (below 1024px)
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 1023px) {
+  .admin-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 50;
+    width: min(var(--sidebar-width), 84vw);
+    flex-basis: auto;
+    transform: translateX(-100%);
+    transition: transform 0.18s ease;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.04), 8px 0 24px rgba(0, 0, 0, 0.08);
+  }
+
+  .admin-shell.is-drawer-open .admin-sidebar {
+    transform: translateX(0);
+  }
+
+  .sidebar-close {
+    display: inline-flex;
+  }
+
+  .admin-content {
+    padding: 20px 16px 48px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   16. RESPONSIVE — DESKTOP  (1024px and up)
+   -------------------------------------------------------------------------- */
+
+@media (min-width: 1024px) {
+  .admin-sidebar {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+  }
+
+  /* Persistent sidebar: no hamburger, no backdrop, no mobile topbar. */
+  .admin-topbar {
+    display: none;
+  }
+
+  .admin-backdrop {
+    display: none !important;
+  }
+
+  .admin-content {
+    padding: 40px 40px 72px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   17. REDUCED MOTION
+   -------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

@@ -13,6 +13,25 @@ import {
   supabaseClient
 } from "./js/core/supabase.js";
 
+import {
+  initShell
+} from "./js/core/shell.js";
+
+import {
+  createRouter
+} from "./js/core/router.js";
+
+import {
+  dashboardRoute
+} from "./js/modules/dashboard.js";
+
+import {
+  profileRoute,
+  experienceRoute,
+  projectsRoute,
+  technologiesRoute
+} from "./js/modules/placeholders.js";
+
 
 const screens = {
   loading:
@@ -31,7 +50,56 @@ const screens = {
     document.getElementById("admin-screen")
 };
 
+const authLayout =
+  document.getElementById("auth-layout");
+
 let enrollmentFactorId = null;
+
+/*
+  Authenticated Admin application (shell + router).
+
+  It is mounted only when showScreen("admin") runs, which routeSession() reaches
+  exclusively after getVerifiedUser() + isOwner() + aal2 have all passed.
+  Leaving the admin screen (logout, session loss, MFA step) unmounts it and
+  clears the rendered content, so no privileged view survives a state change.
+*/
+let adminShell = null;
+let adminRouter = null;
+
+function mountAdminApp() {
+  if (adminRouter) {
+    return;
+  }
+
+  adminShell = initShell();
+
+  adminRouter = createRouter({
+    container: adminShell.contentEl,
+    defaultRoute: "dashboard",
+    routes: [
+      dashboardRoute,
+      profileRoute,
+      experienceRoute,
+      projectsRoute,
+      technologiesRoute
+    ],
+    onRouteChange: route => adminShell.setActiveRoute(route)
+  });
+
+  adminRouter.start();
+}
+
+function unmountAdminApp() {
+  if (adminRouter) {
+    adminRouter.stop();
+    adminRouter = null;
+  }
+
+  if (adminShell) {
+    adminShell.destroy();
+    adminShell = null;
+  }
+}
 
 function showScreen(name) {
   Object.values(screens).forEach(
@@ -39,6 +107,16 @@ function showScreen(name) {
   );
 
   screens[name].hidden = false;
+
+  // The auth layout and the admin shell are mutually exclusive.
+  authLayout.hidden = name === "admin";
+
+  if (name === "admin") {
+    mountAdminApp();
+    return;
+  }
+
+  unmountAdminApp();
 }
 async function routeSession() {
 
