@@ -1,8 +1,8 @@
 export const SUPABASE_URL =
-  "https://hldacuppejztqzqaejsi.supabase.co";
+  "http://127.0.0.1:54321";
 
 export const SUPABASE_PUBLISHABLE_KEY =
-  "sb_publishable_B_Fq0qQhLmbz_MtxI8rFqA_S8MY1OuO";
+  "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH";
 
 export const OWNER_USER_ID =
-  "f463c380-b936-456c-b383-e617955df13b";
+  "c51d8cac-2ba5-4cda-bcdd-026bcc30da7f";
