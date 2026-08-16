@@ -11,6 +11,7 @@
 
   Each route below will be replaced by its own module file
   (modules/profile.js, modules/experience.js, ...) as those phases land.
+  Technologies has already moved out into modules/technologies.js.
 */
 
 import { el, append, pageHeader, emptyState } from "../core/dom.js";
@@ -63,10 +64,4 @@ export const projectsRoute = createPlaceholderRoute({
   note: "The project list and editor will be added in a later phase."
 });
 
-export const technologiesRoute = createPlaceholderRoute({
-  name: "technologies",
-  title: "Technologies",
-  subtitle:
-    "Manage technologies and project tags used across your portfolio.",
-  note: "The technology manager will be added in a later phase."
-});
+// Technologies is implemented: see modules/technologies.js.

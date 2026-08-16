@@ -28,9 +28,12 @@ import {
 import {
   profileRoute,
   experienceRoute,
-  projectsRoute,
-  technologiesRoute
+  projectsRoute
 } from "./js/modules/placeholders.js";
+
+import {
+  technologiesRoute
+} from "./js/modules/technologies.js";
 
 
 const screens = {

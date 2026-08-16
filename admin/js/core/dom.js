@@ -60,14 +60,21 @@ export function pageHeader({ title, subtitle, actions = [] }) {
     const actionBar = el("div", "page-actions");
 
     actions.forEach(action => {
-      const link = el(
-        "a",
-        `admin-button admin-button-${action.variant || "secondary"}`,
-        action.label
-      );
+      const className =
+        `admin-button admin-button-${action.variant || "secondary"}`;
 
-      link.href = action.href;
-      append(actionBar, link);
+      // Route shortcuts stay real links; in-page actions become buttons.
+      if (action.href) {
+        const link = el("a", className, action.label);
+        link.href = action.href;
+        append(actionBar, link);
+        return;
+      }
+
+      const button = el("button", className, action.label);
+      button.type = "button";
+      button.addEventListener("click", action.onClick);
+      append(actionBar, button);
     });
 
     append(header, actionBar);

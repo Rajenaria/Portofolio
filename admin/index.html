@@ -303,6 +303,20 @@
   </div>
 
   <!--
+    Overlay hosts. Both live outside the admin shell so a dialog is never
+    clipped by the shell layout. They stay empty unless a module opens
+    something, and nothing here is ever populated with innerHTML.
+  -->
+  <div id="admin-modal-root"></div>
+
+  <div
+    id="admin-toast-root"
+    class="admin-toast-root"
+    aria-live="polite"
+    aria-atomic="false"
+  ></div>
+
+  <!--
     supabase-js is pinned to an exact version and served from this origin.
     Previously this was a floating CDN reference (@supabase/supabase-js@2), which meant
     unreviewed third-party code could change under the admin login page at any time.
