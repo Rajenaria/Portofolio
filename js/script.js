@@ -2178,7 +2178,17 @@ updateAboutSlider();
        DUPLICATE PROJECTS
     ===================================== */
 
-    const originalCards =
+    /*
+        Bukan const: integrasi CMS publik
+        mengganti isi #projectGrid setelah
+        halaman jalan, lalu memanggil
+        window.refreshProjectCarousel().
+        Semua closure di bawah membaca
+        variabel ini, jadi cukup di-assign
+        ulang sekali di satu tempat.
+    */
+
+    let originalCards =
         Array.from(
             projectGrid.querySelectorAll(
                 ".project-card"
@@ -2204,47 +2214,63 @@ updateAboutSlider();
         01 02 03 04 05 06
     */
 
-    originalCards.forEach(
-        (card) => {
+    function buildClones() {
 
-            const clone =
-                card.cloneNode(true);
+        originalCards.forEach(
+            (card) => {
 
-
-            clone.classList.add(
-                "project-card-clone"
-            );
+                const clone =
+                    card.cloneNode(true);
 
 
-            clone.setAttribute(
-                "aria-hidden",
-                "true"
-            );
+                clone.classList.add(
+                    "project-card-clone"
+                );
 
 
-            /*
-                Link clone tidak perlu
-                bisa difokuskan keyboard.
-            */
-
-            clone
-                .querySelectorAll("a")
-                .forEach((link) => {
-
-                    link.setAttribute(
-                        "tabindex",
-                        "-1"
-                    );
-
-                });
+                clone.setAttribute(
+                    "aria-hidden",
+                    "true"
+                );
 
 
-            projectGrid.appendChild(
+                /*
+                    Link clone tidak perlu
+                    bisa difokuskan keyboard.
+                */
+
                 clone
-            );
+                    .querySelectorAll("a")
+                    .forEach((link) => {
 
-        }
-    );
+                        link.setAttribute(
+                            "tabindex",
+                            "-1"
+                        );
+
+                    });
+
+
+                projectGrid.appendChild(
+                    clone
+                );
+
+            }
+        );
+
+    }
+
+
+    buildClones();
+
+
+    /*
+        Diisi di bagian indikator paling bawah.
+        Refresh hook memakainya supaya bar
+        ikut sinkron tanpa membuat listener baru.
+    */
+
+    let syncIndicator = null;
 
 
 
@@ -2862,12 +2888,86 @@ updateAboutSlider();
 
             updateIndicator();
 
+
+            syncIndicator = updateIndicator;
+
         }
 
     }
 
 
     startLoop();
+
+
+    /* =====================================
+       REFRESH HOOK
+
+       Dipakai integrasi CMS publik setelah
+       kartu asli di #projectGrid diganti.
+
+       Hanya membuang klon lama, mengambil
+       ulang daftar kartu asli, lalu menjalankan
+       ulang fungsi yang sudah ada. Tidak ada
+       listener, observer, timer, atau loop rAF
+       baru yang dibuat: semuanya terikat ke
+       #projectGrid / window, bukan ke kartu.
+    ===================================== */
+
+    window.refreshProjectCarousel =
+        function () {
+
+            projectGrid
+                .querySelectorAll(
+                    ".project-card-clone"
+                )
+                .forEach((clone) => {
+
+                    clone.remove();
+
+                });
+
+
+            originalCards =
+                Array.from(
+                    projectGrid.querySelectorAll(
+                        ".project-card"
+                    )
+                );
+
+
+            if (
+                originalCards.length === 0
+            ) {
+
+                cachedOriginalWidth = 0;
+
+                return;
+
+            }
+
+
+            buildClones();
+
+
+            /*
+                Kartu baru bisa saja belum punya
+                lebar final saat ini (gambar masih
+                dimuat), tapi measureOriginalWidth()
+                juga sudah terpasang di event
+                resize dan load.
+            */
+
+            measureOriginalWidth();
+
+
+            projectGrid.scrollLeft = 0;
+
+
+            if (syncIndicator) {
+                syncIndicator();
+            }
+
+        };
 
 })();
 /* =========================================
