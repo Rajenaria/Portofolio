@@ -57,7 +57,14 @@
 
   <title>Admin CMS</title>
 
-  <link rel="stylesheet" href="./admin.css">
+  <!--
+    Root-absolute, not "./". Vercel serves this page at /admin as well as
+    /admin/ (trailingSlash: false redirects /admin/ -> /admin), and at /admin
+    a "./" reference resolves against the site root, so ./admin.css became
+    /admin.css and 404'd. These three paths must hold for /admin, /admin/ and
+    /admin/index.html alike.
+  -->
+  <link rel="stylesheet" href="/admin/admin.css">
 </head>
 
 <body>
@@ -336,8 +343,8 @@
     node_modules/@supabase/supabase-js/dist/umd/supabase.js to admin/vendor/ under the
     new versioned filename and update the src below.
   -->
-  <script src="./vendor/supabase-js-2.112.3.js"></script>
-  <script type="module" src="./admin.js"></script>
+  <script src="/admin/vendor/supabase-js-2.112.3.js"></script>
+  <script type="module" src="/admin/admin.js"></script>
 
 </body>
 
