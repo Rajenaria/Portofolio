@@ -1,5 +1,5 @@
 /*
-  Project preview (Phase 8A).
+  Project preview (Phase 8A, media added in Phase 8B).
 
   Read-only, Admin-side structured preview built from the CURRENT editor values,
   including unsaved ones. It mirrors the content shape of the existing V1 card
@@ -7,8 +7,10 @@
   intro, meta, about heading, paragraphs, links) without claiming visual parity
   and without touching any public file.
 
-  Cover and documentation media are Phase 8B, so the preview says so explicitly
-  rather than pretending an image exists.
+  The cover and the documentation gallery are rendered from the real stored
+  images — a public URL for portfolio-media, a short-lived signed URL for the
+  private portfolio-staging bucket — and from any image still pending upload,
+  which is labelled as such.
 
   SECURITY: every value is written with textContent. Link URLs are validated
   before they are shown, and are rendered as inert text here rather than as a
@@ -59,10 +61,20 @@ export function openProjectPreview(data) {
   const card = el("article", "project-preview-card");
 
   const mediaSlot = el("div", "project-preview-media");
-  append(
-    mediaSlot,
-    el("span", "media-field-empty", "Cover image will be configured separately.")
-  );
+
+  if (data.coverUrl) {
+    const img = el("img", "project-preview-cover");
+    img.src = data.coverUrl;
+    img.alt = data.coverAlt || "Project cover";
+    append(mediaSlot, img);
+
+    if (data.coverPending) {
+      append(mediaSlot, el("span", "status-badge status-badge-pending", "Pending upload"));
+    }
+  } else {
+    append(mediaSlot, el("span", "media-field-empty", "No cover image yet."));
+  }
+
   append(card, mediaSlot);
 
   const head = el("div", "project-preview-head");
@@ -139,14 +151,58 @@ export function openProjectPreview(data) {
 
   append(detail, paragraphBlock);
 
+  const documentation = data.documentation || [];
+  const galleryBlock = el("div", "preview-line");
+  append(galleryBlock, el("span", "preview-label", "Documentation Gallery"));
+
+  if (documentation.length === 0) {
+    append(galleryBlock, el("p", "preview-value", "—"));
+  } else {
+    const grid = el("div", "preview-photo-grid");
+
+    documentation.forEach((item, index) => {
+      const figure = el("figure", "preview-photo");
+
+      if (item.url) {
+        const img = el("img", "preview-photo-image");
+        img.src = item.url;
+        img.alt = item.altText || `Documentation image ${index + 1}`;
+        append(figure, img);
+      } else {
+        append(figure, el("p", "media-field-empty", "No image"));
+      }
+
+      const caption = el("figcaption", "preview-photo-caption");
+      append(
+        caption,
+        el(
+          "span",
+          "preview-photo-title",
+          item.altText || `Image ${String(index + 1).padStart(2, "0")}`
+        )
+      );
+
+      if (!item.isActive) {
+        append(caption, el("span", "status-badge status-badge-disabled", "Disabled"));
+      }
+
+      if (item.pending) {
+        append(caption, el("span", "status-badge status-badge-pending", "Pending"));
+      }
+
+      append(figure, caption);
+      append(grid, figure);
+    });
+
+    append(galleryBlock, grid);
+  }
+
+  append(detail, galleryBlock);
+
   append(
     detail,
     line("Repository URL", data.githubUrl),
-    line("Live Demo URL", data.demoUrl),
-    line(
-      "Documentation images",
-      "Project media will be configured in the next implementation phase."
-    )
+    line("Live Demo URL", data.demoUrl)
   );
 
   append(body, detail);
@@ -154,7 +210,7 @@ export function openProjectPreview(data) {
   return openModal({
     title: "Project preview",
     description:
-      "Read-only preview. Media is not part of this phase and is shown as a placeholder.",
+      "Read-only preview of the current values, including unsaved text and pending images. This is an Admin content preview, not the public layout.",
     body,
     actions: [{ label: "Close", variant: "secondary", onClick: ctl => ctl.close() }]
   });

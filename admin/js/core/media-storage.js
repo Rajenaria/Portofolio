@@ -29,6 +29,16 @@ import { supabaseClient } from "./supabase.js";
 
 export const MEDIA_BUCKET = "portfolio-media";
 
+/*
+  Private bucket for media that belongs to content the public cannot see yet
+  (Draft Projects). It is never made public: the Admin previews it through
+  short-lived signed URLs, which only the owner's aal2 session can mint
+  (ADMIN-CMS-SECURITY.md section 52).
+*/
+export const STAGING_BUCKET = "portfolio-staging";
+
+const SIGNED_URL_TTL_SECONDS = 600;
+
 export class MediaStorageError extends Error {
   constructor(message, code, cause) {
     super(message);
@@ -82,6 +92,35 @@ export function publicUrl(bucket, path) {
   const { data } = supabaseClient.storage.from(bucket).getPublicUrl(path);
 
   return data ? data.publicUrl : null;
+}
+
+/*
+  Resolves a displayable URL for a stored object.
+
+  portfolio-media is public, so a plain public URL is enough. portfolio-staging
+  is private, so a signed URL is minted instead — it expires, and it can only be
+  created by a session the Storage policies already accept. Neither value is
+  ever written back to the database; the database stores bucket + path only.
+*/
+export async function resolveMediaUrl(bucket, path) {
+  if (!bucket || !path) {
+    return null;
+  }
+
+  if (bucket !== STAGING_BUCKET) {
+    return publicUrl(bucket, path);
+  }
+
+  const { data, error } = await supabaseClient.storage
+    .from(bucket)
+    .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
+
+  if (error || !data) {
+    console.error(error);
+    return null;
+  }
+
+  return data.signedUrl;
 }
 
 async function uploadObject(bucket, path, file) {
@@ -200,6 +239,95 @@ export async function uploadVariantPair({
     bucket,
     desktopPath: paths.desktopPath,
     mobilePath: paths.mobilePath
+  };
+}
+
+/*
+  Copies one object into another bucket, keeping the same object key so the
+  logical layout is identical in staging and in the public bucket.
+
+  supabase-js 2.112.3 supports a server-side cross-bucket copy
+  (destinationBucket), which is preferred: the bytes never travel through the
+  browser. If that call is rejected for any reason the function falls back to an
+  authenticated download + upload, which needs no extra privilege because the
+  owner's aal2 session may already read staging and write portfolio-media.
+*/
+async function copyObject(fromBucket, fromPath, toBucket, toPath) {
+  const { error } = await supabaseClient.storage
+    .from(fromBucket)
+    .copy(fromPath, toPath, { destinationBucket: toBucket });
+
+  if (!error) {
+    return "copy";
+  }
+
+  console.error(error);
+
+  const download = await supabaseClient.storage.from(fromBucket).download(fromPath);
+
+  if (download.error || !download.data) {
+    throw new MediaStorageError(
+      "Could not read the staged image while publishing. Nothing has been changed.",
+      "PROMOTE_READ_FAILED",
+      download.error || error
+    );
+  }
+
+  const file = new File([download.data], toPath.split("/").pop(), {
+    type: "image/webp"
+  });
+
+  await uploadObject(toBucket, toPath, file);
+
+  return "download-upload";
+}
+
+/*
+  promoteVariantPair({ from, toBucket })
+
+  from: { bucket, desktopPath, mobilePath }
+
+  Copies both variants into toBucket and verifies they are really there before
+  reporting success. A failure on the second object removes the first, so a
+  half-promoted pair never exists in the public bucket.
+
+  Resolves with { bucket, desktopPath, mobilePath, method }.
+*/
+export async function promoteVariantPair({ from, toBucket = MEDIA_BUCKET }) {
+  if (!from || !from.desktopPath || !from.mobilePath) {
+    throw new MediaStorageError("Nothing to promote.", "PROMOTE_INVALID");
+  }
+
+  if (from.bucket === toBucket) {
+    return { ...from, method: "already-public" };
+  }
+
+  const created = [];
+  let method = "copy";
+
+  try {
+    method = await copyObject(from.bucket, from.desktopPath, toBucket, from.desktopPath);
+    created.push(from.desktopPath);
+
+    await copyObject(from.bucket, from.mobilePath, toBucket, from.mobilePath);
+    created.push(from.mobilePath);
+
+    const dir = from.desktopPath.split("/").slice(0, -1).join("/");
+
+    await verifyUploads(toBucket, dir, [
+      from.desktopPath.split("/").pop(),
+      from.mobilePath.split("/").pop()
+    ]);
+  } catch (error) {
+    await removeObjects(toBucket, created);
+    throw error;
+  }
+
+  return {
+    bucket: toBucket,
+    desktopPath: from.desktopPath,
+    mobilePath: from.mobilePath,
+    method
   };
 }
 

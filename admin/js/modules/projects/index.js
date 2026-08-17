@@ -1,5 +1,5 @@
 /*
-  Projects route (Phase 8A core).
+  Projects route (Phase 8A core, Phase 8B media).
 
   One route with two internal views inside the existing Admin shell:
 
@@ -12,12 +12,12 @@
   UNSAVED CHANGES
   ---------------
   No autosave. While the editor holds unsaved values — including staged
-  paragraphs and technology selections — three exits are guarded: Back to
-  Projects, sidebar navigation, and browser refresh/close. Preview never clears
-  the dirty state.
+  paragraphs, technology selections and pending images — three exits are
+  guarded: Back to Projects, sidebar navigation, and browser refresh/close.
+  Preview never clears the dirty state.
 
-  This phase manages structured data only: no Storage call, no cover upload, no
-  documentation media, and no public renderer.
+  The public Project renderer is still out of scope: nothing here writes to any
+  Portfolio V1 file.
 */
 
 import { supabaseClient } from "../../core/supabase.js";
@@ -34,8 +34,10 @@ export const projectsRoute = {
   render
 };
 
+// The cover columns must be selected here: the editor rebuilds the cover field
+// from them, so leaving them out would make a saved cover disappear on reopen.
 const PROJECT_COLUMNS =
-  "id, slug, title, card_category, short_description, detail_title_main, detail_title_highlight, detail_intro, role, project_date, project_type, about_heading, github_url, demo_url, featured, sort_order, status, published_at, archived_at, deleted_at, created_at, updated_at";
+  "id, slug, title, card_category, short_description, detail_title_main, detail_title_highlight, detail_intro, role, project_date, project_type, about_heading, cover_bucket, cover_desktop_path, cover_mobile_path, cover_alt, github_url, demo_url, featured, sort_order, status, published_at, archived_at, deleted_at, created_at, updated_at";
 
 async function render(container, { signal }) {
   const headerSlot = el("div", "route-header-slot");
@@ -177,7 +179,13 @@ async function render(container, { signal }) {
           .from("project_technologies")
           .select("technology_id, sort_order")
           .eq("project_id", id)
+          .order("sort_order", { ascending: true }),
+        supabaseClient
+          .from("project_media")
+          .select("id, bucket_name, desktop_path, mobile_path, alt_text, sort_order, is_active")
+          .eq("project_id", id)
           .order("sort_order", { ascending: true })
+          .order("created_at", { ascending: true })
       );
     }
 
@@ -202,6 +210,7 @@ async function render(container, { signal }) {
     const selectedTechnologyIds = id
       ? (results[3].data || []).map(row => row.technology_id)
       : [];
+    const media = id ? results[4].data || [] : [];
 
     teardownViews();
     renderHeader({ inEditor: true });
@@ -209,6 +218,7 @@ async function render(container, { signal }) {
     editorView = createProjectEditor({
       record,
       paragraphs,
+      media,
       technologies,
       selectedTechnologyIds,
       onDirtyChange: () => {},

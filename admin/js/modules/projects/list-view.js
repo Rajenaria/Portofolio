@@ -31,12 +31,16 @@ import {
   emptyState
 } from "../../core/dom.js";
 
-import { confirmDialog } from "../../core/modal.js";
+import { confirmDialog, openModal } from "../../core/modal.js";
 import { toast } from "../../core/toast.js";
+import { textField, trimmed } from "../../core/form.js";
+import { removeObjects, resolveMediaUrl } from "../../core/media-storage.js";
 import { openProjectPreview } from "./preview.js";
 
+// The cover columns are part of this list because Preview needs them to show
+// the image and Delete Permanently needs them to find the objects to remove.
 const SELECT_COLUMNS =
-  "id, slug, title, card_category, short_description, detail_title_main, detail_title_highlight, detail_intro, role, project_date, project_type, about_heading, github_url, demo_url, featured, sort_order, status, published_at, archived_at, deleted_at, created_at, updated_at";
+  "id, slug, title, card_category, short_description, detail_title_main, detail_title_highlight, detail_intro, role, project_date, project_type, about_heading, cover_bucket, cover_desktop_path, cover_mobile_path, cover_alt, github_url, demo_url, featured, sort_order, status, published_at, archived_at, deleted_at, created_at, updated_at";
 
 export function createProjectList({ onEdit, onChanged }) {
   const root = el("div", "experience-list-view project-list-view");
@@ -45,6 +49,7 @@ export function createProjectList({ onEdit, onChanged }) {
     rows: [],
     paragraphsByProject: new Map(),
     technologiesByProject: new Map(),
+    mediaByProject: new Map(),
     filters: { search: "", status: "all" },
     status: "loading",
     busy: false
@@ -137,7 +142,7 @@ export function createProjectList({ onEdit, onChanged }) {
     state.status = "loading";
     renderList();
 
-    const [projects, paragraphs, relations] = await Promise.all([
+    const [projects, paragraphs, relations, media] = await Promise.all([
       supabaseClient
         .from("projects")
         .select(SELECT_COLUMNS)
@@ -153,11 +158,19 @@ export function createProjectList({ onEdit, onChanged }) {
       supabaseClient
         .from("project_technologies")
         .select("project_id, technology_id, sort_order, technologies(name)")
+        .order("sort_order", { ascending: true }),
+
+      supabaseClient
+        .from("project_media")
+        .select("id, project_id, bucket_name, desktop_path, alt_text, sort_order, is_active")
         .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: true })
     ]);
 
-    if (projects.error || paragraphs.error || relations.error) {
-      console.error(projects.error || paragraphs.error || relations.error);
+    if (projects.error || paragraphs.error || relations.error || media.error) {
+      console.error(
+        projects.error || paragraphs.error || relations.error || media.error
+      );
       state.status = "error";
       renderList();
       return;
@@ -177,6 +190,13 @@ export function createProjectList({ onEdit, onChanged }) {
       const list = state.technologiesByProject.get(row.project_id) || [];
       list.push(row.technologies ? row.technologies.name : "");
       state.technologiesByProject.set(row.project_id, list);
+    });
+
+    state.mediaByProject = new Map();
+    (media.data || []).forEach(row => {
+      const list = state.mediaByProject.get(row.project_id) || [];
+      list.push(row);
+      state.mediaByProject.set(row.project_id, list);
     });
 
     state.status = "ready";
@@ -291,7 +311,7 @@ export function createProjectList({ onEdit, onChanged }) {
         el(
           "p",
           "table-note",
-          "Permanent deletion will be enabled after Project media management is implemented, so that stored image files are removed together with the record."
+          "Permanent deletion removes the project, its paragraphs, technology links, documentation records and every stored image file. It cannot be undone."
         )
       );
       return;
@@ -566,16 +586,29 @@ export function createProjectList({ onEdit, onChanged }) {
       { label: "Restore", onSelect: () => restoreFromTrash(row) },
       {
         label: "Delete Permanently",
-        disabled: true,
-        hint:
-          "Available after Project media management is implemented, so stored images are removed with the record.",
-        onSelect: () => {}
+        danger: true,
+        onSelect: () => permanentlyDelete(row)
       }
     ];
   }
 
-  function previewRow(row) {
+  async function previewRow(row) {
+    const coverUrl = await resolveMediaUrl(row.cover_bucket, row.cover_desktop_path);
+
+    const documentation = await Promise.all(
+      (state.mediaByProject.get(row.id) || []).map(async media => ({
+        altText: media.alt_text || "",
+        isActive: media.is_active !== false,
+        pending: false,
+        url: await resolveMediaUrl(media.bucket_name, media.desktop_path)
+      }))
+    );
+
     openProjectPreview({
+      coverUrl,
+      coverAlt: row.cover_alt,
+      coverPending: false,
+      documentation,
       title: row.title,
       slug: row.slug,
       cardCategory: row.card_category,
@@ -758,6 +791,189 @@ export function createProjectList({ onEdit, onChanged }) {
       "Project restored as a draft.",
       "Could not restore this project."
     );
+  }
+
+  /*
+    Permanent delete (Trash only).
+
+    Order matters: the database row goes first and Storage objects follow. An
+    orphaned file is recoverable; a row pointing at an already-deleted image is
+    not. Only paths that this Project actually references are removed — never a
+    folder prefix, never anything bucket-wide.
+  */
+  async function permanentlyDelete(row) {
+    if (state.busy) {
+      return;
+    }
+
+    const mediaRows = await supabaseClient
+      .from("project_media")
+      .select("bucket_name, desktop_path, mobile_path")
+      .eq("project_id", row.id);
+
+    if (mediaRows.error) {
+      console.error(mediaRows.error);
+      toast("Could not read this project's media. Nothing was deleted.", "error");
+      return;
+    }
+
+    const documentationCount = (mediaRows.data || []).length;
+
+    const confirmed = await typedDeleteConfirm(row, documentationCount);
+
+    if (!confirmed) {
+      return;
+    }
+
+    setBusy(true);
+
+    // Collect known object paths BEFORE the cascade removes the child rows.
+    const objects = new Map();
+
+    function collect(bucket, paths) {
+      if (!bucket) {
+        return;
+      }
+
+      const list = objects.get(bucket) || [];
+      paths.filter(Boolean).forEach(path => list.push(path));
+      objects.set(bucket, list);
+    }
+
+    collect(row.cover_bucket, [row.cover_desktop_path, row.cover_mobile_path]);
+
+    (mediaRows.data || []).forEach(media => {
+      collect(media.bucket_name, [media.desktop_path, media.mobile_path]);
+    });
+
+    // project_paragraphs, project_technologies and project_media rows are
+    // removed by their ON DELETE CASCADE foreign keys.
+    const { data, error } = await supabaseClient
+      .from("projects")
+      .delete()
+      .eq("id", row.id)
+      .select("id");
+
+    if (error || !data || data.length === 0) {
+      if (error) {
+        console.error(error);
+      }
+
+      setBusy(false);
+      toast("Could not permanently delete this project.", "error");
+      return;
+    }
+
+    const orphans = [];
+
+    for (const [bucket, paths] of objects.entries()) {
+      const cleanup = await removeObjects(bucket, paths);
+
+      if (cleanup.failed.length > 0) {
+        orphans.push(...cleanup.failed);
+      }
+    }
+
+    setBusy(false);
+
+    toast(
+      orphans.length > 0
+        ? `Project permanently deleted. These files could not be removed and may need manual cleanup: ${orphans.join(", ")}`
+        : "Project permanently deleted.",
+      orphans.length > 0 ? "error" : "success"
+    );
+
+    await load();
+  }
+
+  function typedDeleteConfirm(row, documentationCount) {
+    return new Promise(resolve => {
+      let settled = false;
+
+      const body = el("div", "confirm-body");
+
+      append(
+        body,
+        el("p", "confirm-line", row.title || "This project"),
+        el(
+          "p",
+          "confirm-line",
+          "This permanently removes the project, its paragraphs, its technology relationships, its documentation records and every stored image file."
+        )
+      );
+
+      const summary = [];
+
+      if (row.cover_desktop_path) {
+        summary.push("1 cover image");
+      }
+
+      if (documentationCount > 0) {
+        summary.push(
+          `${documentationCount} documentation image${documentationCount === 1 ? "" : "s"}`
+        );
+      }
+
+      if (summary.length > 0) {
+        append(body, el("p", "confirm-line", `Files to delete: ${summary.join(" and ")}.`));
+      }
+
+      append(body, el("p", "confirm-line", "This action cannot be undone."));
+
+      const field = textField({
+        id: "project-delete-confirm",
+        label: "Type DELETE to confirm",
+        value: "",
+        maxLength: 10
+      });
+
+      append(body, field.node);
+
+      const controller = openModal({
+        title: "Delete permanently?",
+        body,
+        size: "small",
+        actions: [
+          {
+            label: "Cancel",
+            variant: "secondary",
+            onClick: ctl => {
+              settle(false);
+              ctl.close();
+            }
+          },
+          {
+            label: "Delete Permanently",
+            variant: "danger",
+            onClick: ctl => {
+              if (trimmed(field.value) !== "DELETE") {
+                field.setError("Type DELETE exactly to confirm.");
+                field.focus();
+                return;
+              }
+
+              settle(true);
+              ctl.close();
+            }
+          }
+        ],
+        onClosed: () => settle(false)
+      });
+
+      field.control.addEventListener("input", () => field.setError(""));
+      field.focus();
+
+      function settle(value) {
+        if (settled) {
+          return;
+        }
+
+        settled = true;
+        resolve(value);
+      }
+
+      return controller;
+    });
   }
 
   async function move(index, direction) {

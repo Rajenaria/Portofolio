@@ -1,13 +1,16 @@
 ﻿/*
-  Project editor (Phase 8A).
+  Project editor (Phase 8A core, Phase 8B media).
 
   Full-page editor inside the Admin shell. It writes only columns that exist in
-  public.projects, plus the staged paragraph list and technology relationships.
+  public.projects, plus the staged paragraph list, technology relationships,
+  the cover columns and the project_media rows.
 
-  NOT IN THIS PHASE: cover_bucket / cover_desktop_path / cover_mobile_path /
-  cover_alt and the whole project_media table. Those columns exist but are left
-  untouched here; the Settings section says so explicitly. There is no Storage
-  call anywhere in this module.
+  MEDIA (Phase 8B)
+  ----------------
+  Every image change is staged in memory and only touches Storage on Save or
+  Publish. A Draft writes into the private portfolio-staging bucket; publishing
+  promotes those objects into the public portfolio-media bucket and then clears
+  the staged copies. See persistMedia() and promoteStagedMedia() below.
 
   STATUS
   ------
@@ -36,8 +39,20 @@ import {
   trimmedOrNull
 } from "../../core/form.js";
 
+import {
+  MEDIA_BUCKET,
+  STAGING_BUCKET,
+  uploadVariantPair,
+  removeObjects,
+  promoteVariantPair,
+  resolveMediaUrl,
+  newMediaId
+} from "../../core/media-storage.js";
+
 import { createParagraphsEditor } from "./paragraphs-editor.js";
 import { createTechnologySelector } from "./technology-selector.js";
+import { createProjectMediaField } from "./media-field.js";
+import { createDocumentationManager } from "./media-manager.js";
 import { openProjectPreview } from "./preview.js";
 
 export const LIMITS = {
@@ -49,7 +64,8 @@ export const LIMITS = {
   detailTitleHighlight: 180,
   role: 180,
   projectType: 140,
-  aboutHeading: 220
+  aboutHeading: 220,
+  coverAlt: 250
 };
 
 const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
@@ -95,6 +111,7 @@ export function validateUrl(value, label) {
 export function createProjectEditor({
   record,
   paragraphs: initialParagraphs = [],
+  media: initialMedia = [],
   technologies = [],
   selectedTechnologyIds = [],
   onDirtyChange,
@@ -235,8 +252,51 @@ export function createProjectEditor({
       label: "Live Demo URL",
       value: record ? record.demo_url : "",
       help: "Optional. Must start with https:// or http://"
+    }),
+    coverAlt: textField({
+      id: "project-cover-alt",
+      label: "Cover Alt Text",
+      maxLength: LIMITS.coverAlt,
+      value: record ? record.cover_alt : "",
+      help: "Describes the cover for screen readers. Leave blank if the image is decorative."
     })
   };
+
+  /* ---------------- cover ---------------- */
+
+  const coverField = createProjectMediaField({
+    title: "Cover Image",
+    emptyText: "No cover image configured.",
+    current:
+      record && record.cover_desktop_path
+        ? {
+            bucket: record.cover_bucket || MEDIA_BUCKET,
+            desktopPath: record.cover_desktop_path,
+            mobilePath: record.cover_mobile_path
+          }
+        : null,
+    onChange: markDirty
+  });
+
+  const coverSection = el("section", "admin-subsection");
+  append(coverSection, el("h3", "subsection-title", "Cover Image"));
+  append(
+    coverSection,
+    el(
+      "p",
+      "form-help",
+      "Shown on the public Portfolio card and at the top of the Project detail page."
+    ),
+    coverField.element,
+    fields.coverAlt.node
+  );
+
+  /* ---------------- documentation ---------------- */
+
+  const documentationManager = createDocumentationManager({
+    initialMedia,
+    onChange: markDirty
+  });
 
   // project_date is a real `date` column, so a native date input maps to it 1:1.
   const dateField = el("div", "form-field");
@@ -299,27 +359,17 @@ export function createProjectEditor({
   append(settingsSection, el("h3", "subsection-title", "Settings"));
   append(settingsSection, featured.node);
 
-  const mediaNotice = el("div", "deferred-panel");
-  append(
-    mediaNotice,
-    el("p", "deferred-title", "Project media"),
-    el(
-      "p",
-      "form-help",
-      "Project media will be configured in the next implementation phase. Cover and documentation images are not editable yet."
-    )
-  );
-  append(settingsSection, mediaNotice);
-
   const settingsList = el("dl", "settings-list");
   append(settingsSection, settingsList);
 
   append(
     root,
     cardSection,
+    coverSection,
     detailSection,
     paragraphsEditor.element,
     technologySelector.element,
+    documentationManager.element,
     linksSection,
     settingsSection
   );
@@ -418,6 +468,7 @@ export function createProjectEditor({
       aboutHeading: trimmed(fields.aboutHeading.value),
       githubUrl: trimmed(fields.githubUrl.value),
       demoUrl: trimmed(fields.demoUrl.value),
+      coverAlt: trimmed(fields.coverAlt.value),
       featured: featured.value
     });
   }
@@ -425,14 +476,22 @@ export function createProjectEditor({
   let baselineForm = formSnapshot();
   let baselineParagraphs = paragraphsEditor.snapshot();
   let baselineTechnologies = technologySelector.snapshot();
+  let baselineMedia = documentationManager.snapshot();
   let dirty = false;
   let busy = false;
 
+  /*
+    Dirty state covers every staged change: text, paragraphs, technologies,
+    a pending cover replacement, and any documentation add / replace / alt edit
+    / enable-disable / reorder / removal.
+  */
   function computeDirty() {
     return (
       formSnapshot() !== baselineForm ||
       paragraphsEditor.snapshot() !== baselineParagraphs ||
-      technologySelector.snapshot() !== baselineTechnologies
+      technologySelector.snapshot() !== baselineTechnologies ||
+      documentationManager.snapshot() !== baselineMedia ||
+      coverField.hasPending()
     );
   }
 
@@ -455,6 +514,7 @@ export function createProjectEditor({
     baselineForm = formSnapshot();
     baselineParagraphs = paragraphsEditor.snapshot();
     baselineTechnologies = technologySelector.snapshot();
+    baselineMedia = documentationManager.snapshot();
     dirty = false;
     onDirtyChange(false);
   }
@@ -480,7 +540,8 @@ export function createProjectEditor({
       },
       role: { label: "Role", maxLength: LIMITS.role },
       projectType: { label: "Project Type", maxLength: LIMITS.projectType },
-      aboutHeading: { label: "About Heading", maxLength: LIMITS.aboutHeading }
+      aboutHeading: { label: "About Heading", maxLength: LIMITS.aboutHeading },
+      coverAlt: { label: "Cover Alt Text", maxLength: LIMITS.coverAlt }
     };
 
     if (forPublish) {
@@ -539,6 +600,16 @@ export function createProjectEditor({
       ok = false;
     }
 
+    /*
+      The design baseline requires a cover before publish, because the public
+      Portfolio card is built around it. Cover ALT text stays optional: the
+      column is nullable and a decorative cover legitimately has empty alt.
+    */
+    if (ok && forPublish && !coverField.hasPending() && !coverField.getStored()) {
+      toast("Add a cover image before publishing this project.", "error");
+      ok = false;
+    }
+
     if (!ok) {
       toast("Please correct the highlighted fields.", "error");
     }
@@ -563,8 +634,19 @@ export function createProjectEditor({
       about_heading: trimmedOrNull(fields.aboutHeading.value),
       github_url: trimmedOrNull(fields.githubUrl.value),
       demo_url: trimmedOrNull(fields.demoUrl.value),
+      cover_alt: trimmedOrNull(fields.coverAlt.value),
       featured: featured.value
     };
+  }
+
+  /*
+    Draft media lives in the private portfolio-staging bucket; media for an
+    already published Project is written straight to the public bucket so a
+    saved change is live immediately and no broken-image window exists
+    (ADMIN-CMS-SECURITY.md sections 51-53, brief sections 12-13 and 17).
+  */
+  function targetBucket() {
+    return state.status === "published" ? MEDIA_BUCKET : STAGING_BUCKET;
   }
 
   function setBusy(next, label) {
@@ -791,6 +873,350 @@ export function createProjectEditor({
     technologySelector.setSavedIds(loadedTechnologyIds);
   }
 
+  /* ---------------- media persistence ---------------- */
+
+  let loadedMedia = initialMedia.slice();
+
+  async function reloadMedia(projectId) {
+    const { data, error } = await supabaseClient
+      .from("project_media")
+      .select("id, bucket_name, desktop_path, mobile_path, alt_text, sort_order, is_active")
+      .eq("project_id", projectId)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      throw error;
+    }
+
+    loadedMedia = data || [];
+    documentationManager.setSavedMedia(loadedMedia);
+  }
+
+  /*
+    Applies every staged media change. Ordering per operation is always:
+    upload new -> verify -> write database -> only then delete the old object.
+    A failure before the database write removes whatever was just uploaded, so
+    the previously referenced media always stays valid.
+  */
+  async function persistMedia(projectId) {
+    const bucket = targetBucket();
+    const warnings = [];
+
+    // ---- cover ----
+    const coverFiles = coverField.getPendingFiles();
+
+    if (coverFiles) {
+      const previous = coverField.getStored();
+      let uploaded = null;
+
+      try {
+        uploaded = await uploadVariantPair({
+          bucket,
+          directory: `projects/${projectId}/cover`,
+          desktopFile: coverFiles.desktopFile,
+          mobileFile: coverFiles.mobileFile
+        });
+      } catch (error) {
+        throw error;
+      }
+
+      const { data, error } = await supabaseClient
+        .from("projects")
+        .update({
+          cover_bucket: uploaded.bucket,
+          cover_desktop_path: uploaded.desktopPath,
+          cover_mobile_path: uploaded.mobilePath
+        })
+        .eq("id", projectId)
+        .select("id");
+
+      if (error || !data || data.length === 0) {
+        await removeObjects(uploaded.bucket, [
+          uploaded.desktopPath,
+          uploaded.mobilePath
+        ]);
+
+        throw error || new Error("cover update did not apply");
+      }
+
+      coverField.commit({
+        bucket: uploaded.bucket,
+        desktopPath: uploaded.desktopPath,
+        mobilePath: uploaded.mobilePath
+      });
+
+      if (previous && previous.desktopPath) {
+        const cleanup = await removeObjects(previous.bucket, [
+          previous.desktopPath,
+          previous.mobilePath
+        ]);
+
+        if (cleanup.failed.length > 0) {
+          warnings.push("previous cover files could not be removed");
+        }
+      }
+    }
+
+    // ---- documentation removals (database first, then objects) ----
+    for (const entry of documentationManager.getRemoved()) {
+      const { data, error } = await supabaseClient
+        .from("project_media")
+        .delete()
+        .eq("id", entry.id)
+        .select("id");
+
+      if (error || !data || data.length === 0) {
+        throw error || new Error("project_media delete did not apply");
+      }
+
+      const cleanup = await removeObjects(entry.bucket, [
+        entry.desktopPath,
+        entry.mobilePath
+      ]);
+
+      if (cleanup.failed.length > 0) {
+        warnings.push(`orphan files left for a removed image (${entry.desktopPath})`);
+      }
+    }
+
+    // ---- documentation adds / replacements / metadata ----
+    for (const item of documentationManager.getItems()) {
+      const files = item.pendingFiles;
+
+      if (!item.id) {
+        const uploaded = await uploadVariantPair({
+          bucket,
+          directory: `projects/${projectId}/documentation/${newMediaId()}`,
+          desktopFile: files.desktopFile,
+          mobileFile: files.mobileFile
+        });
+
+        const { data, error } = await supabaseClient
+          .from("project_media")
+          .insert({
+            project_id: projectId,
+            bucket_name: uploaded.bucket,
+            desktop_path: uploaded.desktopPath,
+            mobile_path: uploaded.mobilePath,
+            alt_text: item.altText === "" ? null : item.altText,
+            sort_order: item.sortOrder,
+            is_active: item.isActive
+          })
+          .select("id");
+
+        if (error || !data || data.length === 0) {
+          await removeObjects(uploaded.bucket, [
+            uploaded.desktopPath,
+            uploaded.mobilePath
+          ]);
+
+          throw error || new Error("project_media insert did not apply");
+        }
+
+        continue;
+      }
+
+      const previous = loadedMedia.find(row => row.id === item.id);
+      const patch = {
+        alt_text: item.altText === "" ? null : item.altText,
+        sort_order: item.sortOrder,
+        is_active: item.isActive
+      };
+
+      if (files) {
+        const uploaded = await uploadVariantPair({
+          bucket,
+          directory: `projects/${projectId}/documentation/${newMediaId()}`,
+          desktopFile: files.desktopFile,
+          mobileFile: files.mobileFile
+        });
+
+        patch.bucket_name = uploaded.bucket;
+        patch.desktop_path = uploaded.desktopPath;
+        patch.mobile_path = uploaded.mobilePath;
+
+        const { data, error } = await supabaseClient
+          .from("project_media")
+          .update(patch)
+          .eq("id", item.id)
+          .select("id");
+
+        if (error || !data || data.length === 0) {
+          await removeObjects(uploaded.bucket, [
+            uploaded.desktopPath,
+            uploaded.mobilePath
+          ]);
+
+          throw error || new Error("project_media update did not apply");
+        }
+
+        // Row identity, sort_order and created_at are untouched; only the
+        // object references changed, so the old files can go now.
+        if (previous && previous.desktop_path) {
+          const cleanup = await removeObjects(previous.bucket_name, [
+            previous.desktop_path,
+            previous.mobile_path
+          ]);
+
+          if (cleanup.failed.length > 0) {
+            warnings.push(`orphan files left after replacing ${previous.desktop_path}`);
+          }
+        }
+
+        continue;
+      }
+
+      const unchanged =
+        previous &&
+        (previous.alt_text || "") === item.altText &&
+        Number(previous.sort_order) === item.sortOrder &&
+        previous.is_active !== false === item.isActive;
+
+      if (unchanged) {
+        continue;
+      }
+
+      const { data, error } = await supabaseClient
+        .from("project_media")
+        .update(patch)
+        .eq("id", item.id)
+        .select("id");
+
+      if (error || !data || data.length === 0) {
+        throw error || new Error("project_media update did not apply");
+      }
+    }
+
+    await reloadMedia(projectId);
+
+    return warnings;
+  }
+
+  /*
+    Promotes every staged object of this Project into the public bucket before
+    the status flips. Compensation rules (brief section 16):
+
+      copy/verify fails   -> remove the public objects created so far, stay Draft
+      database write fails-> remove the public objects, keep existing references
+      staging cleanup fails-> new public state stands, report an orphan warning
+  */
+  async function promoteStagedMedia(projectId) {
+    const created = [];
+    const warnings = [];
+
+    const cover = coverField.getStored();
+    const mediaRows = loadedMedia.filter(row => row.bucket_name === STAGING_BUCKET);
+    const coverNeedsPromotion = Boolean(
+      cover && cover.desktopPath && cover.bucket === STAGING_BUCKET
+    );
+
+    if (!coverNeedsPromotion && mediaRows.length === 0) {
+      return warnings;
+    }
+
+    let promotedCover = null;
+    const promotedMedia = [];
+
+    try {
+      if (coverNeedsPromotion) {
+        promotedCover = await promoteVariantPair({ from: cover });
+        created.push({
+          bucket: promotedCover.bucket,
+          paths: [promotedCover.desktopPath, promotedCover.mobilePath]
+        });
+      }
+
+      for (const row of mediaRows) {
+        const promoted = await promoteVariantPair({
+          from: {
+            bucket: row.bucket_name,
+            desktopPath: row.desktop_path,
+            mobilePath: row.mobile_path
+          }
+        });
+
+        promotedMedia.push({ id: row.id, promoted, previous: row });
+        created.push({
+          bucket: promoted.bucket,
+          paths: [promoted.desktopPath, promoted.mobilePath]
+        });
+      }
+
+      if (promotedCover) {
+        const { data, error } = await supabaseClient
+          .from("projects")
+          .update({
+            cover_bucket: promotedCover.bucket,
+            cover_desktop_path: promotedCover.desktopPath,
+            cover_mobile_path: promotedCover.mobilePath
+          })
+          .eq("id", projectId)
+          .select("id");
+
+        if (error || !data || data.length === 0) {
+          throw error || new Error("cover promotion update did not apply");
+        }
+      }
+
+      for (const entry of promotedMedia) {
+        const { data, error } = await supabaseClient
+          .from("project_media")
+          .update({
+            bucket_name: entry.promoted.bucket,
+            desktop_path: entry.promoted.desktopPath,
+            mobile_path: entry.promoted.mobilePath
+          })
+          .eq("id", entry.id)
+          .select("id");
+
+        if (error || !data || data.length === 0) {
+          throw error || new Error("project_media promotion update did not apply");
+        }
+      }
+    } catch (error) {
+      // Nothing public may survive a failed promotion.
+      for (const entry of created) {
+        await removeObjects(entry.bucket, entry.paths);
+      }
+
+      throw error;
+    }
+
+    // Database now points at the public objects; staging copies are redundant.
+    if (promotedCover) {
+      const cleanup = await removeObjects(STAGING_BUCKET, [
+        cover.desktopPath,
+        cover.mobilePath
+      ]);
+
+      if (cleanup.failed.length > 0) {
+        warnings.push("staged cover files could not be removed");
+      }
+
+      coverField.commit({
+        bucket: promotedCover.bucket,
+        desktopPath: promotedCover.desktopPath,
+        mobilePath: promotedCover.mobilePath
+      });
+    }
+
+    for (const entry of promotedMedia) {
+      const cleanup = await removeObjects(STAGING_BUCKET, [
+        entry.previous.desktop_path,
+        entry.previous.mobile_path
+      ]);
+
+      if (cleanup.failed.length > 0) {
+        warnings.push(`staged files could not be removed (${entry.previous.desktop_path})`);
+      }
+    }
+
+    await reloadMedia(projectId);
+
+    return warnings;
+  }
+
   async function save({ forPublish = false } = {}) {
     if (busy) {
       return false;
@@ -881,12 +1307,33 @@ export function createProjectEditor({
       return false;
     }
 
+    let mediaWarnings = [];
+
+    try {
+      setBusy(true, "Uploading...");
+      mediaWarnings = await persistMedia(state.id);
+    } catch (error) {
+      console.error(error);
+      setBusy(false);
+      toast(
+        error && error.name === "MediaStorageError"
+          ? error.message
+          : "Project saved, but its images could not be updated. Any previous image is unchanged.",
+        "error"
+      );
+      resetBaselineFormOnly();
+      return false;
+    }
+
     setBusy(false);
     heading.textContent = trimmed(fields.title.value) || "Untitled project";
     refreshStatusUi();
     resetBaseline();
 
-    if (!forPublish) {
+    if (mediaWarnings.length > 0) {
+      // The database is correct; only leftover files remain.
+      toast(`Saved. Cleanup warning: ${mediaWarnings.join("; ")}.`, "error");
+    } else if (!forPublish) {
       toast(firstSaveMessage());
     }
 
@@ -939,6 +1386,27 @@ export function createProjectEditor({
 
     setBusy(true, "Publishing...");
 
+    /*
+      Media first: the Project must never become public while any of its images
+      still live only in the private staging bucket. A failure here leaves the
+      Project as a Draft with its staged media intact.
+    */
+    let promotionWarnings = [];
+
+    try {
+      promotionWarnings = await promoteStagedMedia(state.id);
+    } catch (error) {
+      console.error(error);
+      setBusy(false);
+      toast(
+        error && error.name === "MediaStorageError"
+          ? error.message
+          : "Could not publish the project images. The project is still a draft and its images are unchanged.",
+        "error"
+      );
+      return;
+    }
+
     const patch = { status: "published" };
 
     // published_at records the FIRST publish and is never overwritten later
@@ -970,7 +1438,13 @@ export function createProjectEditor({
 
     refreshStatusUi();
     syncSlugLock();
-    toast("Project published.");
+
+    toast(
+      promotionWarnings.length > 0
+        ? `Project published. Cleanup warning: ${promotionWarnings.join("; ")}.`
+        : "Project published.",
+      promotionWarnings.length > 0 ? "error" : "success"
+    );
 
     if (typeof onSaved === "function") {
       onSaved({ id: state.id, status: state.status });
@@ -1011,9 +1485,26 @@ export function createProjectEditor({
   saveButton.addEventListener("click", () => save());
   publishButton.addEventListener("click", publish);
 
-  previewButton.addEventListener("click", () => {
+  previewButton.addEventListener("click", async () => {
     // Preview never mutates or clears dirty state.
+    const coverUrl = await coverField.resolvePreviewUrl();
+
+    const documentation = await Promise.all(
+      documentationManager.getItems().map(async item => ({
+        altText: item.altText,
+        isActive: item.isActive,
+        pending: Boolean(item.pendingFiles) || !item.id,
+        url: item.pendingPreviewUrl
+          ? item.pendingPreviewUrl
+          : await resolveMediaUrl(item.bucket, item.desktopPath)
+      }))
+    );
+
     openProjectPreview({
+      coverUrl,
+      coverAlt: trimmed(fields.coverAlt.value),
+      coverPending: coverField.hasPending(),
+      documentation,
       title: trimmed(fields.title.value),
       slug: trimmed(fields.slug.value),
       cardCategory: trimmed(fields.cardCategory.value),
@@ -1039,6 +1530,8 @@ export function createProjectEditor({
     isDirty: computeDirty,
     getId: () => state.id,
     destroy() {
+      coverField.destroy();
+      documentationManager.destroy();
       clear(root);
     }
   };
