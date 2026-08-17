@@ -3,13 +3,19 @@
    Isolated feature — does not touch script.js/guestbook.js.
 
    Pipeline: loadExperiences() -> renderExperienceCards() ->
-   initExperienceStack(). loadExperiences() is the only piece that
-   will need to change when this is wired up to Supabase later —
-   rendering and the stack behavior are data-count agnostic and
-   work with 3, 8, 15+ records unchanged.
+   initExperienceStack(). Rendering and the stack behavior are
+   data-count agnostic and work with 1, 3, 12+ records unchanged.
+
+   PHASE 9B1 — PUBLIC CMS
+   ----------------------
+   The list below is now the offline fallback. It renders first so the
+   section is never empty, then published Supabase records replace it.
+   A failed request simply leaves the fallback in place.
 ========================================================= */
 
-document.addEventListener("DOMContentLoaded", () => {
+import { readTable, filled } from "./cms/client.js";
+
+(() => {
 
     const stackCol = document.getElementById("experienceStackCol");
 
@@ -18,13 +24,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     /* ============================
-       1. DATA SOURCE
-       Stand-in for a future Supabase fetch. Field names mirror the
-       planned schema (title/role/description/sort_order etc.) loosely
-       so swapping this function later is a small, contained change.
+       1. FALLBACK DATA SOURCE
+       Field names mirror the real schema 1:1, so the CMS rows and
+       these records flow through the same renderer untouched.
     ============================ */
 
-    function loadExperiences() {
+    function loadFallbackExperiences() {
         return [
             {
                 id: 1,
@@ -98,9 +103,11 @@ document.addEventListener("DOMContentLoaded", () => {
     ============================ */
 
     function renderExperienceCards(experiences) {
-        stackCol.innerHTML = "";
+        while (stackCol.firstChild) {
+            stackCol.removeChild(stackCol.firstChild);
+        }
 
-        experiences.forEach((exp) => {
+        experiences.forEach((exp, index) => {
             const wrap = document.createElement("div");
             wrap.className = "experience-card-wrap";
 
@@ -112,7 +119,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const number = document.createElement("span");
             number.className = "experience-number";
-            number.textContent = exp.number;
+
+            // Display-only counter: the schema has no number column, so
+            // the badge follows the rendered position.
+            number.textContent = String(index + 1).padStart(2, "0");
 
             const type = document.createElement("span");
             type.className = "experience-type";
@@ -137,7 +147,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const tags = document.createElement("div");
             tags.className = "experience-tags";
-            exp.tags.forEach((label) => {
+            (exp.tags || []).forEach((label) => {
                 const tag = document.createElement("span");
                 tag.textContent = label;
                 tags.appendChild(tag);
@@ -168,7 +178,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function initExperienceStack(wraps) {
         if (wraps.length === 0) {
-            return;
+            return null;
         }
 
         function getTuning() {
@@ -196,23 +206,32 @@ document.addEventListener("DOMContentLoaded", () => {
         applyOffsets();
 
         let resizeTimer = null;
-        window.addEventListener("resize", () => {
+
+        function handleResize() {
             window.clearTimeout(resizeTimer);
             resizeTimer = window.setTimeout(applyOffsets, 150);
-        });
+        }
+
+        window.addEventListener("resize", handleResize);
+
+        /*
+            Every controller hands back the exact teardown for what it
+            created. Re-rendering the stack for CMS data must not leave a
+            second resize listener or a second observer behind.
+        */
+
+        function destroy() {
+            window.clearTimeout(resizeTimer);
+            window.removeEventListener("resize", handleResize);
+        }
 
         const prefersReducedMotion = window.matchMedia(
             "(prefers-reduced-motion: reduce)"
         ).matches;
 
-        if (prefersReducedMotion) {
+        if (prefersReducedMotion || !("IntersectionObserver" in window)) {
             wraps.forEach((wrap) => wrap.classList.add("is-settled"));
-            return;
-        }
-
-        if (!("IntersectionObserver" in window)) {
-            wraps.forEach((wrap) => wrap.classList.add("is-settled"));
-            return;
+            return { destroy };
         }
 
         const observer = new IntersectionObserver(
@@ -229,10 +248,142 @@ document.addEventListener("DOMContentLoaded", () => {
         );
 
         wraps.forEach((wrap) => observer.observe(wrap));
+
+        return {
+            destroy() {
+                observer.disconnect();
+                destroy();
+            },
+        };
     }
 
-    const experiences = loadExperiences();
-    const wraps = renderExperienceCards(experiences);
-    initExperienceStack(wraps);
 
-});
+    /* ============================
+       4. LIFECYCLE
+       One controller at a time. Mounting always tears the previous one
+       down first, so the stack can be re-rendered from CMS data without
+       duplicating listeners, observers or stale card references.
+    ============================ */
+
+    let controller = null;
+
+    function mount(experiences) {
+        if (controller) {
+            controller.destroy();
+            controller = null;
+        }
+
+        const wraps = renderExperienceCards(experiences);
+
+        // Measurement happens here, after the cards are in the document,
+        // so offsets and z-index always match the rendered count.
+        controller = initExperienceStack(wraps);
+    }
+
+
+    /* ============================
+       5. PUBLIC CMS SOURCE
+    ============================ */
+
+    const section = document.getElementById("experience");
+
+    /*
+        Zero published records is a real state, not an error: showing the
+        old hardcoded history would present stale content as if it were
+        current. The least disruptive public behaviour the existing design
+        supports is to drop the section entirely — an empty stack column
+        would otherwise leave a lopsided half-section behind — together
+        with the anchors that would then scroll nowhere.
+    */
+
+    function hideExperienceSection() {
+        // Tear the controller down and drop the fallback cards entirely, so
+        // the outdated history is not merely invisible but absent from the
+        // document, the accessibility tree and any crawler.
+        mount([]);
+
+        if (section) {
+            section.hidden = true;
+        }
+
+        document
+            .querySelectorAll('a[href="#experience"]')
+            .forEach((link) => {
+                link.hidden = true;
+            });
+    }
+
+    function normalize(row) {
+        const tags = Array.isArray(row.experience_tags) ? row.experience_tags : [];
+
+        return {
+            id: row.id,
+            type: filled(row.type) ? row.type : "",
+            title: filled(row.title) ? row.title : "",
+            role: filled(row.role) ? row.role : "",
+            location: filled(row.location) ? row.location : "",
+            description: filled(row.description) ? row.description : "",
+            tags: tags
+                .slice()
+                .sort((a, b) => {
+                    const order =
+                        (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0);
+
+                    if (order !== 0) {
+                        return order;
+                    }
+
+                    return String(a.created_at || "").localeCompare(
+                        String(b.created_at || "")
+                    );
+                })
+                .map((tag) => tag.label)
+                .filter((label) => filled(label)),
+        };
+    }
+
+    /*
+        One request for the whole section: tags are embedded through the
+        experience_id foreign key rather than fetched per card.
+
+        The status/deleted_at filters are defence in depth — the public
+        RLS policies already restrict both tables to published, non-deleted
+        rows, so a tampered query string cannot widen visibility.
+    */
+
+    async function loadPublishedExperiences() {
+        const rows = await readTable(
+            "experiences",
+            "select=id,type,title,role,location,description,sort_order,created_at," +
+            "experience_tags(label,sort_order,created_at)" +
+            "&status=eq.published&deleted_at=is.null" +
+            "&order=sort_order.asc,created_at.asc"
+        );
+
+        return rows.map(normalize);
+    }
+
+
+    /* ============================
+       6. START
+       The fallback renders immediately so the section is usable before
+       and regardless of the network, then CMS data replaces it.
+    ============================ */
+
+    mount(loadFallbackExperiences());
+
+    loadPublishedExperiences()
+        .then((experiences) => {
+            if (experiences.length === 0) {
+                hideExperienceSection();
+                return;
+            }
+
+            mount(experiences);
+        })
+        .catch((error) => {
+            // Fallback stays on screen; this is a development signal only.
+            console.warn("[cms] experiences unavailable", error);
+        });
+
+})();
