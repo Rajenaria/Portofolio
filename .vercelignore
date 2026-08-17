@@ -1,0 +1,29 @@
+# Nothing here is part of the website. Without this file Vercel serves the
+# repository root verbatim, which would publish the security audit, the full
+# database schema, every RLS policy and the Supabase config at predictable
+# URLs on the live site.
+
+# Documentation — includes the security audit and database design
+docs/
+
+# Backend definition — migrations, RLS policies, Edge Functions, auth config
+supabase/
+
+# Developer tooling, never executed in a browser
+scripts/
+requirements.txt
+package.json
+package-lock.json
+node_modules/
+
+# Repository notes
+README.md
+PROJECT.md
+AGENTS.md
+
+# Local artifacts
+__pycache__/
+.venv/
+.playwright-mcp/
+.env
+.env.*

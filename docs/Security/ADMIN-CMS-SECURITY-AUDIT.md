@@ -942,3 +942,113 @@ For `/admin` specifically, also send the full CSP as a response header
 Netlify (`_headers`), Vercel (`vercel.json` → `headers`), Cloudflare Pages
 (`_headers`) and Nginx (`add_header`) all support this directly; the exact file
 depends on the host, which is not yet chosen.
+
+---
+
+# Vercel Deployment Preparation (Phase 10A)
+
+Hosting decision is locked: **Vercel Hobby**, private GitHub repository,
+Supabase remains the backend. This section records only the Vercel-specific
+requirements; the header rationale is in the section above.
+
+## Repository artifacts
+
+| File | Purpose |
+|---|---|
+| `vercel.json` | Security headers per route, cache policy, `cleanUrls: false` |
+| `.vercelignore` | Keeps `docs/`, `supabase/`, `scripts/`, `node_modules/` and repo notes **off the public site** |
+
+`.vercelignore` is a security control, not tidiness. Vercel serves the
+repository root verbatim; without it the live site would publish this audit,
+the full database schema, every RLS policy and `supabase/config.toml` at
+predictable URLs.
+
+`cleanUrls` is deliberately **false**. Enabling it would rewrite
+`/project.html` to `/project`, breaking every CMS-generated card link
+(`project.html?slug=…`). No rewrites are configured at all — the site is real
+HTML files and must be served as such.
+
+## Header decisions worth knowing
+
+- **`frame-ancestors 'none'` is now a real response header** for every route,
+  with `X-Frame-Options: DENY` as the legacy companion. This closes L-8 /
+  MT-9, which a `<meta>` CSP could never express.
+- **`style-src` includes `'unsafe-inline'`.** This was measured, not assumed:
+  serving the strict policy locally produced 25 violations from the site's own
+  slider, carousel and certificate code writing `element.style.*`. Splitting
+  into `style-src-elem` / `style-src-attr` was tried and rejected — Chrome
+  classifies those writes as element-level, so the split blocked them while
+  adding no protection. Residual risk is low: every CMS renderer builds DOM
+  with `createElement` + `textContent` and there is no `innerHTML` path for
+  database content.
+- **`script-src` has no `'unsafe-inline'` or `'unsafe-eval'` anywhere**, and
+  no directive uses `*`.
+- **`connect-src` is scoped** to `'self'`, the production Supabase origin and
+  `https://api.iconify.design` (the icon font component fetches icon data at
+  runtime). The Iconify fallback hosts `api.simplesvg.com` / `api.unisvg.com`
+  are deliberately excluded; if the primary is unavailable a handful of icons
+  simply do not render.
+- **`/admin` gets a stricter, separate CSP** (`default-src 'none'`, plus
+  `blob:` which the image processor needs) rather than weakening the public
+  policy to cover both. It also carries `Cache-Control: no-store` and
+  `X-Robots-Tag: noindex, nofollow, noarchive`.
+- **HSTS is `max-age=31536000` with no `includeSubDomains` and no `preload`.**
+  On a `*.vercel.app` hostname a subdomain-wide or preload commitment would be
+  claiming ground the project does not own. Revisit only after a custom apex
+  domain is in place and every subdomain is HTTPS.
+- **HTML, CSS and JS are `max-age=0, must-revalidate`** so nobody is stranded
+  on a stale `index.html`, `project.html` or CMS module. Only `/assets/*` gets
+  a longer TTL (1 day, still revalidated).
+
+## ⚠️ Preview deployments write to production Supabase
+
+There is no separate Preview database. Environment resolution is by hostname:
+anything that is not localhost resolves to the **production** Supabase project,
+which includes every `*.vercel.app` Preview URL.
+
+**Admin actions performed on a Vercel Preview mutate production data.** That is
+intentional — the Preview is how production CMS content will be populated
+before launch — but it must be understood before the first Preview login.
+
+Consequence: **enable Vercel Authentication (Deployment Protection) for Preview
+deployments before signing into Preview `/admin`.** An unprotected Preview URL
+is a public admin login pointed at the production database.
+
+Production itself is meant to be publicly reachable and must **not** be
+protected.
+
+## Deployment gates
+
+**Gate 1 — database.** `supabase db push` applies the two pending migrations
+(`20260815234351_harden_public_default_privileges`,
+`20260818020000_security_hardening_pre_production`). Production is currently
+missing both.
+
+**Gate 2 — content.** Production CMS is empty today: 0 published Experiences,
+0 published Projects, 0 public Technologies, Profile/About unconfigured, 3 Hero
+slots with no images. Deploying against that state renders a **degraded** site:
+Hero/About fall back to static V1 copy, the Tech Stack shows three empty group
+headings, and the Experience and Portfolio sections hide themselves along with
+their navigation links. Do **not** promote to Production until the CMS holds:
+
+- intended Profile / Hero / About content
+- exactly 3 intended Hero media slots
+- intended Technologies across the three public groups
+- intended Published Experiences
+- intended Published Projects, with project media verified
+
+**Gate 3 — Auth URLs.** Once the final production hostname is known, set the
+Supabase Auth **Site URL** and redirect allow-list to match it.
+
+**Gate 4 — smoke test.** Public: Hero/About, Tech Stack, Experience, Projects,
+Project Detail, Guestbook read + submit. Admin: login → MFA → dashboard → one
+edit per module → storage upload → logout. Security: anonymous writes denied,
+Draft content not exposed, `portfolio-staging` unreachable.
+
+## Rollback
+
+Vercel keeps every previous deployment; rolling the site back is an instant
+promote of the prior deployment and needs no repository change. Database
+rollback is separate and is covered by the forward-fix strategy recorded in the
+hardening section above — a bad policy is corrected by a new migration, never
+by editing an applied one.
