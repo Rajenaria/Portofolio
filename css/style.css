@@ -6,6 +6,19 @@
     box-sizing: border-box;
 }
 
+/*
+   The public CMS modules hide a section and its navigation
+   entries with the hidden attribute when nothing is published.
+   Several classes below set display explicitly, which outranks
+   the browser's own [hidden] rule and would leave a link
+   pointing at a section that is no longer on the page, so the
+   attribute is given the last word here.
+*/
+
+[hidden] {
+    display: none !important;
+}
+
 html {
     scroll-behavior: smooth;
 }
