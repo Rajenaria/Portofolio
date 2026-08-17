@@ -42,13 +42,7 @@ function createPlaceholderRoute({ name, title, subtitle, note }) {
   };
 }
 
-export const profileRoute = createPlaceholderRoute({
-  name: "profile",
-  title: "Profile & About",
-  subtitle: "Manage the content displayed in your Hero and About sections.",
-  note:
-    "Hero, About Me and Organization editing will be added in a later phase."
-});
+// Profile & About is implemented: see modules/profile/index.js.
 
 export const experienceRoute = createPlaceholderRoute({
   name: "experience",

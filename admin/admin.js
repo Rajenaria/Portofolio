@@ -26,7 +26,6 @@ import {
 } from "./js/modules/dashboard.js";
 
 import {
-  profileRoute,
   experienceRoute,
   projectsRoute
 } from "./js/modules/placeholders.js";
@@ -34,6 +33,10 @@ import {
 import {
   technologiesRoute
 } from "./js/modules/technologies.js";
+
+import {
+  profileRoute
+} from "./js/modules/profile/index.js";
 
 
 const screens = {

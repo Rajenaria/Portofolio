@@ -1230,6 +1230,457 @@ body.has-modal-open {
 }
 
 /* --------------------------------------------------------------------------
+   13g-a. PROFILE & ABOUT — TABS, SUBSECTIONS, ORDERED LISTS, MEDIA, PREVIEW
+   -------------------------------------------------------------------------- */
+
+.tab-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 24px;
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--admin-border-soft);
+}
+
+.tab-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 14px;
+  margin-bottom: -1px;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: var(--admin-text-secondary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.tab-button:hover {
+  color: var(--admin-text-primary);
+}
+
+.tab-button.is-active {
+  border-bottom-color: var(--admin-primary);
+  color: var(--admin-text-primary);
+  font-weight: 600;
+}
+
+.tab-dirty {
+  color: var(--admin-warning);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.tab-panel-slot:focus {
+  outline: none;
+}
+
+.profile-tab-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.admin-subsection {
+  padding: 20px;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-soft);
+  border-radius: var(--radius-lg);
+}
+
+.subsection-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.subsection-title {
+  margin-bottom: 14px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.subsection-header .subsection-title {
+  margin-bottom: 0;
+}
+
+.admin-subsection.is-busy {
+  opacity: 0.7;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.admin-subsection .form-field {
+  margin-bottom: 16px;
+}
+
+.admin-subsection .form-grid .form-field {
+  margin-bottom: 0;
+}
+
+.admin-textarea {
+  width: 100%;
+  min-height: 90px;
+  padding: 10px 12px;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--radius-md);
+  color: var(--admin-text-primary);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.admin-textarea:focus {
+  border-color: var(--admin-primary);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
+}
+
+.form-help-inline {
+  flex-basis: 100%;
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* ---- media field ---- */
+
+.hero-slots {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.hero-slot {
+  min-width: 0;
+  padding: 16px;
+  background: var(--admin-surface-subtle);
+  border: 1px solid var(--admin-border-soft);
+  border-radius: var(--radius-md);
+}
+
+.media-field {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.media-field-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.media-field-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  padding: 8px;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-soft);
+  border-radius: var(--radius-md);
+}
+
+.media-field-image {
+  display: block;
+  max-width: 100%;
+  max-height: 220px;
+  height: auto;
+  border-radius: var(--radius-sm);
+}
+
+.media-field-empty {
+  color: var(--admin-text-muted);
+  font-size: 13px;
+}
+
+.media-field-detail {
+  color: var(--admin-text-muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.media-field-line {
+  margin-bottom: 4px;
+}
+
+.media-field-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.status-badge-pending {
+  background: var(--admin-warning-bg);
+  color: var(--admin-warning);
+}
+
+.media-replace-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.media-replace-busy {
+  color: var(--admin-text-secondary);
+  font-size: 13px;
+}
+
+.media-replace-busy:empty {
+  display: none;
+}
+
+/* ---- ordered lists ---- */
+
+.ordered-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: none;
+}
+
+.ordered-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  background: var(--admin-surface-subtle);
+  border: 1px solid var(--admin-border-soft);
+  border-radius: var(--radius-md);
+}
+
+.ordered-row.is-inactive {
+  opacity: 0.72;
+}
+
+.ordered-position {
+  flex: 0 0 auto;
+  color: var(--admin-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  padding-top: 2px;
+}
+
+.ordered-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ordered-row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ordered-row-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.ordered-title {
+  font-size: 14px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.ordered-description {
+  color: var(--admin-text-secondary);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.ordered-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.ordered-action {
+  padding: 5px 9px;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--radius-sm);
+  color: var(--admin-text-primary);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.ordered-action:hover:not(:disabled) {
+  background: var(--admin-surface-subtle);
+}
+
+.ordered-action:disabled {
+  color: var(--admin-text-muted);
+  cursor: not-allowed;
+}
+
+.ordered-action.is-danger {
+  color: var(--admin-danger);
+}
+
+.gallery-row {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.gallery-thumb {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 88px;
+  height: 66px;
+  overflow: hidden;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-soft);
+  border-radius: var(--radius-sm);
+}
+
+.gallery-thumb-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.gallery-thumb-fallback {
+  padding: 4px;
+  color: var(--admin-text-muted);
+  font-size: 11px;
+  text-align: center;
+}
+
+.gallery-meta {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* ---- read-only content preview ---- */
+
+.content-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.preview-line {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.preview-label {
+  color: var(--admin-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.preview-value {
+  font-size: 14px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.preview-heading {
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.preview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.preview-list-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.preview-list-item-block {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.preview-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.preview-photo {
+  margin: 0;
+  min-width: 0;
+}
+
+.preview-photo-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--admin-border-soft);
+  border-radius: var(--radius-sm);
+}
+
+.preview-photo-caption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  color: var(--admin-text-secondary);
+  font-size: 12px;
+}
+
+.preview-photo-title {
+  font-weight: 600;
+}
+
+@media (min-width: 700px) {
+  .form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 900px) {
+  .hero-slots {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* --------------------------------------------------------------------------
    13g-b. IMAGE PICKER
    Reusable component (js/core/image-picker.js). Neutral surface so it can be
    dropped into a form section or a modal without restyling.
