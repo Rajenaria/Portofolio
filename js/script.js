@@ -1172,9 +1172,17 @@ if (
     orgDotsContainer
 ) {
 
+    /*
+        Live HTMLCollection, bukan NodeList statis.
+
+        Foto dokumentasi bisa diisi ulang oleh CMS setelah blok ini
+        berjalan, jadi jumlahnya harus ikut berubah sendiri supaya
+        dots, wrap next/prev, dan drag tetap sinkron.
+    */
+
     const orgPhotos =
-        orgTrack.querySelectorAll(
-            ".about-org-photo"
+        orgTrack.getElementsByClassName(
+            "about-org-photo"
         );
 
 
@@ -1201,7 +1209,7 @@ if (
             "";
 
 
-        orgPhotos.forEach(
+        Array.from(orgPhotos).forEach(
             (_, index) => {
 
                 const dot =
@@ -1621,6 +1629,29 @@ if (
     createOrganizationDots();
 
     updateOrganizationSlider();
+
+
+    /* =====================================
+       REFRESH HOOK
+
+       Dipakai integrasi CMS publik setelah isi
+       #aboutOrgTrack diganti. Hanya menjalankan
+       ulang dua fungsi di atas: tidak ada listener,
+       timer, atau tombol baru yang dibuat.
+    ===================================== */
+
+    window.refreshOrganizationGallery =
+        function () {
+
+            orgIndex =
+                0;
+
+
+            createOrganizationDots();
+
+            updateOrganizationSlider();
+
+        };
 
 }
 
