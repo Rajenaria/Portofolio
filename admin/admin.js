@@ -27,7 +27,7 @@ import {
 
 import {
   projectsRoute
-} from "./js/modules/placeholders.js";
+} from "./js/modules/projects/index.js";
 
 import {
   experienceRoute
