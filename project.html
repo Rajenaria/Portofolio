@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Project — Rajendra Aria Nismara
+    </title>
+
+    <!--
+        The heading, cover, paragraphs, tools and documentation
+        below are filled in from the CMS by js/cms/project-detail.js,
+        keyed on ?slug=. The markup is the V1 detail layout with its
+        content removed, so the page renders the same design for
+        every Project instead of one file per Project.
+    -->
+
+    <link
+        rel="stylesheet"
+        href="css/project-detail.css?v=1"
+    >
+
+
+    <!-- ICONIFY -->
+
+    <!--
+        Pinned with Subresource Integrity. The version in the URL
+        is already fixed, so the bytes are immutable and a
+        compromised CDN cannot swap the script out.
+    -->
+
+    <script
+        src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"
+        integrity="sha384-Hj2pe/JEGitdWiVWNPuXWhAdYtdM+ZO+s0KuZHaAk1oAbeAtNas7R6hKlmbInTM4"
+        crossorigin="anonymous"
+    ></script>
+
+</head>
+
+<body>
+
+
+    <!-- =========================================
+         TOP NAV
+    ========================================= -->
+
+    <nav class="project-top-nav">
+
+        <div class="project-top-nav-inner">
+
+            <a
+                href="index.html#portfolio"
+                class="project-back"
+            >
+                ← Back to Portfolio
+            </a>
+
+
+            <a
+                href="index.html"
+                class="project-owner"
+            >
+                Rajendra Aria Nismara.
+            </a>
+
+        </div>
+
+    </nav>
+
+
+
+    <main>
+
+
+        <!-- =========================================
+             NOT FOUND / ERROR STATE
+
+             One state for every failure: unknown slug, missing
+             slug, and Projects that are not published all land
+             here, so the page never reveals that a Project
+             exists but is hidden.
+        ========================================= -->
+
+        <section
+            class="project-detail-hero project-state"
+            id="projectState"
+        >
+
+            <div class="project-page-container">
+
+                <p class="project-number">
+                    PROJECT
+                </p>
+
+                <h1 id="projectStateTitle">
+                    Project not found.
+                </h1>
+
+                <p
+                    class="project-intro"
+                    id="projectStateMessage"
+                >
+                    The project you are looking for is not available.
+                </p>
+
+                <div class="project-links">
+
+                    <a href="index.html#portfolio">
+                        ← Back to Projects
+                    </a>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =========================================
+             PROJECT CONTENT
+        ========================================= -->
+
+        <div
+            id="projectContent"
+            hidden
+        >
+
+
+            <!-- HERO -->
+
+            <section class="project-detail-hero">
+
+                <div class="project-page-container">
+
+
+                    <p
+                        class="project-number"
+                        id="projectNumber"
+                    ></p>
+
+
+                    <h1 id="projectTitle">
+                        <span id="projectTitleHighlight"></span>
+                    </h1>
+
+
+                    <p
+                        class="project-intro"
+                        id="projectIntro"
+                    ></p>
+
+
+
+                    <!-- PROJECT META -->
+
+                    <div
+                        class="project-meta"
+                        id="projectMeta"
+                    ></div>
+
+
+                </div>
+
+            </section>
+
+
+
+            <!-- COVER -->
+
+            <section id="projectCoverSection">
+
+                <div class="project-page-container">
+
+                    <div
+                        class="project-cover"
+                        id="projectCover"
+                    ></div>
+
+                </div>
+
+            </section>
+
+
+
+            <!-- ABOUT PROJECT -->
+
+            <section id="projectAboutSection">
+
+                <div
+                    class="
+                        project-page-container
+                        project-about
+                    "
+                >
+
+
+                    <!-- DESCRIPTION -->
+
+                    <div
+                        class="project-about-text"
+                        id="projectAboutText"
+                    >
+
+                        <p class="project-small-label">
+                            ABOUT THE PROJECT
+                        </p>
+
+
+                        <h2 id="projectAboutHeading"></h2>
+
+
+                        <div id="projectParagraphs"></div>
+
+
+                        <div
+                            class="project-links"
+                            id="projectLinks"
+                            hidden
+                        ></div>
+
+                    </div>
+
+
+
+                    <!-- TECH -->
+
+                    <aside
+                        class="project-tools"
+                        id="projectTools"
+                        hidden
+                    >
+
+                        <p class="project-small-label">
+                            TOOLS &amp; TECHNOLOGY
+                        </p>
+
+
+                        <h3>
+                            Tech Stack
+                        </h3>
+
+
+                        <div
+                            class="project-tool-list"
+                            id="projectToolList"
+                        ></div>
+
+                    </aside>
+
+
+                </div>
+
+            </section>
+
+
+
+            <!-- DOCUMENTATION -->
+
+            <section
+                class="project-documentation"
+                id="projectDocumentation"
+                hidden
+            >
+
+                <div class="project-page-container">
+
+
+                    <div class="project-documentation-heading">
+
+                        <p class="project-small-label">
+                            DOCUMENTATION
+                        </p>
+
+
+                        <h2>
+                            Project Preview.
+                        </h2>
+
+                    </div>
+
+
+
+                    <div
+                        class="project-documentation-grid"
+                        id="projectDocumentationGrid"
+                    ></div>
+
+
+                </div>
+
+            </section>
+
+
+
+            <!-- BOTTOM NAVIGATION -->
+
+            <section class="project-bottom-navigation">
+
+                <div
+                    class="
+                        project-page-container
+                        project-bottom-inner
+                    "
+                >
+
+
+                    <a
+                        href="index.html#portfolio"
+                        class="project-bottom-link"
+                    >
+
+                        <small>
+                            BACK
+                        </small>
+
+                        <span>
+                            ← All Projects
+                        </span>
+
+                    </a>
+
+
+                    <a
+                        href="index.html#portfolio"
+                        class="project-bottom-link"
+                        id="projectNextLink"
+                        hidden
+                    >
+
+                        <small>
+                            NEXT PROJECT
+                        </small>
+
+                        <span id="projectNextTitle"></span>
+
+                    </a>
+
+
+                </div>
+
+            </section>
+
+
+        </div>
+
+
+    </main>
+
+
+
+    <!-- =========================================
+         FOOTER
+    ========================================= -->
+
+    <footer class="project-footer">
+
+        <div class="project-footer-inner">
+
+            <span>
+                © 2026 Rajendra Aria Nismara
+            </span>
+
+            <span>
+                Portfolio Project Documentation
+            </span>
+
+        </div>
+
+    </footer>
+
+
+    <script src="js/cms/project-detail.js" type="module"></script>
+
+</body>
+
+</html>
