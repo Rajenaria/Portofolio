@@ -127,17 +127,44 @@ function initialsFor(name) {
 }
 
 /*
-    Builds the icon element for one technology row. Only the
-    static ICON_MAP entry (never the raw icon_key) supplies the
-    class, icon name, image src or fallback text that ends up in
-    the DOM.
+    An Iconify id, "collection:name", is what the Admin icon picker
+    now stores. The pattern is deliberately narrow: lowercase
+    segments and a single colon, so a stored value can only ever
+    name an icon. It cannot carry markup, a scheme, a path
+    traversal or whitespace.
+*/
+
+const ICONIFY_ID_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*:[a-z0-9]+(-[a-z0-9]+)*$/;
+
+/*
+    Builds the icon element for one technology row.
+
+    Two supported shapes, both identifier-only:
+
+      - an Iconify id, handed to <iconify-icon> after matching the
+        pattern above. Iconify fetches and renders the SVG itself;
+        this module never touches SVG markup.
+      - a legacy bare key from before the picker existed, resolved
+        through the static ICON_MAP.
+
+    Anything else, including an unknown or malformed value, falls
+    back to the safe initials chip rather than rendering nothing.
 */
 
 function buildIcon(row) {
 
-    const entry = typeof row.icon_key === "string"
-        ? ICON_MAP[row.icon_key]
-        : undefined;
+    const key = typeof row.icon_key === "string" ? row.icon_key.trim() : "";
+
+    if (ICONIFY_ID_PATTERN.test(key)) {
+
+        const icon = document.createElement("iconify-icon");
+        icon.className = "tech-iconify";
+        icon.setAttribute("icon", key);
+        return icon;
+
+    }
+
+    const entry = key !== "" ? ICON_MAP[key] : undefined;
 
     if (!entry) {
 

@@ -194,7 +194,7 @@ export function createProjectEditor({
       label: "Category",
       maxLength: LIMITS.cardCategory,
       value: record ? record.card_category : "",
-      help: "Shown on the Portfolio card, for example: UI / UX, Web Development."
+      help: "Shown on the Portfolio card, for example: UI / UX, Web Development. Required before publishing."
     }),
     shortDescription: textareaField({
       id: "project-short-description",
@@ -202,7 +202,7 @@ export function createProjectEditor({
       maxLength: LIMITS.shortDescription,
       value: record ? record.short_description : "",
       rows: 3,
-      help: "Plain text shown on the Portfolio card."
+      help: "Plain text shown on the Portfolio card. Required before publishing."
     }),
     detailTitleMain: textField({
       id: "project-detail-title-main",
@@ -221,25 +221,28 @@ export function createProjectEditor({
       label: "Introduction",
       value: record ? record.detail_intro : "",
       rows: 4,
-      help: "Plain text only. No HTML or formatting markup."
+      help: "Plain text only. No HTML or formatting markup. Required before publishing."
     }),
     role: textField({
       id: "project-role",
       label: "Role",
       maxLength: LIMITS.role,
-      value: record ? record.role : ""
+      value: record ? record.role : "",
+      help: "Required before publishing."
     }),
     projectType: textField({
       id: "project-type",
       label: "Project Type",
       maxLength: LIMITS.projectType,
-      value: record ? record.project_type : ""
+      value: record ? record.project_type : "",
+      help: "Required before publishing."
     }),
     aboutHeading: textField({
       id: "project-about-heading",
       label: "About Heading",
       maxLength: LIMITS.aboutHeading,
-      value: record ? record.about_heading : ""
+      value: record ? record.about_heading : "",
+      help: "Required before publishing."
     }),
     githubUrl: textField({
       id: "project-github-url",

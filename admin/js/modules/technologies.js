@@ -54,8 +54,38 @@ const ICON_KEY_MAX = 120;
 
 const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
-// Plain identifier only: no markup, no URL, no whitespace.
-const ICON_KEY_PATTERN = /^[a-z0-9][a-z0-9._-]*$/;
+/*
+  Two accepted shapes, both plain identifiers — never markup, URLs or
+  whitespace:
+
+    1. an Iconify id, "collection:name" (simple-icons:nextdotjs). This is what
+       the picker writes and what the public renderer hands to <iconify-icon>.
+    2. a legacy bare key (docker, figma) still stored on rows created before
+       the picker existed, resolved through the public site's local icon map.
+
+  Neither shape can contain <, >, ", /, whitespace or a scheme, so a stored
+  value can only ever be an icon identifier — it can never become markup, a
+  data: URL or a path traversal.
+*/
+
+const ICONIFY_ID_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*:[a-z0-9]+(-[a-z0-9]+)*$/;
+
+const LEGACY_ICON_KEY_PATTERN = /^[a-z0-9][a-z0-9._-]*$/;
+
+function isValidIconKey(value) {
+  return ICONIFY_ID_PATTERN.test(value) || LEGACY_ICON_KEY_PATTERN.test(value);
+}
+
+/*
+  Iconify's public API. Search feeds the picker; the SVG endpoint feeds the
+  preview through a plain <img>, which cannot execute script and needs no
+  innerHTML. Both origins are added to the Admin CSP as connect-src / img-src.
+*/
+
+const ICONIFY_API = "https://api.iconify.design";
+
+// Brand/technology icons live here, so they are offered first.
+const ICONIFY_PREFERRED_PREFIX = "simple-icons";
 
 export const technologiesRoute = {
   name: "technologies",
@@ -836,12 +866,14 @@ async function render(container, { signal }) {
 
     const iconField = textField({
       id: "technology-icon-key",
-      label: "Icon Key",
+      label: "Icon (Iconify id)",
       maxLength: ICON_KEY_MAX,
       value: existing && existing.icon_key ? existing.icon_key : "",
       help:
-        "Optional plain identifier, for example: docker. Icons are mapped by the application; markup is not accepted."
+        "Search below, or type an Iconify id such as simple-icons:react. Identifiers only — markup is not accepted."
     });
+
+    const iconPicker = createIconPicker(iconField);
 
     const publicField = checkboxField({
       id: "technology-public",
@@ -868,6 +900,7 @@ async function render(container, { signal }) {
       form,
       nameField.node,
       slugField.node,
+      iconPicker.node,
       iconField.node,
       publicField.node,
       groupField.node,
@@ -1118,9 +1151,9 @@ async function render(container, { signal }) {
     if (values.iconKey !== "") {
       if (values.iconKey.length > ICON_KEY_MAX) {
         errors.iconKey = `Use ${ICON_KEY_MAX} characters or fewer.`;
-      } else if (!ICON_KEY_PATTERN.test(values.iconKey)) {
+      } else if (!isValidIconKey(values.iconKey)) {
         errors.iconKey =
-          "Use a plain identifier: lowercase letters, numbers, dots, hyphens or underscores.";
+          "Pick an icon from the search, or type an Iconify id such as simple-icons:react.";
       }
     }
 
@@ -1144,6 +1177,227 @@ async function render(container, { signal }) {
       ) + 1
     );
   }
+}
+
+/* ------------------------------------------------------------------ */
+/* Icon picker                                                         */
+/*                                                                     */
+/* Searches Iconify rather than shipping a hand-maintained icon list,  */
+/* so a new technology (React, Next.js, Supabase…) needs no code       */
+/* change. Only the identifier is ever stored.                         */
+/*                                                                     */
+/* SECURITY: results are rendered as <img src=".../<prefix>/<name>.svg">*/
+/* built from an identifier that already matched ICONIFY_ID_PATTERN,   */
+/* then encoded. No SVG payload is ever parsed, injected or trusted —  */
+/* an <img> cannot execute script, and there is no innerHTML here.     */
+/* ------------------------------------------------------------------ */
+
+function iconPreviewUrl(iconId) {
+  if (!ICONIFY_ID_PATTERN.test(iconId)) {
+    return null;
+  }
+
+  const [prefix, name] = iconId.split(":");
+
+  return `${ICONIFY_API}/${encodeURIComponent(prefix)}/${encodeURIComponent(name)}.svg`;
+}
+
+function createIconPicker(iconField) {
+  const node = el("div", "form-field icon-picker");
+
+  const label = el("label", "form-label", "Icon Search");
+  label.htmlFor = "technology-icon-search";
+  append(node, label);
+
+  const search = el("input", "admin-input");
+  search.type = "search";
+  search.id = "technology-icon-search";
+  search.placeholder = "Search icons… e.g. React, Next.js, Docker";
+  search.autocomplete = "off";
+  search.spellcheck = false;
+  append(node, search);
+
+  const help = el(
+    "p",
+    "form-help",
+    "Brand icons are listed first. Selecting one fills the Iconify id below."
+  );
+  append(node, help);
+
+  const status = el("p", "form-help icon-picker-status");
+  status.setAttribute("role", "status");
+  status.setAttribute("aria-live", "polite");
+  append(node, status);
+
+  const results = el("div", "icon-picker-results");
+  append(node, results);
+
+  /* ---- live preview of whatever the id field currently holds ---- */
+
+  const preview = el("div", "icon-picker-preview");
+  const previewImg = el("img", "icon-picker-preview-img");
+  previewImg.alt = "";
+  previewImg.setAttribute("aria-hidden", "true");
+  const previewText = el("span", "icon-picker-preview-text");
+  append(preview, previewImg, previewText);
+  append(node, preview);
+
+  function renderPreview() {
+    const value = iconField.input.value.trim();
+
+    if (value === "") {
+      previewImg.removeAttribute("src");
+      previewImg.hidden = true;
+      previewText.textContent = "No icon selected.";
+      return;
+    }
+
+    const url = iconPreviewUrl(value);
+
+    if (!url) {
+      // A legacy bare key has no Iconify preview; it still resolves on the
+      // public site through the local icon map, so this is not an error.
+      previewImg.removeAttribute("src");
+      previewImg.hidden = true;
+      previewText.textContent = `${value} — no live preview (legacy key)`;
+      return;
+    }
+
+    previewImg.hidden = false;
+    previewImg.src = url;
+    previewText.textContent = value;
+  }
+
+  // If the icon 404s or the API is unreachable the row must not look broken.
+  previewImg.addEventListener("error", () => {
+    previewImg.hidden = true;
+    previewText.textContent = `${iconField.input.value.trim()} — icon could not be loaded`;
+  });
+
+  iconField.input.addEventListener("input", renderPreview);
+
+  /* ---- search ---- */
+
+  let searchToken = 0;
+
+  function showResults(icons) {
+    clear(results);
+
+    icons.forEach(iconId => {
+      const url = iconPreviewUrl(iconId);
+
+      if (!url) {
+        return;
+      }
+
+      const button = el("button", "icon-picker-option");
+      button.type = "button";
+      button.title = iconId;
+
+      const img = el("img", "icon-picker-option-img");
+      img.src = url;
+      img.alt = "";
+      img.loading = "lazy";
+      img.setAttribute("aria-hidden", "true");
+
+      const caption = el("span", "icon-picker-option-label", iconId);
+
+      append(button, img, caption);
+
+      button.addEventListener("click", () => {
+        iconField.input.value = iconId;
+        iconField.setError("");
+        renderPreview();
+        status.textContent = `Selected ${iconId}.`;
+      });
+
+      append(results, button);
+    });
+  }
+
+  async function runSearch(query) {
+    const token = ++searchToken;
+
+    clear(results);
+    status.textContent = "Searching…";
+
+    try {
+      const response = await fetch(
+        `${ICONIFY_API}/search?query=${encodeURIComponent(query)}&limit=48`,
+        { headers: { Accept: "application/json" } }
+      );
+
+      if (!response.ok) {
+        throw new Error(`icon search: ${response.status}`);
+      }
+
+      const body = await response.json();
+
+      // A stale response from an earlier keystroke must not overwrite a newer one.
+      if (token !== searchToken) {
+        return;
+      }
+
+      const icons = Array.isArray(body.icons) ? body.icons : [];
+
+      // Only ids that already satisfy the stored-value contract are offered,
+      // so nothing unexpected can reach the database.
+      const safe = icons.filter(id => ICONIFY_ID_PATTERN.test(id));
+
+      // Brand icons first; everything else keeps API order behind them.
+      safe.sort((a, b) => {
+        const aBrand = a.startsWith(`${ICONIFY_PREFERRED_PREFIX}:`) ? 0 : 1;
+        const bBrand = b.startsWith(`${ICONIFY_PREFERRED_PREFIX}:`) ? 0 : 1;
+        return aBrand - bBrand;
+      });
+
+      if (safe.length === 0) {
+        status.textContent = `No icons found for "${query}".`;
+        return;
+      }
+
+      status.textContent = `${safe.length} icon${safe.length === 1 ? "" : "s"} found.`;
+      showResults(safe);
+    } catch (error) {
+      console.error(error);
+      status.textContent =
+        "Icon search is unavailable. You can still type an Iconify id above.";
+    }
+  }
+
+  let debounce = null;
+
+  search.addEventListener("input", () => {
+    window.clearTimeout(debounce);
+
+    const query = search.value.trim();
+
+    if (query.length < 2) {
+      clear(results);
+      status.textContent = "";
+      return;
+    }
+
+    debounce = window.setTimeout(() => runSearch(query), 300);
+  });
+
+  // Enter inside the search box searches; it must not submit the dialog.
+  search.addEventListener("keydown", event => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      window.clearTimeout(debounce);
+
+      const query = search.value.trim();
+
+      if (query.length >= 2) {
+        runSearch(query);
+      }
+    }
+  });
+
+  renderPreview();
+
+  return { node, renderPreview };
 }
 
 /* ------------------------------------------------------------------ */

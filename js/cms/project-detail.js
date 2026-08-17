@@ -44,13 +44,21 @@ const PORTFOLIO_URL = "index.html#portfolio";
 /* ---------------------------------------------------------
    TOOL ICONS
 
-   The V1 tool pill carries an <iconify-icon>. icon_key only ever
-   selects a key from this table: the database value is never
-   written into the icon attribute, so it cannot pull an
-   arbitrary remote icon. An unknown key simply produces a
-   text-only pill, which the existing flex/gap styling already
-   collapses cleanly.
+   The V1 tool pill carries an <iconify-icon>. Two identifier
+   shapes are accepted:
+
+     - an Iconify id stored by the Admin icon picker, allowed
+       through only after matching ICONIFY_ID_PATTERN below;
+     - a legacy bare key predating the picker, which selects an
+       entry from the static table.
+
+   Neither shape can carry markup, a scheme or a traversal, so a
+   database value can name an icon and nothing else. An
+   unrecognised value produces a text-only pill, which the
+   existing flex/gap styling already collapses cleanly.
 --------------------------------------------------------- */
+
+const ICONIFY_ID_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*:[a-z0-9]+(-[a-z0-9]+)*$/;
 
 const TOOL_ICONS = {
     figma: "logos:figma",
@@ -509,9 +517,21 @@ function renderTechnologies(project) {
             const pill = document.createElement("div");
             pill.className = "project-tool";
 
-            const iconName = typeof technology.icon_key === "string"
-                ? TOOL_ICONS[technology.icon_key]
-                : undefined;
+            /*
+                An Iconify id stored by the Admin picker is used
+                directly once it matches the pattern; a legacy bare
+                key still resolves through TOOL_ICONS. Anything
+                unrecognised leaves a text-only pill, which the
+                existing flex/gap styling already collapses.
+            */
+
+            const key = typeof technology.icon_key === "string"
+                ? technology.icon_key.trim()
+                : "";
+
+            const iconName = ICONIFY_ID_PATTERN.test(key)
+                ? key
+                : TOOL_ICONS[key];
 
             if (iconName) {
 
