@@ -13,7 +13,11 @@
                           No 'unsafe-inline' and no 'unsafe-eval': the vendored bundle was
                           checked and contains no eval() or new Function() call sites.
     connect-src         - the Supabase project origin only (Auth, REST and Storage calls).
-    img-src 'self' data: - the MFA enrolment QR code is delivered as a data: URI by Supabase.
+    img-src 'self' data: blob:
+                        - data: for the MFA enrolment QR code delivered by Supabase;
+                          blob: for locally generated image previews produced by
+                          js/core/image-processor.js. Both are same-document sources;
+                          no remote image origin is allowed.
     style-src   'self'  - same-origin stylesheets only.
     base-uri    'none'  - blocks <base> tag injection redirecting relative script URLs.
     form-action 'none'  - the login form is handled entirely in JS via preventDefault();
@@ -34,7 +38,7 @@
     ws://127.0.0.1:54321
     ws://localhost:54321
     https://hldacuppejztqzqaejsi.supabase.co;
-    img-src 'self' data:;
+    img-src 'self' data: blob:;
     style-src 'self';
     base-uri 'none';
     form-action 'none';

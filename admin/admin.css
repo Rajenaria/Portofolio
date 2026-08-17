@@ -1230,6 +1230,157 @@ body.has-modal-open {
 }
 
 /* --------------------------------------------------------------------------
+   13g-b. IMAGE PICKER
+   Reusable component (js/core/image-picker.js). Neutral surface so it can be
+   dropped into a form section or a modal without restyling.
+   -------------------------------------------------------------------------- */
+
+.image-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+.image-picker-body {
+  width: 100%;
+  min-width: 0;
+  padding: 20px;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-soft);
+  border-radius: var(--radius-lg);
+}
+
+.image-picker-empty,
+.image-picker-processing,
+.image-picker-error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.image-picker-empty {
+  align-items: center;
+  text-align: center;
+  padding: 12px 0;
+}
+
+.image-picker-hint {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.image-picker-error-text {
+  color: var(--admin-danger);
+  font-size: 14px;
+  font-weight: 600;
+  max-width: 60ch;
+}
+
+.image-picker-preview {
+  margin: 0 0 16px;
+}
+
+.image-picker-image {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  /* Preserve the aspect ratio of the optimized output; never stretch. */
+  height: auto;
+  background: var(--admin-surface-subtle);
+  border: 1px solid var(--admin-border-soft);
+  border-radius: var(--radius-md);
+}
+
+.image-picker-caption {
+  margin-top: 8px;
+  color: var(--admin-text-muted);
+  font-size: 12px;
+}
+
+.image-picker-filename {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  overflow-wrap: anywhere;
+}
+
+.image-stats {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.image-stat-block {
+  min-width: 0;
+}
+
+.image-stat-title {
+  margin-bottom: 8px;
+  color: var(--admin-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.image-stat-list {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.image-stat-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.image-stat-term {
+  color: var(--admin-text-secondary);
+}
+
+.image-stat-value {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.image-savings {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--admin-border-soft);
+  font-size: 14px;
+}
+
+.image-savings-value {
+  color: var(--admin-success);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.image-savings-label {
+  color: var(--admin-text-secondary);
+}
+
+.image-picker-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+@media (min-width: 600px) {
+  .image-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* --------------------------------------------------------------------------
    13h. TOASTS
    -------------------------------------------------------------------------- */
 
