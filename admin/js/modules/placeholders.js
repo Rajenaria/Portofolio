@@ -44,12 +44,7 @@ function createPlaceholderRoute({ name, title, subtitle, note }) {
 
 // Profile & About is implemented: see modules/profile/index.js.
 
-export const experienceRoute = createPlaceholderRoute({
-  name: "experience",
-  title: "Experience",
-  subtitle: "Manage the experiences displayed on your portfolio.",
-  note: "The experience list and editor will be added in a later phase."
-});
+// Experience is implemented: see modules/experience/index.js.
 
 export const projectsRoute = createPlaceholderRoute({
   name: "projects",

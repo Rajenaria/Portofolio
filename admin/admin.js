@@ -26,9 +26,12 @@ import {
 } from "./js/modules/dashboard.js";
 
 import {
-  experienceRoute,
   projectsRoute
 } from "./js/modules/placeholders.js";
+
+import {
+  experienceRoute
+} from "./js/modules/experience/index.js";
 
 import {
   technologiesRoute

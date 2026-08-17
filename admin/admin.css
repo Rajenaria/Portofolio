@@ -1681,6 +1681,185 @@ body.has-modal-open {
 }
 
 /* --------------------------------------------------------------------------
+   13g-c. EXPERIENCE CMS — FULL-PAGE EDITOR, LIST EXTRAS, PREVIEW CARD
+   -------------------------------------------------------------------------- */
+
+.link-button {
+  align-self: flex-start;
+  padding: 4px 0;
+  background: none;
+  border: 0;
+  color: var(--admin-primary);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.link-button:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.link-button:disabled {
+  color: var(--admin-text-muted);
+  cursor: not-allowed;
+}
+
+.experience-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.editor-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.editor-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.editor-title {
+  font-size: 20px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+
+.settings-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.settings-term {
+  color: var(--admin-text-secondary);
+}
+
+.settings-value {
+  margin: 0;
+  font-weight: 500;
+}
+
+.row-title {
+  display: block;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.row-subtle {
+  display: block;
+  margin-top: 2px;
+  color: var(--admin-text-muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.admin-table tbody tr.is-muted-row .row-title {
+  color: var(--admin-text-secondary);
+}
+
+.row-menu-item.is-danger {
+  color: var(--admin-danger);
+}
+
+/* ---- structured preview card ---- */
+
+.experience-preview-card {
+  padding: 18px;
+  background: var(--admin-surface-subtle);
+  border: 1px solid var(--admin-border-soft);
+  border-radius: var(--radius-lg);
+}
+
+.experience-preview-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.experience-preview-number {
+  color: var(--admin-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.experience-preview-title {
+  font-size: 17px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.experience-preview-meta {
+  margin-top: 4px;
+  color: var(--admin-text-secondary);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.experience-preview-description {
+  margin-top: 10px;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.experience-preview-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.experience-tag-chip {
+  padding: 3px 9px;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-soft);
+  border-radius: 999px;
+  color: var(--admin-text-secondary);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.experience-preview-details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--admin-border-soft);
+}
+
+.experience-list-view.is-busy {
+  opacity: 0.7;
+}
+
+/* --------------------------------------------------------------------------
    13g-b. IMAGE PICKER
    Reusable component (js/core/image-picker.js). Neutral surface so it can be
    dropped into a form section or a modal without restyling.
