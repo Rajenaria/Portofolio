@@ -853,3 +853,92 @@ docker exec supabase_db_... psql ... # throwaway probe tables, created and dropp
 | `scripts/optimize-mobile-images.{js,py}` | Confirmed no Supabase or secret usage |
 | `package.json`, `package-lock.json` | Dependency surface |
 | `docs/Security/ADMIN-CMS-SECURITY.md`, `docs/Features/005-*.md`, `docs/Database/*.md` | Credential-leak scan; stated intent |
+
+---
+
+# Final Security Hardening — Pre-Production
+
+Performed after the Admin CMS and all public CMS integrations (Hero, About,
+Organization, Technologies, Experience, Project cards, Project detail) were
+functionally complete. One new migration was added; no applied migration was
+edited.
+
+**Migration:** `20260818020000_security_hardening_pre_production.sql`
+
+## Findings closed
+
+| Finding | Before | After | Verification |
+|---|---|---|---|
+| **Technologies public SELECT too broad** (carried since the Technologies CMS phase) | Policy allowed `is_active = true OR referenced by published project`, so any active technology was anonymously readable even when deliberately kept out of the public Tech Stack | Policy now allows `(is_active AND show_in_public_stack AND public_group IS NOT NULL) OR (referenced by a published, non-deleted project)` | 5-case anon matrix: public-stack row **visible**; active-but-not-public **hidden**; no-group **hidden**; disabled + stack-hidden **but referenced by a published project** **visible**; referenced only by a draft project **hidden**. Live browser: Tech Stack renders only the public row while project cards and project detail still render the disabled, stack-hidden technology | **FIXED** |
+| **`projects.github_url` / `demo_url` had no DB-level protocol validation** | JS was the only guard, in both Admin and the public renderer | `CHECK` constraints accept `NULL`, `''`, or `^https?://[^[:space:]]+$` | `javascript:`, `data:`, `vbscript:`, `file:`, `//evil.com` and mixed-case `jAvAsCrIpT:` all rejected with `projects_github_url_check`; valid `https://`, `http://` and `''` accepted. Constraints are **validating** (not `NOT VALID`), so a future push fails loudly rather than rewriting owner content | **FIXED** |
+| **M-2 — Guestbook table privileges** | `comments` and `guestbook_rate_limits` both granted `anon` and `authenticated` **INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER`**. RLS does not restrain `TRUNCATE`; `guestbook_rate_limits` had RLS on with **zero policies**, so it was unreadable yet still truncatable | `comments` → `SELECT` only for both browser roles. `guestbook_rate_limits` → **no** grants to browser roles. `guestbook_rate_limits_id_seq` → `anon`/`authenticated` revoked | Anon `POST`/`PATCH`/`DELETE` on both tables → **401**. `service_role` (the `submit-comment` identity) retains full privileges and successfully inserted into both `comments` and `guestbook_rate_limits` after the change. Public read of approved comments unchanged | **FIXED** |
+
+## Findings re-verified as already correct
+
+- **Default privileges (H-1):** `ALTER DEFAULT PRIVILEGES` for role `postgres` in
+  schema `public` grants future tables/sequences/routines to `postgres` and
+  `service_role` only. No new migration needed.
+- **Owner / AAL2 model:** `app_private.is_owner_admin()` and
+  `is_owner_admin_aal2()` are `SECURITY DEFINER` with `search_path = ""`;
+  `EXECUTE` is granted to `authenticated` but **not** `anon`;
+  `app_private.admin_users` is `postgres`-only and holds exactly one row. All
+  **14** non-`SELECT` policies in `public` are AAL2-gated and **zero**
+  write policies reference `anon`.
+- **Storage:** `portfolio-media` public, `portfolio-staging` private, both
+  `image/webp` only with a 5 MB cap. Anon write/delete on both buckets and anon
+  read of staging are denied; anon `LIST` returns `[]` for both (RLS filters
+  every row); anon read of a real public object succeeds. All four object
+  policies are AAL2-gated.
+- **CSP (`admin/index.html`):** `default-src 'none'`, no `*`, no
+  `unsafe-inline`, no `unsafe-eval`, `base-uri 'none'`, `form-action 'none'`,
+  `object-src 'none'`; `connect-src`/`img-src` scoped to self, local dev
+  origins and the production Supabase origin.
+- **Safe DOM:** the five remaining `innerHTML` assignments (`js/guestbook.js`
+  ×4, `js/script.js` ×1) are static template literals or `""`; untrusted
+  guestbook fields use `createElement` + `textContent`. The public CMS
+  renderers contain no `innerHTML` path at all.
+- **Secrets:** no service-role key, secret key, JWT, TOTP seed or private key in
+  the working tree or Git history. `submit-comment` reads its key from
+  `Deno.env`. The one `sb_secret_` string in `admin/vendor/supabase-js-2.112.3.js`
+  is the library's own key-prefix detector, not a credential.
+- **Dependencies:** `npm audit` → **0** vulnerabilities across all severities;
+  nothing outdated; `@supabase/supabase-js` remains pinned at `2.112.3`.
+
+## MFA bootstrap (H-3) — current status
+
+**MITIGATED.** Local state: one Auth user, one owner row, **one verified TOTP
+factor**. With a verified factor present the bootstrap window is closed —
+`nextLevel` resolves to `aal2`, so a password-only session routes to the MFA
+challenge and never reaches the admin. The residual is unchanged and remains
+**MT-4**: confirm the *production* owner has TOTP enrolled and verified with
+recovery codes stored offline.
+
+## Security headers — deployment requirement (closes MT-9 / L-8)
+
+A CSP delivered by `<meta http-equiv>` cannot express `frame-ancestors`, so the
+admin page currently has **no clickjacking protection**. These must be set as
+real HTTP response headers by the host. They are configuration, not code, and
+are deliberately not simulated in the app.
+
+Apply to **all** responses:
+
+```
+Content-Security-Policy: frame-ancestors 'none'
+X-Content-Type-Options: nosniff
+Referrer-Policy: strict-origin-when-cross-origin
+Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=()
+```
+
+Apply to **HTTPS production only**:
+
+```
+Strict-Transport-Security: max-age=31536000; includeSubDomains
+```
+
+For `/admin` specifically, also send the full CSP as a response header
+(mirroring the meta tag) so it is enforced before parsing, and keep
+`X-Robots-Tag: noindex, nofollow` alongside the existing meta robots tag.
+
+Netlify (`_headers`), Vercel (`vercel.json` → `headers`), Cloudflare Pages
+(`_headers`) and Nginx (`add_header`) all support this directly; the exact file
+depends on the host, which is not yet chosen.
