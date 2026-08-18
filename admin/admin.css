@@ -1375,6 +1375,26 @@ body.has-modal-open {
   border-radius: var(--radius-md);
 }
 
+.hero-slot-status:empty {
+  display: none;
+}
+
+.hero-slot-status {
+  margin-top: 10px;
+}
+
+/*
+  Hidden slot: dim the stored thumbnail so the state is obvious at a glance,
+  but never replace it. The owner still has to be able to tell WHICH photo is
+  parked in this slot, and the image is still replaceable while hidden — so
+  only the preview is dimmed, not the controls.
+*/
+.hero-slot.is-hidden-slot .media-field-preview,
+.preview-photo.is-hidden-slot .preview-photo-image {
+  opacity: 0.45;
+  filter: grayscale(0.35);
+}
+
 .media-field {
   display: flex;
   flex-direction: column;

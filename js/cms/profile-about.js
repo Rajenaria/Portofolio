@@ -272,6 +272,27 @@ function renderHeroText(profile) {
 
 }
 
+/*
+    A hero slot is only usable once it satisfies the same responsive
+    contract the public markup has always had: a desktop image that
+    resolves inside the public bucket, plus a mobile variant. It is
+    the same pair the RLS policy requires, checked again here so the
+    renderer never depends on the API alone.
+
+    Hidden slots never reach this function — the public SELECT policy
+    filters them out server-side, so "absent from the response" and
+    "hidden" are the same thing to the browser.
+*/
+
+function heroSlotIsUsable(row) {
+
+    return Boolean(
+        publicMediaUrl(row.bucket_name, row.desktop_path) &&
+        filled(row.mobile_path)
+    );
+
+}
+
 function renderHeroMedia(heroRows) {
 
     const stack = document.getElementById("heroPhotoStack");
@@ -289,11 +310,12 @@ function renderHeroMedia(heroRows) {
     const referenceQuery = mediaQueryFrom(stack.querySelector("picture"));
 
     /*
-        Exactly three slots are the public contract. Slot n maps onto
-        the card at index n-1; no card is ever added or removed, so
-        the stack ordering, z-index, rotation and drag behaviour that
-        hero-photo-stack.js already bound stay exactly as they are.
+        Slot n maps onto the card at index n-1. Slot numbers are
+        identity, not position: if slot 2 is hidden and slot 3 is
+        visible, slot 3 simply becomes the second rendered card.
     */
+
+    const bySlot = new Map();
 
     heroRows.forEach(row => {
 
@@ -303,26 +325,94 @@ function renderHeroMedia(heroRows) {
             return;
         }
 
-        const card = cards[slot - 1];
+        if (row.is_visible === false) {
+            return;
+        }
+
+        if (!heroSlotIsUsable(row)) {
+            return;
+        }
+
+        bySlot.set(slot, row);
+
+    });
+
+    /*
+        ACTIVATION KEY — SLOT 1.
+
+        Taking over the Hero means deleting cards, so it may only
+        happen when the CMS genuinely owns this section. Slot 1 is
+        the primary photo and is the one slot that can never be
+        hidden, so "slot 1 arrived and is fully configured" is a
+        reliable signal that the Hero has really been set up.
+
+        A merely successful request is NOT enough: production can
+        hold half-filled hero_media rows, and treating those as
+        authoritative would strip the static V1 photos off the page
+        and leave an empty stack.
+    */
+
+    if (!bySlot.has(1)) {
+        return;
+    }
+
+    let rendered = 0;
+
+    cards.forEach((card, index) => {
+
+        const row = bySlot.get(index + 1);
+
+        /*
+            Hidden or unconfigured optional slot: the card is removed
+            outright. No empty shell, no placeholder plate, nothing
+            occupying stack space.
+        */
+
+        if (!row) {
+            card.remove();
+            return;
+        }
+
         const existing = card.querySelector("picture");
 
         if (existing) {
             patchPicture(existing, row);
-            return;
         }
 
-        const picture = buildPicture(row, referenceQuery);
+        else {
 
-        if (!picture) {
-            return;
+            const picture = buildPicture(row, referenceQuery);
+
+            if (!picture) {
+                card.remove();
+                return;
+            }
+
+            replaceChildren(card, [picture]);
+
         }
 
-        // The slot stops being a placeholder only once it really has
-        // an image, so a rejected row keeps its "02" / "03" plate.
-        replaceChildren(card, [picture]);
         card.classList.remove("hero-photo-card-placeholder");
+        rendered += 1;
 
     });
+
+    /*
+        The stack controller captured its card list at DOMContentLoaded,
+        before this module ran. Cards have just been removed, so it has
+        to re-read the DOM, rebuild its ordering and drop the stale
+        references. The hook is idempotent by design.
+    */
+
+    if (typeof window.refreshHeroPhotoStack === "function") {
+        window.refreshHeroPhotoStack();
+    }
+
+    else if (rendered > 0) {
+        // Controller unavailable (script blocked); keep the layout
+        // honest so CSS still knows how many cards it is styling.
+        stack.setAttribute("data-count", String(rendered));
+    }
 
 }
 
@@ -568,10 +658,18 @@ async function load() {
             "about_description,about_photo_bucket,about_photo_desktop_path," +
             "about_photo_mobile_path,about_photo_alt&limit=1"
         ),
+        /*
+            RLS is the authority on which slots are public; the
+            is_visible filter and the column it selects are defence in
+            depth, so a future policy change cannot quietly start
+            publishing hidden photos. Same belt-and-braces the
+            published-project read uses.
+        */
         readTable(
             "hero_media",
-            "select=slot_number,bucket_name,desktop_path,mobile_path,alt_text" +
-            "&order=slot_number.asc"
+            "select=slot_number,bucket_name,desktop_path,mobile_path," +
+            "alt_text,is_visible" +
+            "&is_visible=is.true&order=slot_number.asc"
         ),
         readTable(
             "about_interests",

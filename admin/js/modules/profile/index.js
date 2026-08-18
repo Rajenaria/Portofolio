@@ -259,8 +259,16 @@ async function render(container, { signal }) {
         .maybeSingle(),
 
       supabaseClient
+        /*
+          is_visible is read here so the Hero tab can show hidden slots.
+          The owner + aal2 SELECT policy is permissive and separate from the
+          public one, so hidden rows still come back for the Admin even though
+          the public site never sees them.
+        */
         .from("hero_media")
-        .select("slot_number, bucket_name, desktop_path, mobile_path, alt_text")
+        .select(
+          "slot_number, bucket_name, desktop_path, mobile_path, alt_text, is_visible"
+        )
         .order("slot_number", { ascending: true }),
 
       supabaseClient

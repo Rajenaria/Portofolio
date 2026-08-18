@@ -1,5 +1,5 @@
 /*
-  Hero tab (Phase 6).
+  Hero tab (Phase 6, visibility added in Phase B2).
 
   Manages the Hero text on the profile_content singleton plus the three fixed
   hero_media slots.
@@ -11,6 +11,21 @@
   no add, no delete, no reorder, no animation settings. The database backs this
   up with slot_number BETWEEN 1 AND 3 and grants UPDATE only, so even a tampered
   client cannot create a fourth slot.
+
+  VISIBILITY
+  ----------
+  Slots 2 and 3 can be taken off the public site without losing what is stored
+  in them. Two things follow from that, and both matter:
+
+    - Hiding is a METADATA change. It writes is_visible and nothing else: no
+      upload, no path rewrite, no alt-text reset, and above all no Storage
+      delete. A hidden photo has to survive so it can be shown again later.
+
+    - Slot 1 cannot be hidden. It is the primary photo and the key the public
+      renderer uses to decide whether the CMS owns the Hero at all, so hiding
+      it would drop the whole section back to the static fallback. The control
+      is rendered disabled here and the database enforces it for real through
+      hero_media_slot_one_always_visible.
 */
 
 import { supabaseClient } from "../../core/supabase.js";
@@ -21,6 +36,7 @@ import { openModal } from "../../core/modal.js";
 import {
   textField,
   textareaField,
+  checkboxField,
   applyValidation,
   trimmed,
   trimmedOrNull
@@ -80,7 +96,7 @@ export function createHeroTab({ profile, heroSlots, onDirtyChange }) {
     el(
       "p",
       "form-help",
-      "The public Hero uses exactly three photo positions. Slots can be replaced but not added, removed or reordered."
+      "The public Hero uses exactly three photo positions. Slots can be replaced but not added, removed or reordered. Photos 02 and 03 can be hidden from the public site; hiding keeps the uploaded image."
     )
   );
 
@@ -90,6 +106,11 @@ export function createHeroTab({ profile, heroSlots, onDirtyChange }) {
   [1, 2, 3].forEach(slotNumber => {
     const record =
       heroSlots.find(row => Number(row.slot_number) === slotNumber) || {};
+
+    const isPrimary = slotNumber === 1;
+
+    // A row that predates the column, or a slot never configured, is public.
+    const initialVisible = record.is_visible !== false;
 
     const wrapper = el("div", "hero-slot");
 
@@ -116,17 +137,75 @@ export function createHeroTab({ profile, heroSlots, onDirtyChange }) {
 
     alt.control.addEventListener("input", markDirty);
 
-    append(wrapper, media.element, alt.node);
+    /*
+      Same checkbox component the About interests and Organization skills
+      lists already use for is_active, so visibility reads as the one
+      existing "is this published" control rather than a new widget.
+    */
+    const visible = checkboxField({
+      id: `hero-visible-${slotNumber}`,
+      label: "Visible on public site",
+      checked: isPrimary ? true : initialVisible,
+      help: isPrimary
+        ? "Primary photo — always visible. The Hero cannot be published without it."
+        : "Hidden photos keep their image and alt text, and are not rendered on the public site."
+    });
+
+    const statusSlot = el("div", "hero-slot-status");
+
+    if (isPrimary) {
+      visible.control.checked = true;
+      visible.control.disabled = true;
+    } else {
+      visible.control.addEventListener("change", () => {
+        syncVisibilityState();
+        markDirty();
+      });
+    }
+
+    append(wrapper, media.element, alt.node, visible.node, statusSlot);
     append(slotsGrid, wrapper);
 
     slots.push({
       slotNumber,
+      isPrimary,
       media,
       alt,
+      visible,
+      wrapper,
+      statusSlot,
       initialAlt: trimmed(record.alt_text),
+      initialVisible: isPrimary ? true : initialVisible,
       record
     });
   });
+
+  /*
+    Reflects the current toggle state on the slot itself: the stored thumbnail
+    stays exactly as it is (the owner still needs to recognise which photo is
+    in there), the card is only dimmed and badged.
+  */
+  function syncVisibilityState() {
+    slots.forEach(slot => {
+      const hidden = !slot.isPrimary && slot.visible.value === false;
+
+      slot.wrapper.classList.toggle("is-hidden-slot", hidden);
+      clear(slot.statusSlot);
+
+      if (hidden) {
+        append(
+          slot.statusSlot,
+          el(
+            "span",
+            "status-badge status-badge-inactive",
+            "Hidden on public site"
+          )
+        );
+      }
+    });
+  }
+
+  syncVisibilityState();
 
   append(photosSection, slotsGrid);
 
@@ -162,8 +241,20 @@ export function createHeroTab({ profile, heroSlots, onDirtyChange }) {
 
     return slots.some(
       slot =>
-        slot.media.hasPending() || trimmed(slot.alt.value) !== slot.initialAlt
+        slot.media.hasPending() ||
+        trimmed(slot.alt.value) !== slot.initialAlt ||
+        currentVisible(slot) !== slot.initialVisible
     );
+  }
+
+  /*
+    Slot 1 is reported as visible no matter what the DOM says. Its control is
+    disabled, but reading it through one accessor means a tampered checkbox
+    still cannot make the save path send is_visible: false for the primary
+    photo — which the database would reject anyway.
+  */
+  function currentVisible(slot) {
+    return slot.isPrimary ? true : slot.visible.value !== false;
   }
 
   function markDirty() {
@@ -253,6 +344,8 @@ export function createHeroTab({ profile, heroSlots, onDirtyChange }) {
     for (const slot of slots) {
       const altValue = trimmedOrNull(slot.alt.value);
       const altChanged = trimmed(slot.alt.value) !== slot.initialAlt;
+      const visibleValue = currentVisible(slot);
+      const visibilityChanged = visibleValue !== slot.initialVisible;
       const files = slot.media.getPendingFiles();
 
       if (files) {
@@ -271,7 +364,8 @@ export function createHeroTab({ profile, heroSlots, onDirtyChange }) {
                   bucket_name: paths.bucket,
                   desktop_path: paths.desktopPath,
                   mobile_path: paths.mobilePath,
-                  alt_text: altValue
+                  alt_text: altValue,
+                  is_visible: visibleValue
                 })
                 .eq("slot_number", slot.slotNumber)
                 .select("slot_number");
@@ -289,6 +383,7 @@ export function createHeroTab({ profile, heroSlots, onDirtyChange }) {
           });
 
           slot.initialAlt = trimmed(slot.alt.value);
+          slot.initialVisible = visibleValue;
 
           if (result.cleanupWarning) {
             warnings.push(`Hero Photo 0${slot.slotNumber}: ${result.cleanupWarning}`);
@@ -308,25 +403,49 @@ export function createHeroTab({ profile, heroSlots, onDirtyChange }) {
         continue;
       }
 
+      /*
+        No new image for this slot, so this is a metadata-only write. The
+        payload carries ONLY the fields that actually changed: bucket_name,
+        desktop_path and mobile_path are never mentioned, so toggling
+        visibility cannot disturb the stored image, and nothing here can
+        reach Storage at all.
+      */
+
+      const patch = {};
+
       if (altChanged) {
-        const { data, error } = await supabaseClient
-          .from("hero_media")
-          .update({ alt_text: altValue })
-          .eq("slot_number", slot.slotNumber)
-          .select("slot_number");
+        patch.alt_text = altValue;
+      }
 
-        if (error || !data || data.length === 0) {
-          if (error) {
-            console.error(error);
-          }
+      if (visibilityChanged) {
+        patch.is_visible = visibleValue;
+      }
 
-          setSaving(false);
-          toast(`Could not save the alt text for Hero Photo 0${slot.slotNumber}.`, "error");
-          return false;
+      if (Object.keys(patch).length === 0) {
+        continue;
+      }
+
+      const { data, error } = await supabaseClient
+        .from("hero_media")
+        .update(patch)
+        .eq("slot_number", slot.slotNumber)
+        .select("slot_number");
+
+      if (error || !data || data.length === 0) {
+        if (error) {
+          console.error(error);
         }
 
-        slot.initialAlt = trimmed(slot.alt.value);
+        setSaving(false);
+        toast(
+          `Could not save the changes to Hero Photo 0${slot.slotNumber}.`,
+          "error"
+        );
+        return false;
       }
+
+      slot.initialAlt = trimmed(slot.alt.value);
+      slot.initialVisible = visibleValue;
     }
 
     setSaving(false);
@@ -389,6 +508,14 @@ export function createHeroTab({ profile, heroSlots, onDirtyChange }) {
 
       if (slot.media.hasPending()) {
         append(caption, el("span", "status-badge status-badge-pending", "Pending"));
+      }
+
+      if (!currentVisible(slot)) {
+        card.classList.add("is-hidden-slot");
+        append(
+          caption,
+          el("span", "status-badge status-badge-inactive", "Hidden")
+        );
       }
 
       append(card, caption);

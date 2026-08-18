@@ -5466,6 +5466,186 @@ nav.nav-scrolled {
 
 
 /* =========================================
+   HERO PHOTO STACK — JUMLAH KARTU ADAPTIF
+
+   Foto 2 dan 3 bisa disembunyikan dari Admin. Kalau disembunyikan,
+   kartunya benar-benar dihapus dari DOM (bukan disembunyikan pakai
+   CSS), jadi stack bisa berisi 1, 2, atau 3 kartu.
+
+   js/hero-photo-stack.js menulis data-count dari JUMLAH KARTU YANG
+   BENAR-BENAR ADA di DOM, bukan dari data CMS, sehingga geometri di
+   bawah ini tidak mungkin berbeda dengan isi stack-nya.
+
+   Semua aturan di atas adalah kasus TIGA KARTU dan sengaja tidak
+   diubah sedikit pun — tampilan itu sudah disetujui. Blok ini hanya
+   MENAMBAH kasus 2 dan 1 kartu, dengan spesifisitas yang lebih
+   tinggi ([data-count] menambah satu attribute selector), jadi
+   menang tanpa bergantung urutan file.
+========================================= */
+
+
+/* -----------------------------------------
+   DUA KARTU
+
+   Geometri tiga kartu tidak bisa dipakai apa adanya: posisi 1 di
+   sana digeser ke KIRI dengan asumsi ada kartu ketiga yang
+   mengimbangi di kanan. Dengan dua kartu, asumsi itu hilang dan
+   komposisinya jadi berat sebelah.
+
+   Diam: kartu belakang duduk di tengah, sedikit turun dan diputar
+   kecil — sudutnya mengintip di KEDUA sisi, jadi terbaca sebagai
+   tumpukan yang seimbang, bukan satu kartu yang melenceng.
+
+   Terbuka: keduanya bergerak menjauh sama besar dari sumbu tengah,
+   sehingga titik berat komposisinya tetap di tengah panggung.
+----------------------------------------- */
+
+.hero-photo-stack[data-count="2"] .hero-photo-card[data-position="1"] {
+    transform: translate(0, 18px) rotate(-4deg) scale(0.94);
+    z-index: 2;
+}
+
+.hero-photo-stack[data-count="2"].is-spread
+.hero-photo-card[data-position="0"] {
+    transform: translate(-19%, 0) rotate(-4deg) scale(1);
+}
+
+.hero-photo-stack[data-count="2"].is-spread
+.hero-photo-card[data-position="1"] {
+    transform: translate(19%, 2%) rotate(4deg) scale(0.97);
+}
+
+.hero-photo-stack[data-count="2"].is-spread
+.hero-photo-card[data-position="0"]:hover,
+.hero-photo-stack[data-count="2"].is-spread
+.hero-photo-card[data-position="0"]:focus-visible {
+    transform: translate(-19%, 0) rotate(-4deg) scale(1.04);
+}
+
+.hero-photo-stack[data-count="2"].is-spread
+.hero-photo-card[data-position="1"]:hover,
+.hero-photo-stack[data-count="2"].is-spread
+.hero-photo-card[data-position="1"]:focus-visible {
+    transform: translate(19%, 2%) rotate(4deg) scale(1.01);
+}
+
+
+/* -----------------------------------------
+   SATU KARTU
+
+   Bukan tumpukan, jadi jangan berpura-pura jadi tumpukan: tidak ada
+   offset, tidak ada rotasi, tidak ada spread. Kartunya juga sudah
+   di-disable di JS sehingga keluar dari tab order — di sini tinggal
+   menghapus isyarat visual bahwa ia bisa diklik.
+----------------------------------------- */
+
+.hero-photo-stack[data-count="1"] .hero-photo-card,
+.hero-photo-stack[data-count="1"].is-spread .hero-photo-card,
+.hero-photo-stack[data-count="1"] .hero-photo-card:hover,
+.hero-photo-stack[data-count="1"] .hero-photo-card[data-position="0"] {
+    transform: none;
+    cursor: default;
+}
+
+/* Bayangannya tetap ada supaya kartunya tidak terlihat "datar",
+   tapi tidak ikut menguat seperti saat stack terbuka. */
+.hero-photo-stack[data-count="1"].is-spread .hero-photo-card {
+    box-shadow:
+        0 10px 24px rgba(29, 29, 31, 0.10),
+        0 2px 6px rgba(29, 29, 31, 0.06);
+}
+
+
+/* -----------------------------------------
+   TABLET / MOBILE — DUA KARTU
+
+   Sejalan dengan kasus tiga kartu: makin sempit layarnya, makin
+   rapat rentangnya supaya kartu tidak menyentuh tepi panggung.
+----------------------------------------- */
+
+@media (max-width: 900px) {
+
+    .hero-photo-stack[data-count="2"].is-spread
+    .hero-photo-card[data-position="0"],
+    .hero-photo-stack[data-count="2"].is-spread
+    .hero-photo-card[data-position="0"]:hover,
+    .hero-photo-stack[data-count="2"].is-spread
+    .hero-photo-card[data-position="0"]:focus-visible {
+        transform: translate(-14%, 0) rotate(-3deg) scale(1);
+    }
+
+    .hero-photo-stack[data-count="2"].is-spread
+    .hero-photo-card[data-position="1"],
+    .hero-photo-stack[data-count="2"].is-spread
+    .hero-photo-card[data-position="1"]:hover,
+    .hero-photo-stack[data-count="2"].is-spread
+    .hero-photo-card[data-position="1"]:focus-visible {
+        transform: translate(14%, 2%) rotate(3deg) scale(0.97);
+    }
+
+}
+
+
+@media (max-width: 650px) {
+
+    .hero-photo-stack[data-count="2"] .hero-photo-card[data-position="1"] {
+        transform: translate(0, 13px) rotate(-3deg) scale(0.95);
+    }
+
+    .hero-photo-stack[data-count="2"].is-spread
+    .hero-photo-card[data-position="0"],
+    .hero-photo-stack[data-count="2"].is-spread
+    .hero-photo-card[data-position="0"]:hover,
+    .hero-photo-stack[data-count="2"].is-spread
+    .hero-photo-card[data-position="0"]:focus-visible {
+        transform: translate(-9%, 0) rotate(-3deg) scale(1);
+    }
+
+    .hero-photo-stack[data-count="2"].is-spread
+    .hero-photo-card[data-position="1"],
+    .hero-photo-stack[data-count="2"].is-spread
+    .hero-photo-card[data-position="1"]:hover,
+    .hero-photo-stack[data-count="2"].is-spread
+    .hero-photo-card[data-position="1"]:focus-visible {
+        transform: translate(9%, 2%) rotate(3deg) scale(0.96);
+    }
+
+}
+
+
+/* -----------------------------------------
+   GERAK MINIMAL
+
+   Aturan reduced-motion di atas menyebut [data-position] saja, jadi
+   spesifisitasnya kalah dari blok dua-kartu ini. Kasus 2 kartu
+   diulang di sini supaya preferensi pengguna tetap yang menang.
+----------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .hero-photo-stack[data-count="2"] .hero-photo-card[data-position="1"],
+    .hero-photo-stack[data-count="2"].is-spread
+    .hero-photo-card[data-position="1"],
+    .hero-photo-stack[data-count="2"].is-spread
+    .hero-photo-card[data-position="1"]:hover,
+    .hero-photo-stack[data-count="2"].is-spread
+    .hero-photo-card[data-position="1"]:focus-visible {
+        transform: translate(0, 10px) rotate(0deg) scale(0.96);
+    }
+
+    .hero-photo-stack[data-count="2"].is-spread
+    .hero-photo-card[data-position="0"],
+    .hero-photo-stack[data-count="2"].is-spread
+    .hero-photo-card[data-position="0"]:hover,
+    .hero-photo-stack[data-count="2"].is-spread
+    .hero-photo-card[data-position="0"]:focus-visible {
+        transform: none;
+    }
+
+}
+
+
+/* =========================================
    SCROLL INDICATOR
 ========================================= */
 

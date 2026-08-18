@@ -454,14 +454,17 @@ hero_media
 ├── desktop_path text
 ├── mobile_path text
 ├── alt_text varchar(250)
+├── is_visible boolean NOT NULL DEFAULT true
 ├── created_at timestamptz NOT NULL
 └── updated_at timestamptz NOT NULL
 ```
 
-Constraint:
+Constraints:
 
 ```text
 slot_number BETWEEN 1 AND 3
+hero_media_slot_one_always_visible:
+    slot_number <> 1 OR is_visible = true
 ```
 
 Expected seeded rows:
@@ -477,6 +480,31 @@ Admin does not Add/Delete slots.
 Admin only replaces content in the three fixed positions.
 
 This matches the existing Hero stack design.
+
+## Visibility
+
+Added by `20260818100000_hero_media_visibility.sql`.
+
+Slots 2 and 3 can be taken off the public site without losing what is
+stored in them. Slot 1 is the primary photo and cannot be hidden — the
+public renderer uses it as the key that decides whether the CMS owns the
+Hero at all, so hiding it would silently drop the section back to the
+static V1 fallback rather than produce a Hero with no photo. The CHECK
+constraint above is the authority; the Admin control is rendered disabled
+as a convenience.
+
+Hiding is a metadata change only. `bucket_name`, `desktop_path` and
+`mobile_path` are never written by a visibility toggle and no Storage
+object is removed, so a hidden slot can be made visible again without
+re-uploading.
+
+Public SELECT requires `is_visible = true` on top of the existing
+configured test, so a hidden slot is never returned by the API — it is not
+sent and then hidden with CSS. The owner + `aal2` SELECT policy is a
+separate PERMISSIVE policy, so the Admin still reads every row, including
+hidden and unconfigured ones. Both policies must stay PERMISSIVE: making
+either RESTRICTIVE would AND them together and lock the owner out of their
+own hidden media.
 
 ---
 
@@ -2223,6 +2251,7 @@ one row maximum
 
 ```text
 slot 1–3 only
+slot 1 can never be hidden
 ```
 
 ## `about_organization`
