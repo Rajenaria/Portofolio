@@ -901,7 +901,6 @@ async function render(container, { signal }) {
       nameField.node,
       slugField.node,
       iconPicker.node,
-      iconField.node,
       publicField.node,
       groupField.node,
       activeField.node
@@ -1203,85 +1202,187 @@ function iconPreviewUrl(iconId) {
 }
 
 function createIconPicker(iconField) {
+
   const node = el("div", "form-field icon-picker");
 
-  const label = el("label", "form-label", "Icon Search");
+  /* ---- label + combobox input ---- */
+
+  const label = el("label", "form-label", "Icon");
   label.htmlFor = "technology-icon-search";
   append(node, label);
 
-  const search = el("input", "admin-input");
-  search.type = "search";
+  const combo = el("div", "icon-combobox");
+
+  const search = el("input", "admin-input icon-combobox-input");
+  search.type = "text";
   search.id = "technology-icon-search";
-  search.placeholder = "Search icons… e.g. React, Next.js, Docker";
+  search.placeholder = "Search icon… e.g. LinkedIn, React, Next.js";
   search.autocomplete = "off";
   search.spellcheck = false;
-  append(node, search);
+  search.setAttribute("role", "combobox");
+  search.setAttribute("aria-expanded", "false");
+  search.setAttribute("aria-autocomplete", "list");
+  search.setAttribute("aria-controls", "technology-icon-listbox");
 
-  const help = el(
-    "p",
-    "form-help",
-    "Brand icons are listed first. Selecting one fills the Iconify id below."
-  );
-  append(node, help);
+  const panel = el("div", "icon-combobox-panel");
+  panel.id = "technology-icon-listbox";
+  panel.setAttribute("role", "listbox");
+  panel.hidden = true;
 
-  const status = el("p", "form-help icon-picker-status");
+  const status = el("p", "icon-combobox-status");
   status.setAttribute("role", "status");
   status.setAttribute("aria-live", "polite");
-  append(node, status);
 
-  const results = el("div", "icon-picker-results");
-  append(node, results);
+  const list = el("div", "icon-combobox-list");
 
-  /* ---- live preview of whatever the id field currently holds ---- */
+  append(panel, status, list);
+  append(combo, search, panel);
+  append(node, combo);
 
-  const preview = el("div", "icon-picker-preview");
-  const previewImg = el("img", "icon-picker-preview-img");
-  previewImg.alt = "";
-  previewImg.setAttribute("aria-hidden", "true");
-  const previewText = el("span", "icon-picker-preview-text");
-  append(preview, previewImg, previewText);
-  append(node, preview);
+  append(
+    node,
+    el(
+      "p",
+      "form-help",
+      "Brand icons are listed first. Only the identifier is stored."
+    )
+  );
 
-  function renderPreview() {
-    const value = iconField.input.value.trim();
+  /* ---- selected icon card ---- */
+
+  const selected = el("div", "icon-selected");
+  const selectedLabel = el("p", "icon-selected-label", "Selected icon");
+  const selectedRow = el("div", "icon-selected-row");
+
+  const selectedImg = el("img", "icon-selected-img");
+  selectedImg.alt = "";
+  selectedImg.setAttribute("aria-hidden", "true");
+
+  const selectedId = el("span", "icon-selected-id");
+
+  const clearButton = el("button", "icon-selected-clear", "Clear");
+  clearButton.type = "button";
+
+  append(selectedRow, selectedImg, selectedId, clearButton);
+  append(selected, selectedLabel, selectedRow);
+  append(node, selected);
+
+  /* ---- advanced: the manual identifier field ---- */
+
+  const advanced = el("details", "icon-advanced");
+  const summary = el("summary", "icon-advanced-summary", "Advanced");
+  append(advanced, summary, iconField.node);
+  append(node, advanced);
+
+  /* ---------------------------------------------------------------- */
+
+  let options = [];
+  let activeIndex = -1;
+
+  function currentValue() {
+    return iconField.input.value.trim();
+  }
+
+  /*
+    "simple-icons:visual-studio-code" reads as "Visual Studio Code".
+    Derived from the identifier itself rather than a lookup table, so
+    a newly published icon never needs a code change.
+  */
+
+  function readableName(iconId) {
+    const name = iconId.split(":")[1] || iconId;
+
+    return name
+      .split("-")
+      .filter(Boolean)
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  }
+
+  function renderSelected() {
+    const value = currentValue();
 
     if (value === "") {
-      previewImg.removeAttribute("src");
-      previewImg.hidden = true;
-      previewText.textContent = "No icon selected.";
+      selected.hidden = true;
       return;
     }
+
+    selected.hidden = false;
+    selectedId.textContent = value;
 
     const url = iconPreviewUrl(value);
 
     if (!url) {
-      // A legacy bare key has no Iconify preview; it still resolves on the
-      // public site through the local icon map, so this is not an error.
-      previewImg.removeAttribute("src");
-      previewImg.hidden = true;
-      previewText.textContent = `${value} — no live preview (legacy key)`;
+      // A legacy bare key has no Iconify preview but is still valid.
+      selectedImg.hidden = true;
       return;
     }
 
-    previewImg.hidden = false;
-    previewImg.src = url;
-    previewText.textContent = value;
+    selectedImg.hidden = false;
+    selectedImg.src = url;
   }
 
-  // If the icon 404s or the API is unreachable the row must not look broken.
-  previewImg.addEventListener("error", () => {
-    previewImg.hidden = true;
-    previewText.textContent = `${iconField.input.value.trim()} — icon could not be loaded`;
+  selectedImg.addEventListener("error", () => {
+    selectedImg.hidden = true;
   });
 
-  iconField.input.addEventListener("input", renderPreview);
+  clearButton.addEventListener("click", () => {
+    iconField.input.value = "";
+    iconField.setError("");
+    renderSelected();
+    search.focus();
+  });
 
-  /* ---- search ---- */
+  iconField.input.addEventListener("input", renderSelected);
 
-  let searchToken = 0;
+  /* ---- dropdown ---- */
+
+  function closePanel() {
+    panel.hidden = true;
+    search.setAttribute("aria-expanded", "false");
+    activeIndex = -1;
+  }
+
+  function openPanel() {
+    panel.hidden = false;
+    search.setAttribute("aria-expanded", "true");
+  }
+
+  function setActive(index) {
+    if (options.length === 0) {
+      return;
+    }
+
+    activeIndex = (index + options.length) % options.length;
+
+    options.forEach((option, i) => {
+      const isActive = i === activeIndex;
+
+      option.button.classList.toggle("is-active", isActive);
+      option.button.setAttribute("aria-selected", isActive ? "true" : "false");
+
+      if (isActive) {
+        option.button.scrollIntoView({ block: "nearest" });
+      }
+    });
+  }
+
+  function choose(iconId) {
+    iconField.input.value = iconId;
+    iconField.setError("");
+    renderSelected();
+    closePanel();
+
+    search.value = "";
+    clear(list);
+    options = [];
+    status.textContent = "";
+    search.focus();
+  }
 
   function showResults(icons) {
-    clear(results);
+    clear(list);
+    options = [];
 
     icons.forEach(iconId => {
       const url = iconPreviewUrl(iconId);
@@ -1290,78 +1391,215 @@ function createIconPicker(iconField) {
         return;
       }
 
-      const button = el("button", "icon-picker-option");
+      const button = el("button", "icon-option");
       button.type = "button";
-      button.title = iconId;
+      button.setAttribute("role", "option");
+      button.setAttribute("aria-selected", "false");
 
-      const img = el("img", "icon-picker-option-img");
+      const img = el("img", "icon-option-preview");
       img.src = url;
       img.alt = "";
       img.loading = "lazy";
       img.setAttribute("aria-hidden", "true");
 
-      const caption = el("span", "icon-picker-option-label", iconId);
+      const text = el("span", "icon-option-text");
 
-      append(button, img, caption);
+      append(
+        text,
+        el("span", "icon-option-name", readableName(iconId)),
+        el("span", "icon-option-id", iconId)
+      );
 
-      button.addEventListener("click", () => {
-        iconField.input.value = iconId;
-        iconField.setError("");
-        renderPreview();
-        status.textContent = `Selected ${iconId}.`;
-      });
+      const check = el("span", "icon-option-check", "✓");
+      check.setAttribute("aria-hidden", "true");
 
-      append(results, button);
+      append(button, img, text, check);
+
+      if (iconId === currentValue()) {
+        button.classList.add("is-selected");
+      }
+
+      button.addEventListener("click", () => choose(iconId));
+
+      append(list, button);
+
+      options.push({ id: iconId, button });
     });
+  }
+
+  let searchToken = 0;
+
+  async function fetchJson(url) {
+    const response = await fetch(url, { headers: { Accept: "application/json" } });
+
+    if (!response.ok) {
+      throw new Error("icon search: " + response.status);
+    }
+
+    return await response.json();
+  }
+
+  /*
+    Iconify's relevance ranking buries brand icons: searching
+    "LinkedIn" returns no simple-icons entry at all, even though
+    simple-icons:linkedin exists. Sorting cannot fix what the API
+    never returned, so the brand collection is asked directly.
+
+    An exact name probe is the most reliable of the three, because
+    simple-icons names the icon after the brand ("linkedin",
+    "react"). Punctuation is stripped, so "Next.js" probes
+    "nextjs".
+  */
+
+  /*
+    Technology names are routinely punctuated ("Next.js", "Node.js",
+    "Socket.IO") while icon collections cannot use punctuation in a
+    name. simple-icons resolves this by spelling the separator out,
+    so "Next.js" is published as "nextdotjs".
+
+    These candidates are produced from the punctuation itself, not
+    from any brand list: lowercase as typed, punctuation removed,
+    each dot spelled as "dot", and punctuation as spaces. A name
+    with no punctuation collapses to a single candidate.
+  */
+
+  function queryCandidates(query) {
+    const lower = query.toLowerCase().trim();
+
+    const candidates = [
+      lower,
+      lower.replace(/[^a-z0-9]+/g, ""),
+      lower.replace(/\./g, "dot").replace(/[^a-z0-9]+/g, ""),
+      lower.replace(/[^a-z0-9]+/g, " ").trim()
+    ];
+
+    return [...new Set(candidates)].filter(Boolean);
+  }
+
+  /*
+    Asks the brand collection directly whether an icon of that exact
+    name exists. This is the most reliable source: Iconify's own
+    relevance search returns no simple-icons entry at all for
+    "LinkedIn", even though simple-icons:linkedin exists.
+  */
+
+  async function findBrandExact(query) {
+    const slugs = queryCandidates(query)
+      .map(candidate => candidate.replace(/[^a-z0-9]/g, ""))
+      .filter(Boolean);
+
+    const unique = [...new Set(slugs)];
+
+    if (unique.length === 0) {
+      return [];
+    }
+
+    try {
+      const body = await fetchJson(
+        ICONIFY_API +
+          "/" +
+          ICONIFY_PREFERRED_PREFIX +
+          ".json?icons=" +
+          unique.map(encodeURIComponent).join(",")
+      );
+
+      const icons = (body && body.icons) || {};
+
+      // Keeps candidate order, so the closest spelling wins.
+      return unique
+        .filter(slug => icons[slug])
+        .map(slug => ICONIFY_PREFERRED_PREFIX + ":" + slug);
+    } catch (error) {
+      return [];
+    }
+  }
+
+  async function findBrandSearch(query) {
+    try {
+      const body = await fetchJson(
+        ICONIFY_API +
+          "/search?query=" +
+          encodeURIComponent(query) +
+          "&prefixes=" +
+          ICONIFY_PREFERRED_PREFIX +
+          "&limit=24"
+      );
+
+      return Array.isArray(body.icons) ? body.icons : [];
+    } catch (error) {
+      return [];
+    }
+  }
+
+  async function findGeneral(query) {
+    const body = await fetchJson(
+      ICONIFY_API + "/search?query=" + encodeURIComponent(query) + "&limit=48"
+    );
+
+    return Array.isArray(body.icons) ? body.icons : [];
   }
 
   async function runSearch(query) {
     const token = ++searchToken;
 
-    clear(results);
+    openPanel();
+    clear(list);
+    options = [];
     status.textContent = "Searching…";
 
     try {
-      const response = await fetch(
-        `${ICONIFY_API}/search?query=${encodeURIComponent(query)}&limit=48`,
-        { headers: { Accept: "application/json" } }
-      );
+      /*
+        Brand-first by construction rather than by sorting
+        afterwards. The searches also run against the normalised
+        spelling, because Iconify returns nothing at all for a
+        punctuated query like "Next.js".
+      */
 
-      if (!response.ok) {
-        throw new Error(`icon search: ${response.status}`);
-      }
+      const candidates = queryCandidates(query);
+      const stripped = candidates[1] && candidates[1] !== candidates[0]
+        ? candidates[1]
+        : null;
 
-      const body = await response.json();
+      const [exact, brand, brandStripped, general, generalStripped] =
+        await Promise.all([
+          findBrandExact(query),
+          findBrandSearch(query),
+          stripped ? findBrandSearch(stripped) : Promise.resolve([]),
+          findGeneral(query),
+          stripped ? findGeneral(stripped).catch(() => []) : Promise.resolve([])
+        ]);
 
-      // A stale response from an earlier keystroke must not overwrite a newer one.
+      // A stale response from an earlier keystroke must not replace a newer one.
       if (token !== searchToken) {
         return;
       }
 
-      const icons = Array.isArray(body.icons) ? body.icons : [];
+      const seen = new Set();
+      const merged = [];
 
-      // Only ids that already satisfy the stored-value contract are offered,
-      // so nothing unexpected can reach the database.
-      const safe = icons.filter(id => ICONIFY_ID_PATTERN.test(id));
-
-      // Brand icons first; everything else keeps API order behind them.
-      safe.sort((a, b) => {
-        const aBrand = a.startsWith(`${ICONIFY_PREFERRED_PREFIX}:`) ? 0 : 1;
-        const bBrand = b.startsWith(`${ICONIFY_PREFERRED_PREFIX}:`) ? 0 : 1;
-        return aBrand - bBrand;
+      [exact, brand, brandStripped, general, generalStripped].forEach(group => {
+        group.forEach(id => {
+          if (!seen.has(id) && ICONIFY_ID_PATTERN.test(id)) {
+            seen.add(id);
+            merged.push(id);
+          }
+        });
       });
 
-      if (safe.length === 0) {
-        status.textContent = `No icons found for "${query}".`;
+      if (merged.length === 0) {
+        status.textContent = 'No icons found for "' + query + '".';
         return;
       }
 
-      status.textContent = `${safe.length} icon${safe.length === 1 ? "" : "s"} found.`;
-      showResults(safe);
+      status.textContent =
+        merged.length + " icon" + (merged.length === 1 ? "" : "s") + " found";
+
+      showResults(merged);
     } catch (error) {
       console.error(error);
+
       status.textContent =
-        "Icon search is unavailable. You can still type an Iconify id above.";
+        "Icon search is unavailable. Use Advanced to type an id.";
     }
   }
 
@@ -1373,7 +1611,9 @@ function createIconPicker(iconField) {
     const query = search.value.trim();
 
     if (query.length < 2) {
-      clear(results);
+      closePanel();
+      clear(list);
+      options = [];
       status.textContent = "";
       return;
     }
@@ -1381,10 +1621,43 @@ function createIconPicker(iconField) {
     debounce = window.setTimeout(() => runSearch(query), 300);
   });
 
-  // Enter inside the search box searches; it must not submit the dialog.
+  search.addEventListener("focus", () => {
+    if (options.length > 0) {
+      openPanel();
+    }
+  });
+
   search.addEventListener("keydown", event => {
+    if (event.key === "Escape") {
+      closePanel();
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+
+      if (panel.hidden && options.length > 0) {
+        openPanel();
+      }
+
+      setActive(activeIndex + 1);
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setActive(activeIndex - 1);
+      return;
+    }
+
     if (event.key === "Enter") {
       event.preventDefault();
+
+      if (activeIndex >= 0 && options[activeIndex]) {
+        choose(options[activeIndex].id);
+        return;
+      }
+
       window.clearTimeout(debounce);
 
       const query = search.value.trim();
@@ -1395,9 +1668,20 @@ function createIconPicker(iconField) {
     }
   });
 
-  renderPreview();
+  /*
+    Clicking anywhere outside the combobox closes it. Bound once per
+    editor dialog, which the modal removes together with this node.
+  */
 
-  return { node, renderPreview };
+  document.addEventListener("pointerdown", event => {
+    if (!combo.contains(event.target)) {
+      closePanel();
+    }
+  });
+
+  renderSelected();
+
+  return { node, renderSelected };
 }
 
 /* ------------------------------------------------------------------ */

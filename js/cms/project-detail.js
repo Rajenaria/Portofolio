@@ -60,6 +60,26 @@ const PORTFOLIO_URL = "index.html#portfolio";
 
 const ICONIFY_ID_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*:[a-z0-9]+(-[a-z0-9]+)*$/;
 
+const ICONIFY_API = "https://api.iconify.design";
+
+/*
+    Assembled only from an already-validated identifier, with each
+    segment encoded. The SVG is loaded as an image, never fetched
+    as text and never injected as markup.
+*/
+
+function iconifyImageUrl(iconId) {
+
+    if (!ICONIFY_ID_PATTERN.test(iconId)) {
+        return null;
+    }
+
+    const [prefix, name] = iconId.split(":");
+
+    return `${ICONIFY_API}/${encodeURIComponent(prefix)}/${encodeURIComponent(name)}.svg`;
+
+}
+
 const TOOL_ICONS = {
     figma: "logos:figma",
     python: "logos:python",
@@ -533,11 +553,38 @@ function renderTechnologies(project) {
                 ? key
                 : TOOL_ICONS[key];
 
-            if (iconName) {
+            const iconUrl = iconName
+                ? iconifyImageUrl(iconName)
+                : null;
 
-                const icon = document.createElement("iconify-icon");
-                icon.setAttribute("icon", iconName);
-                pill.appendChild(icon);
+            if (iconUrl) {
+
+                /*
+                    An <img> rather than <iconify-icon>: a missing
+                    icon reports failure and is simply removed,
+                    leaving the text-only pill the layout already
+                    handles, instead of an empty gap.
+                */
+
+                const image = document.createElement("img");
+                image.className = "project-tool-icon";
+                image.setAttribute("alt", "");
+                image.setAttribute("aria-hidden", "true");
+                image.setAttribute("loading", "lazy");
+                image.setAttribute("decoding", "async");
+
+                // Listener first: setting src can fail immediately
+                // from cache, and a handler attached afterwards
+                // would miss the event.
+                image.addEventListener(
+                    "error",
+                    () => image.remove(),
+                    { once: true }
+                );
+
+                image.setAttribute("src", iconUrl);
+
+                pill.appendChild(image);
 
             }
 

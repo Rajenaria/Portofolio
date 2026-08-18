@@ -136,6 +136,38 @@ function initialsFor(name) {
 
 const ICONIFY_ID_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*:[a-z0-9]+(-[a-z0-9]+)*$/;
 
+const ICONIFY_API = "https://api.iconify.design";
+
+/*
+    Turns a validated identifier into the Iconify SVG endpoint.
+
+    The URL is assembled only from an id that already matched the
+    pattern above, and each segment is encoded, so the address can
+    never be steered somewhere else. The SVG is loaded as an image
+    and is never fetched as text or injected as markup.
+*/
+
+function iconifyImageUrl(iconId) {
+
+    if (!ICONIFY_ID_PATTERN.test(iconId)) {
+        return null;
+    }
+
+    const [prefix, name] = iconId.split(":");
+
+    return `${ICONIFY_API}/${encodeURIComponent(prefix)}/${encodeURIComponent(name)}.svg`;
+
+}
+
+function initialsChip(name) {
+
+    const chip = document.createElement("div");
+    chip.className = "tech-custom-icon";
+    chip.textContent = initialsFor(name);
+    return chip;
+
+}
+
 /*
     Builds the icon element for one technology row.
 
@@ -155,12 +187,37 @@ function buildIcon(row) {
 
     const key = typeof row.icon_key === "string" ? row.icon_key.trim() : "";
 
-    if (ICONIFY_ID_PATTERN.test(key)) {
+    const iconUrl = iconifyImageUrl(key);
 
-        const icon = document.createElement("iconify-icon");
-        icon.className = "tech-iconify";
-        icon.setAttribute("icon", key);
-        return icon;
+    if (iconUrl) {
+
+        /*
+            A plain <img> rather than the <iconify-icon> element:
+            an image reports failure, so an id that is well formed
+            but names an icon that does not exist can be swapped
+            for the initials chip instead of leaving an empty box.
+            The technology name stays visible beside it, so the
+            image itself is decorative.
+        */
+
+        const image = document.createElement("img");
+        image.className = "tech-local-icon";
+        image.setAttribute("alt", "");
+        image.setAttribute("aria-hidden", "true");
+        image.setAttribute("loading", "lazy");
+        image.setAttribute("decoding", "async");
+
+        // Listener first: setting src can fail immediately from
+        // cache, and a handler attached afterwards would miss it.
+        image.addEventListener(
+            "error",
+            () => image.replaceWith(initialsChip(row.name)),
+            { once: true }
+        );
+
+        image.setAttribute("src", iconUrl);
+
+        return image;
 
     }
 
@@ -168,10 +225,7 @@ function buildIcon(row) {
 
     if (!entry) {
 
-        const fallback = document.createElement("div");
-        fallback.className = "tech-custom-icon";
-        fallback.textContent = initialsFor(row.name);
-        return fallback;
+        return initialsChip(row.name);
 
     }
 

@@ -20,7 +20,7 @@
         { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' https://code.iconify.design; style-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; font-src 'self' https://cdn.jsdelivr.net; img-src 'self' data: https://hldacuppejztqzqaejsi.supabase.co; connect-src 'self' https://hldacuppejztqzqaejsi.supabase.co https://api.iconify.design; frame-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'"
+          "value": "default-src 'self'; script-src 'self' https://code.iconify.design; style-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; font-src 'self' https://cdn.jsdelivr.net; img-src 'self' data: https://hldacuppejztqzqaejsi.supabase.co https://api.iconify.design; connect-src 'self' https://hldacuppejztqzqaejsi.supabase.co https://api.iconify.design; frame-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'"
         }
       ]
     },
@@ -30,7 +30,7 @@
         { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' https://code.iconify.design; style-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; font-src 'self' https://cdn.jsdelivr.net; img-src 'self' data: https://hldacuppejztqzqaejsi.supabase.co; connect-src 'self' https://hldacuppejztqzqaejsi.supabase.co https://api.iconify.design; frame-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'"
+          "value": "default-src 'self'; script-src 'self' https://code.iconify.design; style-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; font-src 'self' https://cdn.jsdelivr.net; img-src 'self' data: https://hldacuppejztqzqaejsi.supabase.co https://api.iconify.design; connect-src 'self' https://hldacuppejztqzqaejsi.supabase.co https://api.iconify.design; frame-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'"
         }
       ]
     },
@@ -40,7 +40,7 @@
         { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' https://code.iconify.design; style-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; font-src 'self' https://cdn.jsdelivr.net; img-src 'self' data: https://hldacuppejztqzqaejsi.supabase.co; connect-src 'self' https://hldacuppejztqzqaejsi.supabase.co https://api.iconify.design; frame-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'"
+          "value": "default-src 'self'; script-src 'self' https://code.iconify.design; style-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; font-src 'self' https://cdn.jsdelivr.net; img-src 'self' data: https://hldacuppejztqzqaejsi.supabase.co https://api.iconify.design; connect-src 'self' https://hldacuppejztqzqaejsi.supabase.co https://api.iconify.design; frame-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'"
         }
       ]
     },
@@ -51,7 +51,7 @@
         { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' https://code.iconify.design; style-src 'self' 'unsafe-inline'; font-src 'self' https://cdn.jsdelivr.net; img-src 'self' data:; connect-src 'self' https://api.iconify.design; frame-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; object-src 'none'"
+          "value": "default-src 'self'; script-src 'self' https://code.iconify.design; style-src 'self' 'unsafe-inline'; font-src 'self' https://cdn.jsdelivr.net; img-src 'self' data: https://api.iconify.design; connect-src 'self' https://api.iconify.design; frame-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; object-src 'none'"
         }
       ]
     },

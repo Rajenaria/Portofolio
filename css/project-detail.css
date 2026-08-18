@@ -970,3 +970,19 @@ a {
     margin-bottom: 34px;
 }
 
+
+/* =========================================
+   TOOL ICON IMAGE
+
+   Iconify icons on the tool pills render as plain <img>, matching
+   the size the <iconify-icon> element used.
+========================================= */
+
+.project-tool-icon {
+    width: 17px;
+    height: 17px;
+
+    object-fit: contain;
+
+    flex-shrink: 0;
+}
