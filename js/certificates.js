@@ -175,12 +175,41 @@
     const DRAG_GAIN = 2.2;
 
     /* Ambang peredupan kartu, dalam derajat dari posisi depan.
-       |rel| <= FADE_START  -> opacity 1 (terbaca penuh)
-       |rel| >= FADE_END    -> opacity 0 (membelakangi —
-       WAJIB disembunyikan, kalau tidak sisi belakang kartu
-       terlihat terbalik seperti cermin). */
-    const FADE_START = 45;
-    const FADE_END = 110;
+       |rel| <= fadeStart -> opacity 1 (terbaca penuh)
+       |rel| >= fadeEnd   -> opacity 0 (membelakangi — WAJIB
+       disembunyikan, kalau tidak sisi belakang kartu terlihat
+       terbalik seperti cermin).
+
+       Keduanya DIHITUNG dari step (= 360 / jumlah kartu), bukan
+       angka mati, supaya komposisi globe-nya bertahan berapa pun
+       jumlah sertifikatnya. Nilai V1 dipakai sebagai titik
+       kalibrasi: dengan 5 kartu rumus ini menghasilkan 45 dan
+       110.2 — praktis identik dengan 45 / 110 yang lama.
+
+       Bagian proporsionalnya membuat tetangga kiri-kanan tetap di
+       sekitar 0.59 di berapa pun jumlah kartu. Yang bekerja cuma
+       clamp di kedua ujung:
+
+         - BATAS ATAS menahan kasus 3 kartu. Di sana tetangga
+           duduk di 120°, sudah lewat horizon backface: yang
+           menghadap kita justru sisi BELAKANG kartu, terbaca
+           terbalik seperti cermin. Batas ini menekan opacity-nya
+           ke ~0.26 — cukup untuk hadir sebagai kedalaman, terlalu
+           redup untuk teks cerminnya terbaca.
+
+         - BATAS BAWAH menahan jumlah kartu besar supaya tetangga
+           tidak merangkak naik ke opacity penuh dan jadi ramai.
+           Dengan 8 atau 12 kartu tetap hanya dua tetangga yang
+           tampak, sisanya 0. */
+
+    const FADE_START_FACTOR = 0.625;
+    const FADE_END_FACTOR = 1.53;
+
+    const FADE_START_MIN = 16;
+    const FADE_START_MAX = 62;
+
+    const FADE_END_MIN = 40;
+    const FADE_END_MAX = 140;
 
     /* Di bawah opacity ini kartu dianggap tidak ada:
        pointer-events none, aria-hidden, keluar dari tab order. */
@@ -211,21 +240,47 @@
     }
 
 
+    function clamp(value, min, max) {
+
+        return Math.min(Math.max(value, min), max);
+    }
+
+
+    /* Ambang peredupan untuk satu jumlah kartu tertentu.
+       Dihitung sekali per controller — step tidak berubah selama
+       jumlah kartunya tetap. */
+    function computeFade(step) {
+
+        return {
+            start: clamp(
+                step * FADE_START_FACTOR,
+                FADE_START_MIN,
+                FADE_START_MAX
+            ),
+            end: clamp(
+                step * FADE_END_FACTOR,
+                FADE_END_MIN,
+                FADE_END_MAX
+            )
+        };
+    }
+
+
     /* Opacity kartu berdasarkan seberapa jauh ia berputar
        dari posisi depan. */
-    function faceOpacity(relAngle) {
+    function faceOpacity(relAngle, fade) {
 
         const a = Math.abs(relAngle);
 
-        if (a <= FADE_START) {
+        if (a <= fade.start) {
             return 1;
         }
 
-        if (a >= FADE_END) {
+        if (a >= fade.end) {
             return 0;
         }
 
-        return 1 - (a - FADE_START) / (FADE_END - FADE_START);
+        return 1 - (a - fade.start) / (fade.end - fade.start);
     }
 
 
@@ -393,7 +448,12 @@
         flip.append(front, back);
         slot.appendChild(flip);
 
-        return { slot, flip, back, backInner, link, hasLink, index };
+        /* `faces` dipakai render(): peredupan dipasang di kedua
+           muka kartu, bukan di slot — lihat catatan di render(). */
+        return {
+            slot, flip, front, back, backInner, link, hasLink, index,
+            faces: [front, back]
+        };
     }
 
 
@@ -417,14 +477,15 @@
        5. CAROUSEL
     ===================================================== */
 
-    function initCarousel(refs) {
+    function initCarousel(refs, data) {
 
         const {
             section, carousel, stage, ring, dotsWrap, prevBtn, nextBtn
         } = refs;
 
-        const total = CERTIFICATES.length;
+        const total = data.length;
         const step = 360 / total;
+        const fade = computeFade(step);
 
         const reducedMotion = window.matchMedia(
             "(prefers-reduced-motion: reduce)"
@@ -432,14 +493,14 @@
 
         /* ---- Bangun kartu + titik indikator ---- */
 
-        const cards = CERTIFICATES.map(function (cert, index) {
+        const cards = data.map(function (cert, index) {
 
             const card = buildCard(cert, index, step);
             ring.appendChild(card.slot);
             return card;
         });
 
-        const dots = CERTIFICATES.map(function (cert, index) {
+        const dots = data.map(function (cert, index) {
 
             const dot = buildDot(index, cert);
             dotsWrap.appendChild(dot);
@@ -448,42 +509,86 @@
 
 
         /* ---- STATE ----
-           `index` sengaja tidak dibatasi 0..n-1: ia boleh terus
-           naik/turun supaya putaran bisa berlanjut ke arah yang
-           sama tanpa "mundur" satu lingkaran penuh.
-           `angle` = sudut ring saat ini (derajat). */
 
-        let index = START_INDEX;
-        let angle = -index * step;
+           `activeIndex` = kartu yang menghadap depan, SELALU di
+           rentang 0..total-1. Versi sebelumnya memakai indeks yang
+           boleh tumbuh tanpa batas supaya putaran bisa lanjut ke
+           arah yang sama; sekarang arah putaran dibawa oleh
+           `angle`, jadi indeksnya tidak perlu ikut membesar.
+
+           `angle` = sudut ring saat ini (derajat), tetap kontinu
+           supaya rotasi selalu mengambil jalur terpendek dan tidak
+           pernah "mundur" satu lingkaran penuh. Ia dirapikan ke
+           rentang wajar hanya saat carousel diam — lihat
+           normalizeAccumulatedAngle().
+
+           Invarian yang dijaga keduanya:
+               angle ≡ -activeIndex * step  (mod 360) */
+
+        let activeIndex = ((START_INDEX % total) + total) % total;
+        let angle = -activeIndex * step;
 
         /* Dibaca ulang dari CSS tiap kali layout berubah —
            lihat measure(). Jangan hardcode. */
         let radius = 300;
 
         let frame = 0;
+        let destroyed = false;
 
 
         function frontIndex() {
-            return ((index % total) + total) % total;
+            return activeIndex;
         }
 
 
-        /* ---- Terapkan sudut ke DOM ----
-           Hanya menyentuh transform dan opacity. */
-
-        function render() {
+        function applyRingTransform() {
 
             ring.style.transform =
                 "translateZ(calc(-1 * var(--cert-radius))) " +
                 "rotateY(" + angle.toFixed(3) + "deg)";
+        }
+
+
+        /* ---- Terapkan sudut ke DOM ----
+           Hanya menyentuh transform, opacity dan visibility. */
+
+        function render() {
+
+            applyRingTransform();
 
             cards.forEach(function (card) {
 
                 const rel = normalizeAngle(card.index * step + angle);
-                const opacity = faceOpacity(rel);
+                const opacity = faceOpacity(rel, fade);
                 const visible = opacity > HIDDEN_OPACITY;
 
-                card.slot.style.opacity = opacity.toFixed(3);
+                /* PENTING: opacity dipasang di kedua MUKA kartu,
+                   tidak pernah di .cert-slot.
+
+                   .cert-slot memegang transform-style: preserve-3d.
+                   Opacity pecahan di elemen ber-preserve-3d memaksa
+                   transform-style-nya jadi flat (CSS Transforms
+                   Level 2), yang menggepengkan .cert-flip dan kedua
+                   muka ke satu bidang dan melumpuhkan
+                   backface-visibility — kartu yang membelakangi
+                   kita jadi ikut tergambar dan menumpuk. Muka kartu
+                   adalah daun, jadi meredupkannya aman.
+
+                   visibility ikut disetel supaya kartu yang sudah
+                   benar-benar hilang berhenti jadi lapisan yang
+                   masih dicat compositor. Transisi visibility di
+                   CSS menahan nilai "visible" selama fade berjalan,
+                   jadi menghilang tetap halus dan muncul kembali
+                   tetap seketika. */
+
+                const value = opacity.toFixed(3);
+                const shown = opacity > 0 ? "visible" : "hidden";
+
+                card.faces.forEach(function (face) {
+                    face.style.opacity = value;
+                    face.style.visibility = shown;
+                });
+
                 card.slot.style.pointerEvents = visible ? "auto" : "none";
                 card.slot.setAttribute(
                     "aria-hidden",
@@ -556,17 +661,79 @@
         }
 
 
+        /* ---- MERAPIKAN SUDUT YANG MENUMPUK ----
+
+           rotateY(a) dan rotateY(a - 360k) menghasilkan orientasi
+           yang identik, jadi sudut yang sudah menumpuk boleh
+           dikecilkan tanpa ada yang bergerak di layar — ASAL
+           transisinya dimatikan saat penulisan ulang, kalau tidak
+           browser justru memutar balik k lingkaran penuh.
+
+           Karena itu ini hanya dijalankan di batas aman: beberapa
+           saat setelah rotasi terakhir, ketika transisi sudah
+           selesai dan sudut yang tergambar sama persis dengan
+           nilai `angle`. Kalau ada drag berjalan, ditunda. */
+
+        const SETTLE_MS = 950;
+
+        let settleTimer = 0;
+
+
+        function normalizeAccumulatedAngle() {
+
+            if (destroyed || dragging) {
+                return;
+            }
+
+            const turns = Math.round(angle / 360);
+
+            if (turns === 0) {
+                return;
+            }
+
+            angle -= turns * 360;
+
+            const previous = ring.style.transition;
+
+            ring.style.transition = "none";
+            applyRingTransform();
+
+            /* Paksa reflow supaya nilai baru benar-benar terpakai
+               sebelum transisinya dinyalakan lagi. */
+            void ring.offsetWidth;
+
+            ring.style.transition = previous;
+        }
+
+
+        function scheduleNormalize() {
+
+            window.clearTimeout(settleTimer);
+            settleTimer = window.setTimeout(
+                normalizeAccumulatedAngle,
+                SETTLE_MS
+            );
+        }
+
+
         /* ---- NAVIGASI ----
-           Memutar carousel selalu mengembalikan semua kartu ke
-           sisi depan. */
 
-        function goTo(newIndex) {
+           Semua rotasi lewat satu pintu: rotateBy(delta), dengan
+           delta = jumlah langkah bertanda. `angle` bergerak kontinu
+           (jalur terpendek terjaga), `activeIndex` melipat di
+           0..total-1. Memutar carousel selalu mengembalikan semua
+           kartu ke sisi depan. */
 
-            index = newIndex;
-            angle = -index * step;
+        function rotateBy(delta) {
+
+            if (delta !== 0) {
+                angle -= delta * step;
+                activeIndex = ((activeIndex + delta) % total + total) % total;
+            }
 
             resetFlips();
             render();
+            scheduleNormalize();
         }
 
 
@@ -575,22 +742,33 @@
 
         function goToCard(target) {
 
-            const front = frontIndex();
-
-            let delta = ((target - front) % total + total) % total;
+            let delta = ((target - activeIndex) % total + total) % total;
 
             if (delta > total / 2) {
                 delta -= total;
             }
 
-            goTo(index + delta);
+            rotateBy(delta);
         }
 
 
-        /* Lepas drag -> kunci ke kartu terdekat. */
+        /* Lepas drag -> kunci ke kartu terdekat.
 
-        function snap() {
-            goTo(Math.round(-angle / step));
+           Dihitung relatif terhadap keadaan saat drag DIMULAI,
+           bukan dari indeks absolut, supaya perapian sudut di atas
+           tidak pernah bisa menggeser hasil snap. */
+
+        function snap(startAngle, startActive) {
+
+            const stepsMoved = Math.round((startAngle - angle) / step);
+
+            angle = startAngle - stepsMoved * step;
+            activeIndex =
+                ((startActive + stepsMoved) % total + total) % total;
+
+            resetFlips();
+            render();
+            scheduleNormalize();
         }
 
 
@@ -627,6 +805,7 @@
         let pointerId = null;
         let startX = 0;
         let startAngle = 0;
+        let startActive = 0;
         let suppressClick = false;
 
 
@@ -658,7 +837,7 @@
                    yang menyusul membalik kartu. */
                 suppressClick = true;
 
-                snap();
+                snap(startAngle, startActive);
             }
 
             captured = false;
@@ -666,22 +845,79 @@
         }
 
 
-        stage.addEventListener("pointerdown", function (event) {
+        /* Hanya pointer yang sedang kita lacak yang boleh
+           mengakhiri drag. Tanpa penjagaan ini, jari kedua yang
+           diangkat duluan akan menghentikan drag jari pertama. */
+
+        function handlePointerEnd(event) {
+
+            if (pointerId !== null && event.pointerId !== pointerId) {
+                return;
+            }
+
+            endDrag();
+        }
+
+
+        function handlePointerDown(event) {
 
             /* Tombol tengah/kanan mouse tidak memutar apa pun. */
             if (event.button !== 0 && event.pointerType === "mouse") {
                 return;
             }
 
+            /* Sentuhan kedua tidak boleh menimpa drag yang sedang
+               berjalan — dulu ia mengganti pointerId, startX dan
+               startAngle di tengah jalan, dan begitu salah satu
+               jari diangkat sisa state-nya bisa tertinggal: kelas
+               is-dragging tidak pernah dilepas, transisi tetap
+               mati, dan globe-nya lompat.
+
+               Kalau state lama ternyata belum pernah menangkap
+               pointer (geseran di bawah ambang lalu pointer-nya
+               hilang di luar stage), ia dianggap basi dan
+               dibersihkan supaya drag berikutnya tidak ikut mati. */
+
+            if (dragging) {
+
+                if (captured) {
+                    return;
+                }
+
+                endDrag();
+            }
+
+            if (event.isPrimary === false) {
+                return;
+            }
+
+            /* Bersihkan penekan klik dari gestur SEBELUMNYA.
+
+               endDrag() menyalakan suppressClick supaya klik yang
+               menyusul sebuah drag tidak ikut membalik kartu.
+               Dulu ia hanya dimatikan lagi oleh handler klik di
+               kartu — padahal begitu pointer capture diambil,
+               klik penutup drag mendarat di stage, bukan di
+               kartu. Handler-nya tidak pernah jalan, flag-nya
+               tertinggal menyala, dan tap berikutnya ikut ditelan.
+
+               Setiap gestur baru selalu dimulai dari pointerdown,
+               dan klik milik gestur lama pasti sudah lewat saat
+               itu — jadi di sinilah tempat yang tepat untuk
+               menolkannya, tanpa bergantung pada waktu. */
+
+            suppressClick = false;
+
             dragging = true;
             captured = false;
             pointerId = event.pointerId;
             startX = event.clientX;
             startAngle = angle;
-        });
+            startActive = activeIndex;
+        }
 
 
-        stage.addEventListener("pointermove", function (event) {
+        function handlePointerMove(event) {
 
             if (!dragging || event.pointerId !== pointerId) {
                 return;
@@ -712,17 +948,36 @@
                 (dx / radius) * (180 / Math.PI) * DRAG_GAIN;
 
             scheduleRender();
-        });
+        }
 
 
-        stage.addEventListener("pointerup", endDrag);
-        stage.addEventListener("pointercancel", endDrag);
-        stage.addEventListener("lostpointercapture", endDrag);
+        stage.addEventListener("pointerdown", handlePointerDown);
+        stage.addEventListener("pointermove", handlePointerMove);
+        stage.addEventListener("pointerup", handlePointerEnd);
+        stage.addEventListener("pointercancel", handlePointerEnd);
+        stage.addEventListener("lostpointercapture", handlePointerEnd);
+
+        /* Jaring pengaman: sebelum ambang geser terlampaui belum
+           ada pointer capture, jadi pointerup-nya bisa mendarat di
+           elemen lain dan stage tidak pernah tahu drag-nya sudah
+           berakhir. Pasangan listener di window menutup celah itu.
+           Untuk drag yang sudah tertangkap, event ini cuma
+           gelembung dari stage dan endDrag() kedua langsung
+           keluar karena dragging sudah false. */
+
+        window.addEventListener("pointerup", handlePointerEnd);
+        window.addEventListener("pointercancel", handlePointerEnd);
 
 
         /* =================================================
            KLIK, KEYBOARD, TOMBOL, TITIK
         ================================================= */
+
+        /* Listener kartu dan titik indikator menempel pada elemen
+           yang dibuat controller ini sendiri. Saat rebuild, elemen
+           itu ikut dibuang, jadi listener-nya mati bersamanya —
+           yang perlu dilepas manual hanya listener pada elemen
+           yang TETAP hidup (stage, carousel, tombol, window). */
 
         cards.forEach(function (card) {
 
@@ -762,25 +1017,31 @@
         /* Panah keyboard bekerja di mana pun fokus berada di
            dalam carousel. */
 
-        carousel.addEventListener("keydown", function (event) {
+        function handleCarouselKeydown(event) {
 
             if (event.key === "ArrowLeft") {
                 event.preventDefault();
-                goTo(index - 1);
+                rotateBy(-1);
             } else if (event.key === "ArrowRight") {
                 event.preventDefault();
-                goTo(index + 1);
+                rotateBy(1);
             }
-        });
+        }
 
 
-        prevBtn.addEventListener("click", function () {
-            goTo(index - 1);
-        });
+        function handlePrevClick() {
+            rotateBy(-1);
+        }
 
-        nextBtn.addEventListener("click", function () {
-            goTo(index + 1);
-        });
+
+        function handleNextClick() {
+            rotateBy(1);
+        }
+
+
+        carousel.addEventListener("keydown", handleCarouselKeydown);
+        prevBtn.addEventListener("click", handlePrevClick);
+        nextBtn.addEventListener("click", handleNextClick);
 
 
         dots.forEach(function (dot, i) {
@@ -851,24 +1112,194 @@
         }
 
 
-        window.addEventListener("resize", scheduleMeasure);
-        window.addEventListener("orientationchange", scheduleMeasure);
+        /* ---- RESIZE: LEBAR SAJA ----
+
+           Di HP, menampilkan/menyembunyikan bilah URL memicu
+           `resize` dengan LEBAR yang tidak berubah — hanya tinggi
+           viewport-nya. Dulu tiap event itu menjalankan measure()
+           penuh, yang menulis ulang --cert-h, mengubah tinggi
+           .cert-ring dan karenanya margin-top-nya, sehingga
+           globe-nya tersentak vertikal cuma karena halaman
+           di-scroll. Desktop dan emulasi DevTools tidak pernah
+           mengalaminya.
+
+           Konvensinya sudah ada di js/experience-stack.js:
+           simpan lebar terakhir, dan hanya ukur ulang kalau lebar
+           itu benar-benar berubah. orientationchange tetap selalu
+           mengukur ulang: di sana lebar memang berubah, tapi
+           browser bisa melaporkannya terlambat. */
+
+        let lastWidth = window.innerWidth;
+
+
+        function handleResize() {
+
+            const width = window.innerWidth;
+
+            if (width === lastWidth) {
+                return;
+            }
+
+            lastWidth = width;
+            scheduleMeasure();
+        }
+
+
+        function handleOrientationChange() {
+
+            lastWidth = window.innerWidth;
+            scheduleMeasure();
+        }
+
+
+        window.addEventListener("resize", handleResize);
+        window.addEventListener("orientationchange", handleOrientationChange);
 
         /* Font yang belum selesai dimuat bisa mengubah tinggi
            teks di sisi belakang — ukur ulang setelah siap. */
         if (document.fonts && document.fonts.ready) {
-            document.fonts.ready.then(measure).catch(function () {});
+            document.fonts.ready.then(function () {
+
+                if (!destroyed) {
+                    measure();
+                }
+
+            }).catch(function () {});
         }
 
         reducedMotion.addEventListener("change", render);
 
         measure();
+
+
+        /* =================================================
+           TEARDOWN
+
+           Belum dipakai V1 — carousel dibangun sekali saja. Ia ada
+           supaya integrasi CMS nanti bisa membangun ulang carousel
+           dari data yang di-fetch tanpa menumpuk listener atau
+           kartu. Semua yang dipasang di elemen yang TETAP hidup
+           (stage, carousel, tombol, window, media query) dilepas di
+           sini; listener pada kartu dan titik ikut mati sendiri
+           karena elemennya dibuang.
+        ================================================= */
+
+        function destroy() {
+
+            if (destroyed) {
+                return;
+            }
+
+            destroyed = true;
+
+            if (frame) {
+                cancelAnimationFrame(frame);
+                frame = 0;
+            }
+
+            window.clearTimeout(resizeTimer);
+            window.clearTimeout(settleTimer);
+
+            /* Lepas pointer capture yang mungkin masih dipegang,
+               lalu nolkan state drag-nya. */
+            try {
+                if (pointerId !== null &&
+                    stage.hasPointerCapture(pointerId)) {
+                    stage.releasePointerCapture(pointerId);
+                }
+            } catch (err) {
+                /* diabaikan */
+            }
+
+            dragging = false;
+            captured = false;
+            pointerId = null;
+            carousel.classList.remove("is-dragging");
+
+            stage.removeEventListener("pointerdown", handlePointerDown);
+            stage.removeEventListener("pointermove", handlePointerMove);
+            stage.removeEventListener("pointerup", handlePointerEnd);
+            stage.removeEventListener("pointercancel", handlePointerEnd);
+            stage.removeEventListener("lostpointercapture", handlePointerEnd);
+
+            window.removeEventListener("pointerup", handlePointerEnd);
+            window.removeEventListener("pointercancel", handlePointerEnd);
+
+            carousel.removeEventListener("keydown", handleCarouselKeydown);
+            prevBtn.removeEventListener("click", handlePrevClick);
+            nextBtn.removeEventListener("click", handleNextClick);
+
+            window.removeEventListener("resize", handleResize);
+            window.removeEventListener(
+                "orientationchange",
+                handleOrientationChange
+            );
+
+            reducedMotion.removeEventListener("change", render);
+
+            while (ring.firstChild) {
+                ring.removeChild(ring.firstChild);
+            }
+
+            while (dotsWrap.firstChild) {
+                dotsWrap.removeChild(dotsWrap.firstChild);
+            }
+
+            section.style.removeProperty("--cert-h");
+        }
+
+
+        return { destroy: destroy };
     }
 
 
     /* =====================================================
        6. INIT
     ===================================================== */
+
+    /* SATU controller hidup pada satu waktu.
+
+       V1 memanggil build() tepat sekali, dari DOMContentLoaded.
+       Yang membuat modul ini siap untuk CMS nanti adalah: build()
+       selalu membongkar controller sebelumnya lebih dulu, jadi
+       memanggilnya lagi dengan data lain tidak mungkin
+       meninggalkan kartu ganda atau listener ganda. Tidak ada
+       fetch di sini — sumber datanya masih array CERTIFICATES di
+       atas. */
+
+    let refs = null;
+    let controller = null;
+
+
+    function build(data) {
+
+        if (!refs) {
+            return false;
+        }
+
+        /* Validasi SEBELUM membongkar apa pun.
+
+           Globe butuh minimal tiga kartu untuk terbaca sebagai
+           globe. Kalau datanya lebih pendek dari itu, permintaan
+           ditolak dan carousel yang sedang tampil dibiarkan utuh —
+           membongkarnya dulu baru menolak akan menyisakan section
+           kosong, yang justru lebih buruk daripada tidak jadi
+           membangun ulang. */
+
+        if (!Array.isArray(data) || data.length < 3) {
+            return false;
+        }
+
+        if (controller) {
+            controller.destroy();
+            controller = null;
+        }
+
+        controller = initCarousel(refs, data);
+
+        return true;
+    }
+
 
     document.addEventListener("DOMContentLoaded", function () {
 
@@ -885,7 +1316,7 @@
             return;
         }
 
-        initCarousel({
+        refs = {
             section: section,
             carousel: carousel,
             stage: stage,
@@ -893,7 +1324,24 @@
             dotsWrap: dotsWrap,
             prevBtn: prevBtn,
             nextBtn: nextBtn
-        });
+        };
+
+        build(CERTIFICATES);
+
+        /* Pintu masuk untuk fase berikutnya (dan untuk pengujian
+           jumlah kartu). Mengikuti pola yang sudah dipakai
+           window.refreshProjectCarousel dan
+           window.refreshOrganizationGallery. */
+        window.certificatesCarousel = {
+            rebuild: build,
+            destroy: function () {
+
+                if (controller) {
+                    controller.destroy();
+                    controller = null;
+                }
+            }
+        };
 
     });
 
