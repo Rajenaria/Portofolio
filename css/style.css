@@ -13230,3 +13230,87 @@ a.footer-contact-item:hover {
     }
 
 }
+
+/* =========================================
+   TECH STACK — CMS ICON SIZING
+
+   The CMS renders the same tile as the static
+   V1 markup — icon + name — so nothing here
+   changes layout, spacing or backgrounds. The
+   one difference is the icon element: static
+   tiles use an icon font (.tech-item > i), CMS
+   tiles use an <img>, which needs its own box.
+
+   No background, border or card is drawn. The
+   icon sits directly on the Tech Stack surface
+   and whatever transparency the source artwork
+   has is preserved, including its own colours.
+========================================= */
+
+/*
+   A fixed box with contain: every logo occupies
+   the same 33px footprint as the icon font it
+   replaces, and a non-square logo is letterboxed
+   inside it rather than stretched to fill it.
+*/
+
+.tech-item-cms .tech-icon-img {
+    width: 33px;
+    height: 33px;
+
+    max-width: 100%;
+    max-height: 100%;
+
+    object-fit: contain;
+
+    flex-shrink: 0;
+
+    display: block;
+
+    background: none;
+
+    transition:
+        transform 0.35s
+        cubic-bezier(
+            0.22,
+            1,
+            0.36,
+            1
+        );
+}
+
+
+/* Same lift the static icons already use. */
+
+.tech-item-cms:hover .tech-icon-img {
+    transform:
+        scale(1.12)
+        rotate(-3deg);
+}
+
+
+/* =========================================
+   MOBILE
+
+   Matches the 28px the static .tech-item > i
+   drops to at this width, so a mixed list
+   stays even.
+========================================= */
+
+@media (max-width: 650px) {
+
+    .tech-item-cms .tech-icon-img {
+        width: 28px;
+        height: 28px;
+    }
+
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+
+    .tech-item-cms .tech-icon-img {
+        transition: none !important;
+    }
+
+}

@@ -50,43 +50,73 @@ const PUBLIC_GROUPS = [
    src itself.
 --------------------------------------------------------- */
 
-const ICON_MAP = {
-    python: { kind: "devicon", cls: "devicon-python-plain colored" },
-    c: { kind: "devicon", cls: "devicon-c-plain colored" },
-    cpp: { kind: "devicon", cls: "devicon-cplusplus-plain colored" },
-    javascript: { kind: "devicon", cls: "devicon-javascript-plain colored" },
-    html5: { kind: "devicon", cls: "devicon-html5-plain colored" },
-    css3: { kind: "devicon", cls: "devicon-css3-plain colored" },
-    nodejs: { kind: "devicon", cls: "devicon-nodejs-plain colored" },
-    react: { kind: "devicon", cls: "devicon-react-original colored" },
-    opencv: { kind: "devicon", cls: "devicon-opencv-plain colored" },
-    yolov8: {
-        kind: "iconify",
-        cls: "tech-iconify tech-yolo",
-        icon: "simple-icons:ultralytics"
-    },
-    arduino: { kind: "devicon", cls: "devicon-arduino-plain colored" },
-    stm32: {
-        kind: "text",
-        cls: "tech-custom-icon tech-stm-icon",
-        text: "STM"
-    },
-    iot: {
-        kind: "image",
-        cls: "tech-local-icon",
-        src: "assets/images/branding/iot.png",
-        alt: "IoT"
-    },
-    mysql: { kind: "devicon", cls: "devicon-mysql-plain colored" },
-    git: { kind: "devicon", cls: "devicon-git-plain colored" },
-    github: { kind: "devicon", cls: "devicon-github-original" },
-    docker: { kind: "devicon", cls: "devicon-docker-plain colored" },
-    vscode: { kind: "devicon", cls: "devicon-vscode-plain colored" },
-    figma: { kind: "devicon", cls: "devicon-figma-plain colored" },
-    photoshop: { kind: "devicon", cls: "devicon-photoshop-plain colored" },
-    illustrator: { kind: "devicon", cls: "devicon-illustrator-plain colored" },
-    canva: { kind: "devicon", cls: "devicon-canva-original colored" }
+/*
+    LEGACY KEY NORMALISATION
+
+    Rows created before the Iconify picker store a bare key such as
+    "docker" or "react.js". Each maps to a modern Iconify id here, so
+    every icon — legacy or newly picked — travels the same rendering
+    path and looks identical.
+
+    devicon is chosen because it ships real brand colours. simple-icons
+    is deliberately avoided: its artwork uses currentColor with no
+    palette, which renders solid black inside an <img>.
+
+    Punctuation is stripped before lookup, so "react.js", "React JS"
+    and "reactjs" all resolve.
+*/
+
+const LEGACY_ICON_IDS = {
+    python: "devicon:python",
+    c: "devicon:c",
+    cpp: "devicon:cplusplus",
+    cplusplus: "devicon:cplusplus",
+    javascript: "devicon:javascript",
+    typescript: "devicon:typescript",
+    html5: "devicon:html5",
+    html: "devicon:html5",
+    css3: "devicon:css3",
+    css: "devicon:css3",
+    nodejs: "devicon:nodejs",
+    react: "devicon:react",
+    reactjs: "devicon:react",
+    nextjs: "devicon:nextjs",
+    opencv: "devicon:opencv",
+    arduino: "devicon:arduino",
+    mysql: "devicon:mysql",
+    git: "devicon:git",
+    github: "devicon:github",
+    docker: "devicon:docker",
+    vscode: "devicon:vscode",
+    figma: "devicon:figma",
+    photoshop: "devicon:photoshop",
+    illustrator: "devicon:illustrator",
+    canva: "devicon:canva",
+    linkedin: "devicon:linkedin",
+    tailwindcss: "devicon:tailwindcss",
+    supabase: "devicon:supabase",
+    yolov8: "simple-icons:ultralytics"
 };
+
+/*
+    The one legacy key with no icon in any collection: a local asset
+    that still ships with the site.
+*/
+
+const LEGACY_LOCAL_IMAGES = {
+    iot: { src: "assets/images/branding/iot.png", alt: "IoT" }
+};
+
+/*
+    Legacy keys drawn as a lettered chip rather than artwork, matching
+    the static V1 markup exactly. The class is a fixed literal from
+    this table, never a value from the database.
+*/
+
+const LEGACY_TEXT_CHIPS = {
+    stm32: { cls: "tech-custom-icon tech-stm-icon", text: "STM" }
+};
+
 
 
 /* ---------------------------------------------------------
@@ -169,113 +199,128 @@ function initialsChip(name) {
 }
 
 /*
-    Builds the icon element for one technology row.
+    Resolves any stored value to a single Iconify id.
 
-    Two supported shapes, both identifier-only:
+    Accepted shapes, all identifier-only:
 
-      - an Iconify id, handed to <iconify-icon> after matching the
-        pattern above. Iconify fetches and renders the SVG itself;
-        this module never touches SVG markup.
-      - a legacy bare key from before the picker existed, resolved
-        through the static ICON_MAP.
+      - an Iconify id written by the picker ("devicon:react");
+      - a legacy bare key ("docker", "react.js"), normalised by
+        stripping punctuation and looked up in LEGACY_ICON_IDS.
 
-    Anything else, including an unknown or malformed value, falls
-    back to the safe initials chip rather than rendering nothing.
+    Returns null when nothing matches, which is the only route to
+    the initials fallback.
+*/
+
+function resolveIconId(rawKey) {
+
+    const key = typeof rawKey === "string" ? rawKey.trim() : "";
+
+    if (key === "") {
+        return null;
+    }
+
+    if (ICONIFY_ID_PATTERN.test(key)) {
+        return key;
+    }
+
+    const normalised = key.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+    return LEGACY_ICON_IDS[normalised] || null;
+
+}
+
+/*
+    Builds the icon for one technology row.
+
+    Every icon takes the same path — an <img> pointing at the
+    Iconify SVG endpoint — so sizing, alignment and optical weight
+    are identical whatever the source. Sizing lives in CSS as a
+    fixed box with object-fit: contain, which normalises the
+    footprint without stretching artwork that is not square.
+
+    The image is decorative: the technology name is rendered as
+    visible text beside it, so alt is empty rather than repeating
+    the label to a screen reader.
+
+    An <img> also reports failure, so an id that is well formed but
+    names no real icon degrades to the initials chip instead of
+    leaving an empty box.
 */
 
 function buildIcon(row) {
 
     const key = typeof row.icon_key === "string" ? row.icon_key.trim() : "";
+    const normalised = key.toLowerCase().replace(/[^a-z0-9]/g, "");
 
-    const iconUrl = iconifyImageUrl(key);
+    const chip = LEGACY_TEXT_CHIPS[normalised];
 
-    if (iconUrl) {
+    if (chip) {
 
-        /*
-            A plain <img> rather than the <iconify-icon> element:
-            an image reports failure, so an id that is well formed
-            but names an icon that does not exist can be swapped
-            for the initials chip instead of leaving an empty box.
-            The technology name stays visible beside it, so the
-            image itself is decorative.
-        */
+        const box = document.createElement("div");
+        box.className = chip.cls;
+        box.textContent = chip.text;
+        return box;
+
+    }
+
+    const local = LEGACY_LOCAL_IMAGES[normalised];
+
+    if (local) {
 
         const image = document.createElement("img");
-        image.className = "tech-local-icon";
+        image.className = "tech-icon-img";
+        image.setAttribute("src", local.src);
         image.setAttribute("alt", "");
         image.setAttribute("aria-hidden", "true");
         image.setAttribute("loading", "lazy");
         image.setAttribute("decoding", "async");
-
-        // Listener first: setting src can fail immediately from
-        // cache, and a handler attached afterwards would miss it.
-        image.addEventListener(
-            "error",
-            () => image.replaceWith(initialsChip(row.name)),
-            { once: true }
-        );
-
-        image.setAttribute("src", iconUrl);
-
         return image;
 
     }
 
-    const entry = key !== "" ? ICON_MAP[key] : undefined;
+    const iconId = resolveIconId(key);
+    const iconUrl = iconId ? iconifyImageUrl(iconId) : null;
 
-    if (!entry) {
-
+    if (!iconUrl) {
         return initialsChip(row.name);
-
     }
 
-    switch (entry.kind) {
+    const image = document.createElement("img");
+    image.className = "tech-icon-img";
+    image.setAttribute("alt", "");
+    image.setAttribute("aria-hidden", "true");
+    image.setAttribute("loading", "lazy");
+    image.setAttribute("decoding", "async");
 
-        case "devicon": {
-            const icon = document.createElement("i");
-            icon.className = entry.cls;
-            return icon;
-        }
+    // Listener first: setting src can fail immediately from cache,
+    // and a handler attached afterwards would miss the event.
+    image.addEventListener(
+        "error",
+        () => image.replaceWith(initialsChip(row.name)),
+        { once: true }
+    );
 
-        case "iconify": {
-            const icon = document.createElement("iconify-icon");
-            icon.className = entry.cls;
-            icon.setAttribute("icon", entry.icon);
-            return icon;
-        }
+    image.setAttribute("src", iconUrl);
 
-        case "image": {
-            const image = document.createElement("img");
-            image.className = entry.cls;
-            image.setAttribute("src", entry.src);
-            image.setAttribute("alt", entry.alt);
-            image.setAttribute("loading", "lazy");
-            image.setAttribute("decoding", "async");
-            return image;
-        }
-
-        case "text": {
-            const box = document.createElement("div");
-            box.className = entry.cls;
-            box.textContent = entry.text;
-            return box;
-        }
-
-        default: {
-            const fallback = document.createElement("div");
-            fallback.className = "tech-custom-icon";
-            fallback.textContent = initialsFor(row.name);
-            return fallback;
-        }
-
-    }
+    return image;
 
 }
+
+/*
+    Icon + name, exactly the shape of the static V1 tile this
+    module replaces: the same .tech-item element, the same icon
+    slot, the same <span> label. The extra .tech-item-cms class
+    carries nothing but icon sizing, since a CMS icon arrives as an
+    <img> where the static markup used an icon font.
+
+    The name is untrusted public input and is written with
+    textContent, never as markup.
+*/
 
 function buildItem(row) {
 
     const item = document.createElement("div");
-    item.className = "tech-item";
+    item.className = "tech-item tech-item-cms";
 
     item.appendChild(buildIcon(row));
 

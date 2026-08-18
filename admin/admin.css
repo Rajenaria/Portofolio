@@ -2514,9 +2514,16 @@ body.has-modal-open {
 /* =========================================
    TECHNOLOGY ICON PICKER
 
-   A combobox: the search field opens a labelled dropdown of icons.
-   Every result shows a preview, a readable name and the exact
-   Iconify identifier, so it is always clear what is being selected.
+   A combobox: the search field opens an icon-only grid of results,
+   read like a library sheet rather than a list of rows. The name
+   and the exact Iconify identifier ride on the tooltip and the
+   accessible label instead of competing with the artwork.
+
+   Nothing here draws a tile behind an icon. Options sit directly
+   on the panel and earn a background only while hovered, active or
+   selected, so the transparency of the artwork is what the eye
+   reads.
+
    Previews are plain <img> pointing at the Iconify SVG endpoint —
    no SVG markup is parsed or injected anywhere.
 ========================================= */
@@ -2553,30 +2560,48 @@ body.has-modal-open {
   display: none;
 }
 
+/*
+  auto-fill drops a column on its own as the panel narrows, so the
+  same rule serves desktop and mobile without a breakpoint.
+*/
+
 .icon-combobox-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+  gap: 4px;
+  padding: 8px;
   overflow-y: auto;
 }
 
+/*
+  The hit area is a 48px row cell for pointer and touch comfort; it
+  is not a card. Transparent by default, no border, no shadow — the
+  icon is the only thing painted until the option is interacted
+  with.
+*/
+
 .icon-option {
-  width: 100%;
+  position: relative;
+  height: 48px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 9px 12px;
-  background: none;
+  justify-content: center;
+  padding: 0;
+  background: transparent;
   border: 0;
-  border-bottom: 1px solid var(--admin-border-soft);
-  text-align: left;
+  border-radius: var(--radius-md);
   cursor: pointer;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.icon-option:last-child {
-  border-bottom: 0;
-}
+/*
+  A neutral wash rather than a panel colour: --admin-surface-subtle
+  is a near-white that would be invisible against the white panel.
+*/
 
 .icon-option:hover,
 .icon-option.is-active {
-  background: var(--admin-surface-subtle);
+  background: rgba(15, 23, 42, 0.06);
 }
 
 .icon-option:focus-visible {
@@ -2584,38 +2609,38 @@ body.has-modal-open {
   outline-offset: -2px;
 }
 
+/*
+  Selection reads as an accent ring drawn inside the hit area plus a
+  faint tint, so it never becomes an opaque tile behind the icon.
+*/
+
+.icon-option.is-selected {
+  background: rgba(0, 113, 227, 0.08);
+  box-shadow: inset 0 0 0 2px var(--admin-primary);
+}
+
+/*
+  One viewport for every option. contain keeps the source aspect
+  ratio, so a wide wordmark and a square glyph occupy the same box
+  without either being stretched or cropped.
+*/
+
 .icon-option-preview {
-  width: 24px;
-  height: 24px;
-  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
-}
-
-.icon-option-text {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.icon-option-name {
-  color: var(--admin-text-primary);
-  font-size: 13px;
-  font-weight: 600;
-  overflow-wrap: anywhere;
-}
-
-.icon-option-id {
-  color: var(--admin-text-muted);
-  font-size: 11px;
-  overflow-wrap: anywhere;
+  display: block;
 }
 
 .icon-option-check {
-  margin-left: auto;
-  flex-shrink: 0;
+  position: absolute;
+  top: 3px;
+  right: 4px;
   color: var(--admin-primary);
-  font-size: 14px;
+  font-size: 10px;
+  line-height: 1;
   visibility: hidden;
 }
 
@@ -2623,14 +2648,20 @@ body.has-modal-open {
   visibility: visible;
 }
 
-/* ---- selected icon card ---- */
+/* ---- selected icon ---- */
+
+/*
+  A hairline rule rather than a card: the selected value belongs to
+  the modal it sits in, and a boxed panel here would reintroduce
+  exactly the tile the grid above avoids.
+*/
 
 .icon-selected {
-  margin-top: 10px;
-  padding: 10px 12px;
-  background: var(--admin-surface-subtle);
-  border: 1px solid var(--admin-border-soft);
-  border-radius: var(--radius-md);
+  margin-top: 12px;
+  padding: 10px 0 0;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--admin-border-soft);
 }
 
 .icon-selected-label {
@@ -2648,11 +2679,17 @@ body.has-modal-open {
   gap: 10px;
 }
 
+/*
+  Larger than a result tile, since it is the one icon in view, and
+  sized by the same contain rule so it is never distorted.
+*/
+
 .icon-selected-img {
-  width: 24px;
-  height: 24px;
+  width: 34px;
+  height: 34px;
   flex-shrink: 0;
   object-fit: contain;
+  display: block;
 }
 
 .icon-selected-id {
@@ -2697,12 +2734,22 @@ body.has-modal-open {
   margin-bottom: 8px;
 }
 
+/*
+  Touch: a taller cell and a wider column minimum, with the icon
+  itself unchanged so the grid keeps its optical rhythm.
+*/
+
 @media (max-width: 600px) {
   .icon-combobox-panel {
     max-height: 260px;
   }
 
-  .icon-option-name {
-    font-size: 12px;
+  .icon-combobox-list {
+    grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+    gap: 5px;
+  }
+
+  .icon-option {
+    height: 52px;
   }
 }

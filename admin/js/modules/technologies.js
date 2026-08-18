@@ -84,8 +84,35 @@ function isValidIconKey(value) {
 
 const ICONIFY_API = "https://api.iconify.design";
 
-// Brand/technology icons live here, so they are offered first.
-const ICONIFY_PREFERRED_PREFIX = "simple-icons";
+/*
+  Collection priority, most colourful first.
+
+  This ordering is the whole reason picked icons render in colour.
+  simple-icons draws every glyph with currentColor and no palette, so
+  an <img> of it is solid black; devicon, logos, vscode-icons and
+  skill-icons all ship real brand colours. simple-icons stays
+  available at the end of the list — it is often the only collection
+  carrying a given brand — but it is never what the picker offers
+  first.
+*/
+
+const ICONIFY_COLOR_PREFIXES = [
+  "devicon",
+  "logos",
+  "vscode-icons",
+  "skill-icons",
+  "devicon-plain"
+];
+
+// Probed by exact name when resolving a typed technology name.
+const ICONIFY_EXACT_PREFIXES = ["devicon", "logos", "simple-icons"];
+
+function collectionRank(iconId) {
+  const prefix = iconId.split(":")[0];
+  const index = ICONIFY_COLOR_PREFIXES.indexOf(prefix);
+
+  return index === -1 ? ICONIFY_COLOR_PREFIXES.length : index;
+}
 
 export const technologiesRoute = {
   name: "technologies",
@@ -1244,11 +1271,12 @@ function createIconPicker(iconField) {
     el(
       "p",
       "form-help",
-      "Brand icons are listed first. Only the identifier is stored."
+      "Brand icons are listed first. Hover an icon to see its name " +
+        "and identifier. Only the identifier is stored."
     )
   );
 
-  /* ---- selected icon card ---- */
+  /* ---- selected icon ---- */
 
   const selected = el("div", "icon-selected");
   const selectedLabel = el("p", "icon-selected-label", "Selected icon");
@@ -1391,10 +1419,23 @@ function createIconPicker(iconField) {
         return;
       }
 
+      /*
+        Icon-only option: the artwork is the content. The readable
+        name and the exact identifier are still available on demand —
+        as a two-line hover tooltip and as the accessible name — but
+        neither is painted into the grid, where dozens of labels
+        would drown the icons they describe.
+      */
+
       const button = el("button", "icon-option");
       button.type = "button";
       button.setAttribute("role", "option");
       button.setAttribute("aria-selected", "false");
+      button.setAttribute("aria-label", readableName(iconId) + ", " + iconId);
+
+      // Assigned as a property, so the newline survives as a real
+      // second tooltip line rather than being collapsed as markup.
+      button.title = readableName(iconId) + "\n" + iconId;
 
       const img = el("img", "icon-option-preview");
       img.src = url;
@@ -1402,18 +1443,18 @@ function createIconPicker(iconField) {
       img.loading = "lazy";
       img.setAttribute("aria-hidden", "true");
 
-      const text = el("span", "icon-option-text");
-
-      append(
-        text,
-        el("span", "icon-option-name", readableName(iconId)),
-        el("span", "icon-option-id", iconId)
+      // A collection that fails to serve artwork should not leave a
+      // blank tile sitting in the grid.
+      img.addEventListener(
+        "error",
+        () => button.remove(),
+        { once: true }
       );
 
       const check = el("span", "icon-option-check", "✓");
       check.setAttribute("aria-hidden", "true");
 
-      append(button, img, text, check);
+      append(button, img, check);
 
       if (iconId === currentValue()) {
         button.classList.add("is-selected");
@@ -1494,24 +1535,33 @@ function createIconPicker(iconField) {
       return [];
     }
 
-    try {
-      const body = await fetchJson(
-        ICONIFY_API +
-          "/" +
-          ICONIFY_PREFERRED_PREFIX +
-          ".json?icons=" +
-          unique.map(encodeURIComponent).join(",")
-      );
+    const encoded = unique.map(encodeURIComponent).join(",");
 
-      const icons = (body && body.icons) || {};
+    /*
+      Colour-bearing collections are probed first, so a pinned exact
+      match is a colourful icon rather than a monochrome one.
+    */
 
-      // Keeps candidate order, so the closest spelling wins.
-      return unique
-        .filter(slug => icons[slug])
-        .map(slug => ICONIFY_PREFERRED_PREFIX + ":" + slug);
-    } catch (error) {
-      return [];
-    }
+    const perCollection = await Promise.all(
+      ICONIFY_EXACT_PREFIXES.map(async prefix => {
+        try {
+          const body = await fetchJson(
+            ICONIFY_API + "/" + prefix + ".json?icons=" + encoded
+          );
+
+          const icons = (body && body.icons) || {};
+
+          // Candidate order preserved, so the closest spelling wins.
+          return unique
+            .filter(slug => icons[slug])
+            .map(slug => prefix + ":" + slug);
+        } catch (error) {
+          return [];
+        }
+      })
+    );
+
+    return perCollection.flat();
   }
 
   async function findBrandSearch(query) {
@@ -1521,8 +1571,8 @@ function createIconPicker(iconField) {
           "/search?query=" +
           encodeURIComponent(query) +
           "&prefixes=" +
-          ICONIFY_PREFERRED_PREFIX +
-          "&limit=24"
+          ICONIFY_COLOR_PREFIXES.join(",") +
+          "&limit=48"
       );
 
       return Array.isArray(body.icons) ? body.icons : [];
@@ -1533,7 +1583,7 @@ function createIconPicker(iconField) {
 
   async function findGeneral(query) {
     const body = await fetchJson(
-      ICONIFY_API + "/search?query=" + encodeURIComponent(query) + "&limit=48"
+      ICONIFY_API + "/search?query=" + encodeURIComponent(query) + "&limit=96"
     );
 
     return Array.isArray(body.icons) ? body.icons : [];
@@ -1585,6 +1635,13 @@ function createIconPicker(iconField) {
           }
         });
       });
+
+      /*
+        Stable sort by collection, so colourful variants lead while
+        every other usable variant stays selectable below them.
+      */
+
+      merged.sort((a, b) => collectionRank(a) - collectionRank(b));
 
       if (merged.length === 0) {
         status.textContent = 'No icons found for "' + query + '".';
