@@ -66,6 +66,14 @@ export const IS_LOCAL_CMS = ENVIRONMENT === LOCAL;
 export const PUBLIC_BUCKET = "portfolio-media";
 
 /*
+    Certificate documents live in their own public bucket. It is the only
+    other bucket the public site may read from; portfolio-staging is private
+    and must never be linked.
+*/
+
+export const PUBLIC_DOCUMENT_BUCKET = "portfolio-documents";
+
+/*
     The database stores a bucket plus an object path, never a
     full URL, so the address is always derived here. Anything
     that looks like a caller-supplied absolute URL, a protocol
@@ -73,9 +81,9 @@ export const PUBLIC_BUCKET = "portfolio-media";
     being turned into a live image source.
 */
 
-export function publicMediaUrl(bucket, path) {
+function buildPublicUrl(allowedBucket, bucket, path) {
 
-    if (bucket !== PUBLIC_BUCKET) {
+    if (bucket !== allowedBucket) {
         return null;
     }
 
@@ -102,7 +110,45 @@ export function publicMediaUrl(bucket, path) {
         .map(encodeURIComponent)
         .join("/");
 
-    return `${CMS_URL}/storage/v1/object/public/${PUBLIC_BUCKET}/${encoded}`;
+    return `${CMS_URL}/storage/v1/object/public/${allowedBucket}/${encoded}`;
+
+}
+
+export function publicMediaUrl(bucket, path) {
+
+    return buildPublicUrl(PUBLIC_BUCKET, bucket, path);
+
+}
+
+export function publicDocumentUrl(bucket, path) {
+
+    return buildPublicUrl(PUBLIC_DOCUMENT_BUCKET, bucket, path);
+
+}
+
+/*
+    Certificates may instead point at a page the issuer hosts. Only absolute
+    http(s) is accepted: javascript:, data:, vbscript: and protocol-relative
+    //host all fail, so a stored value can never become an executable href.
+*/
+
+export function safeExternalUrl(value) {
+
+    if (typeof value !== "string" || value.trim() === "") {
+        return null;
+    }
+
+    try {
+
+        const url = new URL(value.trim());
+
+        return url.protocol === "https:" || url.protocol === "http:"
+            ? url.href
+            : null;
+
+    } catch (error) {
+        return null;
+    }
 
 }
 

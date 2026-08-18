@@ -12797,6 +12797,20 @@ a.footer-contact-item:hover {
     transform: rotateY(180deg);
 }
 
+/* Kartu yang sudah lewat 90 derajat menampilkan sisi belakangnya, dan
+   isinya terbaca terbalik. Ini hanya muncul kalau kartunya sedikit:
+   dengan 3 kartu, tetangganya persis di 120 derajat.
+
+   Yang disembunyikan hanya isinya. Permukaan kartunya tetap tergambar,
+   jadi komposisi globe-nya utuh: kartu samping masih terlihat sebagai
+   bidang gelap, hanya tanpa teks cermin. Kelasnya dipasang oleh JS di
+   render(); saat kartu depan dibalik, |rel| mendekati 0 sehingga aturan
+   ini tidak aktif. */
+
+.cert-slot.is-reversed .cert-back-inner {
+    visibility: hidden;
+}
+
 
 /* =========================================
    KARTU — SISI DEPAN & BELAKANG

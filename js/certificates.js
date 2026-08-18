@@ -397,7 +397,32 @@
            itu langsung jadi tautan asli — tidak ada yang
            perlu diubah di file ini maupun di CSS. */
 
-        const hasLink = Boolean(cert.link);
+        /* Defence in depth. The CMS layer already resolves this to a
+           public-bucket document URL or a parsed http(s) link, but this
+           is the sink the security audit named, so the scheme is checked
+           again at the point of assignment. Anything else renders as the
+           inert placeholder rather than a live href. */
+
+        const safeLink = (function () {
+
+            if (typeof cert.link !== "string" || cert.link.trim() === "") {
+                return "";
+            }
+
+            try {
+                const url = new URL(cert.link.trim(), window.location.href);
+
+                return url.protocol === "https:" || url.protocol === "http:"
+                    ? url.href
+                    : "";
+
+            } catch (err) {
+                return "";
+            }
+
+        }());
+
+        const hasLink = Boolean(safeLink);
 
         const link = document.createElement("a");
         link.className = "cert-link";
@@ -416,7 +441,7 @@
 
         if (hasLink) {
 
-            link.href = cert.link;
+            link.href = safeLink;
             link.target = "_blank";
             link.rel = "noopener noreferrer";
 
@@ -583,6 +608,23 @@
 
                 const value = opacity.toFixed(3);
                 const shown = opacity > 0 ? "visible" : "hidden";
+
+                /* Lewat 90 derajat, muka depan kartu sudah
+                   membelakangi kita dan yang menghadap justru sisi
+                   BELAKANG, sehingga isinya terbaca terbalik seperti
+                   cermin. Ini cuma terjadi saat kartunya sedikit:
+                   dengan 3 kartu, tetangganya duduk tepat di 120
+                   derajat.
+
+                   Yang disembunyikan hanya ISI sisi belakang, bukan
+                   kartunya. Permukaan gelapnya tetap tergambar, jadi
+                   kartu samping masih hadir sebagai kedalaman, tanpa
+                   teks cermin. */
+
+                card.slot.classList.toggle(
+                    "is-reversed",
+                    Math.abs(rel) > 90
+                );
 
                 card.faces.forEach(function (face) {
                     face.style.opacity = value;
