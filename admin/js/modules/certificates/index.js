@@ -32,7 +32,7 @@ import { createCertificateList } from "./list-view.js";
 import { createCertificateEditor } from "./editor-view.js";
 
 const SELECT_COLUMNS =
-  "id, title, publisher, period, category, issuer_line, badge_text, description, status, sort_order, published_at, archived_at, deleted_at, created_at, updated_at";
+  "id, title, publisher, period, category, issuer_line, badge_text, description, status, sort_order, published_at, archived_at, deleted_at, created_at, updated_at, document_bucket, document_path, document_type, external_url";
 
 export const certificatesRoute = {
   name: "certificates",

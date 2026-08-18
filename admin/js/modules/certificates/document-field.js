@@ -1,0 +1,213 @@
+/*
+  Certificate document field (Phase D).
+
+  Owns three things and nothing else:
+
+    1. showing what is currently stored (public URL derived for display only),
+    2. validating a picked file through document-processor.js,
+    3. holding the processed file until the editor saves.
+
+  IT NEVER UPLOADS. Storage work belongs to core/document-storage.js and is
+  triggered by the editor's Save action, so a failed form never leaves an
+  orphan object behind.
+
+  "View Certificate" opens in a new tab with rel="noopener noreferrer". There
+  is deliberately no iframe or <embed> viewer: the site CSP sets
+  frame-src 'none' and object-src 'none', and an in-page viewer would mean
+  relaxing both for a cosmetic gain.
+*/
+
+import { el, append, clear } from "../../core/dom.js";
+import { toast } from "../../core/toast.js";
+import {
+  processDocument,
+  DocumentProcessorError,
+  MAX_DOCUMENT_BYTES
+} from "../../core/document-processor.js";
+import { documentUrl, documentDownloadUrl } from "../../core/document-storage.js";
+import { formatBytes } from "../../core/image-processor.js";
+
+const TYPE_LABELS = {
+  pdf: "PDF document",
+  webp: "Image (converted to WebP)"
+};
+
+export function createDocumentField({ current, onChange }) {
+  const root = el("div", "document-field");
+
+  const statusSlot = el("div", "document-field-status");
+  const actions = el("div", "document-field-actions");
+
+  const input = el("input", "visually-hidden");
+  input.type = "file";
+  input.id = "certificate-document-input";
+  input.accept = ".pdf,application/pdf,.jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp";
+
+  const chooseButton = el("button", "admin-button admin-button-secondary", "Upload document");
+  chooseButton.type = "button";
+
+  const viewLink = el("a", "admin-button admin-button-secondary", "View Certificate");
+  viewLink.target = "_blank";
+  viewLink.rel = "noopener noreferrer";
+
+  const downloadLink = el("a", "admin-button admin-button-ghost", "Download");
+  downloadLink.target = "_blank";
+  downloadLink.rel = "noopener noreferrer";
+
+  const removeButton = el("button", "admin-button admin-button-ghost", "Remove document");
+  removeButton.type = "button";
+
+  const discardButton = el("button", "admin-button admin-button-ghost", "Discard pending file");
+  discardButton.type = "button";
+
+  append(actions, chooseButton, viewLink, downloadLink, removeButton, discardButton);
+  append(root, input, statusSlot, actions);
+
+  /*
+    stored   : what the database currently references
+    pending  : a validated file waiting for Save
+    removing : the owner asked to detach the stored document on Save
+  */
+  let stored = current && current.path ? { ...current } : null;
+  let pending = null;
+  let removing = false;
+
+  function notify() {
+    if (typeof onChange === "function") {
+      onChange();
+    }
+  }
+
+  function render() {
+    clear(statusSlot);
+
+    const url = stored ? documentUrl(stored.bucket, stored.path) : null;
+    const showStored = Boolean(stored) && !removing && !pending;
+
+    viewLink.hidden = !showStored || !url;
+    downloadLink.hidden = viewLink.hidden;
+    removeButton.hidden = !showStored;
+    discardButton.hidden = !pending && !removing;
+    chooseButton.textContent = stored && !removing ? "Replace document" : "Upload document";
+
+    if (url) {
+      viewLink.href = url;
+      downloadLink.href = documentDownloadUrl(stored.bucket, stored.path);
+    } else {
+      viewLink.removeAttribute("href");
+      downloadLink.removeAttribute("href");
+    }
+
+    if (pending) {
+      const line = el("p", "document-field-line");
+      append(line, el("span", "status-badge status-badge-pending", "Pending upload"));
+      append(statusSlot, line);
+
+      append(
+        statusSlot,
+        el("p", "document-field-detail", `${TYPE_LABELS[pending.type]} · ${formatBytes(pending.storedSize)}`),
+        el("p", "document-field-detail", `From: ${pending.originalName}`),
+        el("p", "form-help", "The file is uploaded when you save this certificate.")
+      );
+      return;
+    }
+
+    if (removing) {
+      const line = el("p", "document-field-line");
+      append(line, el("span", "status-badge status-badge-inactive", "Will be removed"));
+      append(statusSlot, line);
+      append(
+        statusSlot,
+        el("p", "form-help", "The stored document is detached and deleted when you save.")
+      );
+      return;
+    }
+
+    if (stored) {
+      append(
+        statusSlot,
+        el("p", "document-field-detail", TYPE_LABELS[stored.type] || "Document"),
+        el("p", "document-field-detail", stored.path)
+      );
+      return;
+    }
+
+    append(
+      statusSlot,
+      el("p", "form-help", `No document uploaded. PDF, JPG, PNG or WebP, up to ${formatBytes(MAX_DOCUMENT_BYTES)}. Images are converted to WebP; PDFs are stored as they are.`)
+    );
+  }
+
+  chooseButton.addEventListener("click", () => input.click());
+
+  input.addEventListener("change", async () => {
+    const file = input.files && input.files[0];
+    input.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    chooseButton.disabled = true;
+
+    try {
+      const result = await processDocument(file);
+      pending = result;
+      removing = false;
+      render();
+      notify();
+    } catch (error) {
+      if (!(error instanceof DocumentProcessorError)) {
+        console.error(error);
+      }
+
+      toast(
+        error && error.message
+          ? error.message
+          : "This file could not be used as a certificate document.",
+        "error"
+      );
+    } finally {
+      chooseButton.disabled = false;
+    }
+  });
+
+  removeButton.addEventListener("click", () => {
+    removing = true;
+    pending = null;
+    render();
+    notify();
+  });
+
+  discardButton.addEventListener("click", () => {
+    pending = null;
+    removing = false;
+    render();
+    notify();
+  });
+
+  render();
+
+  return {
+    element: root,
+
+    hasPending: () => Boolean(pending),
+    isRemoving: () => removing,
+    isDirty: () => Boolean(pending) || removing,
+
+    getPending: () => pending,
+    getStored: () => (stored ? { ...stored } : null),
+
+    /* Called after a successful save so the field reflects what is now stored. */
+    commit(next) {
+      pending = null;
+      removing = false;
+      stored = next && next.path ? { ...next } : null;
+      render();
+    },
+
+    destroy() {
+      clear(root);
+    }
+  };
+}

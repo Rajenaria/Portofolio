@@ -54,9 +54,10 @@ import {
   CERTIFICATE_CATEGORIES
 } from "./categories.js";
 import { openCertificatePreview } from "./preview.js";
+import { documentUrl, removeDocument } from "../../core/document-storage.js";
 
 const SELECT_COLUMNS =
-  "id, title, publisher, period, category, issuer_line, badge_text, description, status, sort_order, published_at, archived_at, deleted_at, created_at, updated_at";
+  "id, title, publisher, period, category, issuer_line, badge_text, description, status, sort_order, published_at, archived_at, deleted_at, created_at, updated_at, document_bucket, document_path, document_type, external_url";
 
 const MINIMUM_PUBLISHED = 3;
 
@@ -611,9 +612,19 @@ export function createCertificateList({ onEdit, onChanged }) {
     const orderedIndex = ordered.findIndex(entry => entry.id === row.id);
     const blocked = wouldBreakMinimum(row);
 
+    const documentHref = documentUrl(row.document_bucket, row.document_path);
+
     const entries = [
       { label: "Edit", onSelect: () => onEdit(row.id) },
       { label: "Preview", onSelect: () => previewRow(row) },
+      {
+        label: "View Certificate",
+        disabled: !documentHref,
+        hint: documentHref ? null : "No document uploaded yet.",
+        /* New tab, never an iframe: the site CSP sets frame-src 'none' and
+           object-src 'none', and an embedded viewer would mean relaxing both. */
+        onSelect: () => window.open(documentHref, "_blank", "noopener,noreferrer")
+      },
       {
         label: "Move Up",
         disabled: !canReorder || orderedIndex <= 0,
@@ -681,7 +692,9 @@ export function createCertificateList({ onEdit, onChanged }) {
       category: row.category,
       issuerLine: row.issuer_line,
       badgeText: row.badge_text,
-      description: row.description
+      description: row.description,
+      documentUrl: documentUrl(row.document_bucket, row.document_path),
+      externalUrl: row.external_url
     });
   }
 
@@ -868,6 +881,27 @@ export function createCertificateList({ onEdit, onChanged }) {
       );
       await load();
       return;
+    }
+
+    /*
+      Row first, object second. The row is gone, so a lingering object is only
+      recoverable noise; deleting the file first and then failing the row would
+      leave a record pointing at nothing.
+
+      Trash deliberately does NOT do this — a soft-deleted certificate keeps
+      its document so Restore brings back a complete record.
+    */
+    if (row.document_path) {
+      const removed = await removeDocument(row.document_bucket, row.document_path);
+
+      if (removed.failed.length > 0) {
+        toast(
+          "Certificate deleted. Its document file could not be removed and may need manual cleanup.",
+          "error"
+        );
+        await load();
+        return;
+      }
     }
 
     toast("Certificate deleted permanently.");

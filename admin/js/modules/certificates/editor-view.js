@@ -25,8 +25,9 @@
   title and a category renders coherently, and marking more fields with a red
   asterisk would be inventing a rule the card does not have.
 
-  This module writes structured text only. It performs no Storage calls; the
-  certificate document is Phase D.
+  The certificate document is uploaded here through core/document-storage.js,
+  which never deletes the previous object until the database has accepted the
+  new reference.
 */
 
 import { supabaseClient } from "../../core/supabase.js";
@@ -44,6 +45,8 @@ import {
 
 import { categoryOptions, DEFAULT_CATEGORY, isKnownCategory } from "./categories.js";
 import { buildCertificatePreview } from "./preview.js";
+import { createDocumentField } from "./document-field.js";
+import { replaceDocument, removeDocument, documentUrl } from "../../core/document-storage.js";
 
 /* Mirrors the column widths in 20260818110000_certificates_schema.sql. */
 const LIMITS = {
@@ -52,8 +55,11 @@ const LIMITS = {
   period: 60,
   issuerLine: 180,
   badgeText: 60,
-  description: 400
+  description: 400,
+  externalUrl: 500
 };
+
+const HTTP_URL = /^https?:\/\/[^\s]+$/i;
 
 export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack }) {
   const isNew = !record;
@@ -120,8 +126,33 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
       value: record ? record.description : "",
       rows: 4,
       help: "Plain text only, shown on the back. No HTML or formatting markup."
+    }),
+
+    externalUrl: textField({
+      id: "certificate-external-url",
+      label: "External verification URL",
+      maxLength: LIMITS.externalUrl,
+      value: record ? record.external_url : "",
+      help: "Optional. A link the issuer hosts, for example a Credly badge. Must start with http:// or https://."
     })
   };
+
+  /*
+    The uploaded certificate itself. The field validates and holds the file;
+    nothing reaches Storage until Save, so abandoning the form cannot leave an
+    orphan object.
+  */
+  const documentField = createDocumentField({
+    current:
+      record && record.document_path
+        ? {
+            bucket: record.document_bucket,
+            path: record.document_path,
+            type: record.document_type
+          }
+        : null,
+    onChange: () => markDirty()
+  });
 
   /* ---------------- layout ---------------- */
 
@@ -165,6 +196,19 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
   append(backGrid, fields.issuerLine.node, fields.badgeText.node);
   append(backSection, backGrid, fields.description.node);
 
+  const documentSection = el("section", "admin-subsection");
+  append(
+    documentSection,
+    el("h3", "subsection-title", "Certificate document"),
+    el(
+      "p",
+      "form-help",
+      "The certificate itself. It opens in a new tab from the public card once the public section is connected to the CMS."
+    ),
+    documentField.element,
+    fields.externalUrl.node
+  );
+
   const previewSection = el("section", "admin-subsection");
   append(previewSection, el("h3", "subsection-title", "Preview"));
 
@@ -177,7 +221,7 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
   saveButton.type = "button";
 
   append(actions, saveButton);
-  append(root, frontSection, backSection, previewSection, actions);
+  append(root, frontSection, backSection, documentSection, previewSection, actions);
 
   /* ---------------- live preview ---------------- */
 
@@ -189,7 +233,16 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
       category: fields.category.value,
       issuerLine: trimmed(fields.issuerLine.value),
       badgeText: trimmed(fields.badgeText.value),
-      description: trimmed(fields.description.value)
+      description: trimmed(fields.description.value),
+      externalUrl: trimmed(fields.externalUrl.value),
+      /* Pending files are not uploaded yet, so the preview links to what is
+         actually reachable today: the stored document, or the issuer URL. */
+      documentUrl: (() => {
+        const stored = documentField.getStored();
+        return stored && !documentField.isRemoving()
+          ? documentUrl(stored.bucket, stored.path)
+          : null;
+      })()
     };
   }
 
@@ -209,7 +262,7 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
   let saving = false;
 
   function computeDirty() {
-    return snapshot() !== baseline;
+    return snapshot() !== baseline || documentField.isDirty();
   }
 
   function markDirty() {
@@ -250,10 +303,21 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
       period: { label: "Period / Year", maxLength: LIMITS.period },
       issuerLine: { label: "Issuer Line", maxLength: LIMITS.issuerLine },
       badgeText: { label: "Badge / Value", maxLength: LIMITS.badgeText },
-      description: { label: "Description", maxLength: LIMITS.description }
+      description: { label: "Description", maxLength: LIMITS.description },
+      externalUrl: { label: "External verification URL", maxLength: LIMITS.externalUrl }
     });
 
     if (!valid) {
+      toast("Please correct the highlighted fields.", "error");
+      return false;
+    }
+
+    const externalUrl = trimmed(fields.externalUrl.value);
+
+    /* Mirrors certificates_external_url_check; the database rejects anything
+       else regardless, this just explains it before the round trip. */
+    if (externalUrl !== "" && !HTTP_URL.test(externalUrl)) {
+      fields.externalUrl.setError("Enter a full URL starting with http:// or https://.");
       toast("Please correct the highlighted fields.", "error");
       return false;
     }
@@ -271,47 +335,134 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
       category: fields.category.value,
       issuer_line: trimmedOrNull(fields.issuerLine.value),
       badge_text: trimmedOrNull(fields.badgeText.value),
-      description: trimmedOrNull(fields.description.value)
+      description: trimmedOrNull(fields.description.value),
+      external_url: trimmedOrNull(fields.externalUrl.value)
     };
 
     setSaving(true);
 
-    let result;
+    /*
+      One writer for both create and update, so the document paths are set in
+      exactly the same statement as the rest of the record.
+    */
+    async function persist(extra) {
+      const body = { ...payload, ...extra };
 
-    if (isNew) {
-      /*
-        New certificates always start as drafts and are placed at the end of
-        the list. Status is never set here: publishing is an explicit action
-        in the list view, where the minimum-published rule is explained.
-      */
-      const { data: tail } = await supabaseClient
-        .from("certificates")
-        .select("sort_order")
-        .is("deleted_at", null)
-        .order("sort_order", { ascending: false })
-        .limit(1);
+      if (isNew) {
+        /*
+          New certificates always start as drafts, at the end of the list.
+          Status is never set here: publishing is an explicit action in the
+          list view, where the minimum-published rule is explained.
+        */
+        const { data: tail } = await supabaseClient
+          .from("certificates")
+          .select("sort_order")
+          .is("deleted_at", null)
+          .order("sort_order", { ascending: false })
+          .limit(1);
 
-      const nextOrder =
-        tail && tail.length > 0 ? Number(tail[0].sort_order) + 1 : 0;
+        const nextOrder =
+          tail && tail.length > 0 ? Number(tail[0].sort_order) + 1 : 0;
 
-      result = await supabaseClient
+        return await supabaseClient
+          .from("certificates")
+          .insert({ ...body, status: "draft", sort_order: nextOrder })
+          .select("id")
+          .maybeSingle();
+      }
+
+      return await supabaseClient
         .from("certificates")
-        .insert({ ...payload, status: "draft", sort_order: nextOrder })
-        .select("id")
-        .maybeSingle();
-    } else {
-      result = await supabaseClient
-        .from("certificates")
-        .update(payload)
+        .update(body)
         .eq("id", record.id)
         .select("id")
         .maybeSingle();
     }
 
+    const pendingDocument = documentField.getPending();
+    const storedDocument = documentField.getStored();
+    const removingDocument = documentField.isRemoving();
+
+    let result = null;
+    let committedDocument = storedDocument;
+    let cleanupWarning = null;
+
+    try {
+      if (pendingDocument) {
+        /*
+          Upload, verify, then commit the row in the same call. document-storage
+          only deletes the previous object AFTER the database has accepted the
+          new reference, so any failure leaves the old document live.
+        */
+        const outcome = await replaceDocument({
+          file: pendingDocument.file,
+          type: pendingDocument.type,
+          previous: storedDocument,
+          commit: async paths => {
+            result = await persist({
+              document_bucket: paths.bucket,
+              document_path: paths.path,
+              document_type: paths.type
+            });
+
+            if (result.error || !result.data) {
+              throw new Error("certificate write did not apply");
+            }
+          }
+        });
+
+        committedDocument = {
+          bucket: outcome.bucket,
+          path: outcome.path,
+          type: outcome.type
+        };
+        cleanupWarning = outcome.cleanupWarning;
+      } else if (removingDocument) {
+        result = await persist({
+          document_bucket: null,
+          document_path: null,
+          document_type: null
+        });
+
+        if (result.error || !result.data) {
+          throw new Error("certificate write did not apply");
+        }
+
+        /* Detach first, delete second: an object with no row pointing at it is
+           recoverable noise, a row pointing at a deleted object is a broken
+           link on the public site. */
+        if (storedDocument) {
+          const removed = await removeDocument(storedDocument.bucket, storedDocument.path);
+
+          if (removed.failed.length > 0) {
+            cleanupWarning =
+              "Saved. The old document file could not be removed and may need manual cleanup.";
+          }
+        }
+
+        committedDocument = null;
+      } else {
+        result = await persist({});
+      }
+    } catch (error) {
+      console.error(error);
+      setSaving(false);
+
+      toast(
+        error && error.name === "MediaStorageError" && error.message
+          ? error.message
+          : isNew
+            ? "Could not create this certificate. Your changes are still here."
+            : "Could not save this certificate. Your changes are still here.",
+        "error"
+      );
+      return false;
+    }
+
     setSaving(false);
 
-    if (result.error || !result.data) {
-      if (result.error) {
+    if (!result || result.error || !result.data) {
+      if (result && result.error) {
         console.error(result.error);
       }
 
@@ -324,11 +475,17 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
       return false;
     }
 
+    documentField.commit(committedDocument);
+
     baseline = snapshot();
     dirty = false;
     onDirtyChange(false);
 
-    toast(isNew ? "Certificate created as a draft." : "Certificate saved.");
+    if (cleanupWarning) {
+      toast(cleanupWarning, "error");
+    } else {
+      toast(isNew ? "Certificate created as a draft." : "Certificate saved.");
+    }
 
     if (typeof onSaved === "function") {
       onSaved(result.data.id);
@@ -344,6 +501,7 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
     isDirty: computeDirty,
     save,
     destroy() {
+      documentField.destroy();
       clear(root);
     }
   };

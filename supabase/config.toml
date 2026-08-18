@@ -426,3 +426,8 @@ allowed_mime_types = ["image/webp"]
 public = true
 file_size_limit = "5MB"
 allowed_mime_types = ["image/webp"]
+
+[storage.buckets.portfolio-documents]
+public = true
+file_size_limit = "10MB"
+allowed_mime_types = ["application/pdf", "image/webp"]

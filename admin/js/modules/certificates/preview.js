@@ -76,13 +76,25 @@ function buildBack(data) {
   }
 
   /*
-    The public back carries a "LIHAT SERTIFIKAT" button. There is no document
-    to link to until Phase D, so the preview shows the placeholder state the
-    public card already uses for an unset link rather than implying the button
-    works.
+    The public back carries a "LIHAT SERTIFIKAT" button. It becomes a real link
+    once a document is uploaded, preferring the stored file and falling back to
+    the issuer's own verification URL.
+
+    New tab, never an iframe: the site CSP sets frame-src 'none' and
+    object-src 'none', so an embedded viewer would mean relaxing both.
+    rel="noopener noreferrer" keeps the opened tab away from window.opener.
   */
-  const cta = el("span", "cert-preview-link is-empty", "LIHAT SERTIFIKAT");
-  append(inner, cta);
+  const href = data.documentUrl || data.externalUrl || null;
+
+  if (href) {
+    const cta = el("a", "cert-preview-link", "LIHAT SERTIFIKAT");
+    cta.href = href;
+    cta.target = "_blank";
+    cta.rel = "noopener noreferrer";
+    append(inner, cta);
+  } else {
+    append(inner, el("span", "cert-preview-link is-empty", "LIHAT SERTIFIKAT"));
+  }
 
   append(face, inner);
 

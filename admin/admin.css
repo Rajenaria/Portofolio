@@ -2946,3 +2946,46 @@ body.has-modal-open {
 .cert-preview-body .cert-preview {
   margin-top: 4px;
 }
+
+/* ---- CERTIFICATE DOCUMENT FIELD ---- */
+
+.document-field {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--admin-border-soft);
+  border-radius: var(--radius-md);
+  background: var(--admin-surface-subtle);
+}
+
+.document-field-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.document-field-detail {
+  color: var(--admin-text-secondary);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.document-field-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* A real link styled as a button needs the button's own line-height back. */
+a.admin-button {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.cert-preview-link[href]:hover {
+  border-style: solid;
+  border-color: rgba(41, 151, 255, 0.5);
+  color: #2997ff;
+}
