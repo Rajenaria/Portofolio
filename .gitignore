@@ -1,3 +1,11 @@
 node_modules/
 .venv/
 __pycache__/
+
+# Local secrets — never commit
+.env
+.env.*
+!.env.example
+
+# Tooling artifacts
+.playwright-mcp/

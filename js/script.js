@@ -1172,9 +1172,17 @@ if (
     orgDotsContainer
 ) {
 
+    /*
+        Live HTMLCollection, bukan NodeList statis.
+
+        Foto dokumentasi bisa diisi ulang oleh CMS setelah blok ini
+        berjalan, jadi jumlahnya harus ikut berubah sendiri supaya
+        dots, wrap next/prev, dan drag tetap sinkron.
+    */
+
     const orgPhotos =
-        orgTrack.querySelectorAll(
-            ".about-org-photo"
+        orgTrack.getElementsByClassName(
+            "about-org-photo"
         );
 
 
@@ -1201,7 +1209,7 @@ if (
             "";
 
 
-        orgPhotos.forEach(
+        Array.from(orgPhotos).forEach(
             (_, index) => {
 
                 const dot =
@@ -1621,6 +1629,29 @@ if (
     createOrganizationDots();
 
     updateOrganizationSlider();
+
+
+    /* =====================================
+       REFRESH HOOK
+
+       Dipakai integrasi CMS publik setelah isi
+       #aboutOrgTrack diganti. Hanya menjalankan
+       ulang dua fungsi di atas: tidak ada listener,
+       timer, atau tombol baru yang dibuat.
+    ===================================== */
+
+    window.refreshOrganizationGallery =
+        function () {
+
+            orgIndex =
+                0;
+
+
+            createOrganizationDots();
+
+            updateOrganizationSlider();
+
+        };
 
 }
 
@@ -2147,7 +2178,17 @@ updateAboutSlider();
        DUPLICATE PROJECTS
     ===================================== */
 
-    const originalCards =
+    /*
+        Bukan const: integrasi CMS publik
+        mengganti isi #projectGrid setelah
+        halaman jalan, lalu memanggil
+        window.refreshProjectCarousel().
+        Semua closure di bawah membaca
+        variabel ini, jadi cukup di-assign
+        ulang sekali di satu tempat.
+    */
+
+    let originalCards =
         Array.from(
             projectGrid.querySelectorAll(
                 ".project-card"
@@ -2173,47 +2214,149 @@ updateAboutSlider();
         01 02 03 04 05 06
     */
 
-    originalCards.forEach(
-        (card) => {
+    function buildClones() {
 
-            const clone =
-                card.cloneNode(true);
+        originalCards.forEach(
+            (card) => {
 
-
-            clone.classList.add(
-                "project-card-clone"
-            );
+                const clone =
+                    card.cloneNode(true);
 
 
-            clone.setAttribute(
-                "aria-hidden",
-                "true"
-            );
+                clone.classList.add(
+                    "project-card-clone"
+                );
 
 
-            /*
-                Link clone tidak perlu
-                bisa difokuskan keyboard.
-            */
-
-            clone
-                .querySelectorAll("a")
-                .forEach((link) => {
-
-                    link.setAttribute(
-                        "tabindex",
-                        "-1"
-                    );
-
-                });
+                clone.setAttribute(
+                    "aria-hidden",
+                    "true"
+                );
 
 
-            projectGrid.appendChild(
+                /*
+                    Link clone tidak perlu
+                    bisa difokuskan keyboard.
+                */
+
                 clone
-            );
+                    .querySelectorAll("a")
+                    .forEach((link) => {
+
+                        link.setAttribute(
+                            "tabindex",
+                            "-1"
+                        );
+
+                    });
+
+
+                projectGrid.appendChild(
+                    clone
+                );
+
+            }
+        );
+
+    }
+
+
+    /*
+        Apakah carousel benar-benar perlu melooping?
+
+        Klon hanya masuk akal kalau set asli memang lebih lebar
+        dari viewport carousel. Kalau semua project sudah muat
+        (misalnya baru ada 1-2 project), klon justru tampil di
+        sebelah aslinya dan terbaca sebagai project ganda.
+
+        Sinyal utamanya lebar konten asli vs lebar viewport,
+        bukan jumlah project. Minimal dua kartu asli dipakai
+        sebagai syarat aman supaya loop tetap mulus.
+    */
+
+    const LOOP_TOLERANCE = 4;
+
+    let loopEnabled = false;
+
+    /*
+        startLoop() menyentuh const/let yang dideklarasikan
+        lebih bawah di IIFE ini. Pada pemanggilan pertama
+        evaluateLoopMode() belum boleh menyalakan loop; yang
+        menyalakan adalah startLoop() di akhir IIFE. Setelah itu
+        resize/refresh boleh menyalakannya langsung.
+    */
+
+    let carouselReady = false;
+
+
+    function removeClones() {
+
+        projectGrid
+            .querySelectorAll(
+                ".project-card-clone"
+            )
+            .forEach((clone) => {
+
+                clone.remove();
+
+            });
+
+    }
+
+
+    /*
+        Satu-satunya tempat yang memutuskan mode carousel.
+
+        Selalu membersihkan klon lama sebelum mengukur, jadi
+        pengukuran memakai set asli murni dan klon tidak pernah
+        menumpuk saat resize berulang.
+    */
+
+    function evaluateLoopMode() {
+
+        removeClones();
+
+        measureOriginalWidth();
+
+
+        loopEnabled =
+            originalCards.length >= 2 &&
+            cachedOriginalWidth >
+                projectGrid.clientWidth +
+                LOOP_TOLERANCE;
+
+
+        if (loopEnabled) {
+
+            buildClones();
+
+            if (carouselReady) {
+                startLoop();
+            }
+
+            return;
 
         }
-    );
+
+
+        /*
+            Tanpa loop: tidak ada klon, tidak ada auto-scroll,
+            dan posisi dikembalikan ke awal supaya kartu
+            pertama selalu terlihat utuh.
+        */
+
+        projectGrid.scrollLeft = 0;
+
+    }
+
+
+    /*
+        Diisi di bagian indikator paling bawah.
+        Refresh hook memakainya supaya bar
+        ikut sinkron tanpa membuat listener baru.
+    */
+
+    let syncIndicator = null;
 
 
 
@@ -2316,13 +2459,20 @@ updateAboutSlider();
     }
 
 
-    measureOriginalWidth();
+    /*
+        Keputusan awal mode carousel. Ini juga yang melakukan
+        pengukuran pertama, jadi measureOriginalWidth() tidak
+        perlu dipanggil terpisah di sini.
+    */
+
+    evaluateLoopMode();
 
 
     /*
-        Refresh ukuran saat resize,
-        di-debounce supaya resize
-        tidak menyebabkan lag.
+        Re-evaluasi saat resize, di-debounce supaya resize
+        tidak menyebabkan lag. Listener-nya tetap satu: yang
+        berubah hanya fungsi yang dipanggil, sehingga tidak ada
+        listener ganda dan klon tidak menumpuk.
     */
 
     let resizeTimeout = null;
@@ -2337,7 +2487,7 @@ updateAboutSlider();
 
             resizeTimeout =
                 setTimeout(
-                    measureOriginalWidth,
+                    evaluateLoopMode,
                     150
                 );
 
@@ -2350,7 +2500,7 @@ updateAboutSlider();
 
     window.addEventListener(
         "load",
-        measureOriginalWidth
+        evaluateLoopMode
     );
 
 
@@ -2434,7 +2584,13 @@ updateAboutSlider();
 
     function run(time) {
 
-        if (!isSectionVisible) {
+        /*
+            Berhenti juga ketika loop dimatikan (set asli muat
+            di viewport), supaya tidak ada auto-scroll pada
+            carousel yang tidak punya apa-apa untuk digulir.
+        */
+
+        if (!isSectionVisible || !loopEnabled) {
 
             isLoopRunning = false;
 
@@ -2500,7 +2656,8 @@ updateAboutSlider();
 
         if (
             isLoopRunning ||
-            prefersReducedMotion
+            prefersReducedMotion ||
+            !loopEnabled
         ) {
 
             return;
@@ -2831,12 +2988,77 @@ updateAboutSlider();
 
             updateIndicator();
 
+
+            syncIndicator = updateIndicator;
+
         }
 
     }
 
 
+    carouselReady = true;
+
     startLoop();
+
+
+    /* =====================================
+       REFRESH HOOK
+
+       Dipakai integrasi CMS publik setelah
+       kartu asli di #projectGrid diganti.
+
+       Hanya membuang klon lama, mengambil
+       ulang daftar kartu asli, lalu menjalankan
+       ulang fungsi yang sudah ada. Tidak ada
+       listener, observer, timer, atau loop rAF
+       baru yang dibuat: semuanya terikat ke
+       #projectGrid / window, bukan ke kartu.
+    ===================================== */
+
+    window.refreshProjectCarousel =
+        function () {
+
+            removeClones();
+
+
+            originalCards =
+                Array.from(
+                    projectGrid.querySelectorAll(
+                        ".project-card"
+                    )
+                );
+
+
+            if (
+                originalCards.length === 0
+            ) {
+
+                cachedOriginalWidth = 0;
+
+                loopEnabled = false;
+
+                return;
+
+            }
+
+
+            /*
+                Satu jalur keputusan yang sama dengan init dan
+                resize: mengukur set asli, lalu memutuskan perlu
+                klon atau tidak. Kartu baru bisa saja belum punya
+                lebar final (gambar masih dimuat), tapi
+                evaluateLoopMode() juga sudah terpasang di event
+                resize dan load.
+            */
+
+            evaluateLoopMode();
+
+
+            if (syncIndicator) {
+                syncIndicator();
+            }
+
+        };
 
 })();
 /* =========================================

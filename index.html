@@ -15,7 +15,7 @@
     <!-- MAIN CSS -->
     <link
         rel="stylesheet"
-        href="css/style.css?v=20"
+        href="css/style.css?v=26"
     >
 
     <!-- DEVICON -->
@@ -860,7 +860,7 @@
     </div>
 
 
-    <div class="tech-list">
+    <div class="tech-list" data-tech-group="languages">
 
         <div class="tech-item">
             <i class="devicon-python-plain colored"></i>
@@ -917,7 +917,7 @@
     </div>
 
 
-    <div class="tech-list">
+    <div class="tech-list" data-tech-group="development_systems">
 
         <!-- NODE JS -->
 
@@ -1027,7 +1027,7 @@
     </div>
 
 
-    <div class="tech-list">
+    <div class="tech-list" data-tech-group="tools_platforms">
 
         <!-- GIT -->
 
@@ -2611,10 +2611,16 @@
 
 </footer>
 
-    <script src="js/script.js?v=2"></script>
-    <script src="js/hero-photo-stack.js" defer></script>
-    <script src="js/experience-stack.js" defer></script>
-    <script src="js/certificates.js?v=12" defer></script>
+    <script src="js/script.js?v=3"></script>
+    <script src="js/hero-photo-stack.js?v=2" defer></script>
+    <script src="js/experience-stack.js" type="module"></script>
+    <script src="js/certificates.js?v=15" defer></script>
+
+    <!-- PUBLIC CMS INTEGRATION (read-only, patches the static content above) -->
+    <script src="js/cms/profile-about.js?v=2" type="module"></script>
+    <script src="js/cms/technologies.js" type="module"></script>
+    <script src="js/cms/projects.js" type="module"></script>
+    <script src="js/cms/certificates.js?v=1" type="module"></script>
 
 </body>
 </html>

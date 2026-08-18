@@ -6,6 +6,19 @@
     box-sizing: border-box;
 }
 
+/*
+   The public CMS modules hide a section and its navigation
+   entries with the hidden attribute when nothing is published.
+   Several classes below set display explicitly, which outranks
+   the browser's own [hidden] rule and would leave a link
+   pointing at a section that is no longer on the page, so the
+   attribute is given the last word here.
+*/
+
+[hidden] {
+    display: none !important;
+}
+
 html {
     scroll-behavior: smooth;
 }
@@ -5185,21 +5198,16 @@ nav.nav-scrolled {
 }
 
 
-.simple-hero-photo img {
-    width: 100%;
+/* Aturan .simple-hero-photo img dihapus (dulu di sini).
 
-    max-height: 640px;
+   .simple-hero-photo hanya berisi hero photo stack, jadi selector
+   itu tidak pernah kena gambar lain — hanya <img> di dalam
+   .hero-photo-card. Isinya (object-fit: contain, max-height:
+   640px) bertentangan dengan cara kartu mengisi gambarnya, dan
+   max-height-nya tidak pernah ditimpa aturan kartu.
 
-    display: block;
-
-    object-fit: contain;
-
-    object-position: center bottom;
-
-    user-select: none;
-
-    -webkit-user-drag: none;
-}
+   Semua styling gambar hero sekarang milik satu blok:
+   ".hero-photo-stack .hero-photo-card picture, ... img" di bawah. */
 
 
 .simple-hero-photo:hover {
@@ -5253,12 +5261,43 @@ nav.nav-scrolled {
         box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* ---- ISI KARTU: <picture> + <img> ----
+
+   Kartu adalah <button>. Anak sebuah <button> dibungkus kotak
+   anonim oleh browser, dan WebKit tidak selalu meregangkan kotak
+   itu setinggi tombolnya — di situ height:100% bisa jatuh ke
+   auto, gambar memakai tinggi aslinya, lalu latar kartu (#f5f5f7)
+   terlihat sebagai pita putih. Karena itu picture DAN img
+   dikeluarkan dari alur normal: keduanya position:absolute
+   inset:0, sehingga kotak pembatasnya adalah KARTU itu sendiri
+   (satu-satunya leluhur ber-position di rantai ini), bukan kotak
+   anonim tombol. Perilakunya jadi sama di semua mesin render.
+
+   max-width/max-height sengaja di-none-kan: aturan lama
+   .simple-hero-photo img pernah memasang batas 340px/420px/430px
+   yang tidak pernah ditimpa aturan ini, dan itulah penyebab asli
+   pita putih di HP lebar dan di tablet. Aturan-aturan tersebut
+   sudah dihapus, reset ini menahan kalau ada yang kembali.
+
+   Selector menyebut .hero-photo-stack supaya spesifisitasnya
+   (0,2,1) selalu di atas .simple-hero-photo img / picture
+   (0,1,1) — menang karena spesifisitas, bukan karena urutan. */
+
+.hero-photo-stack .hero-photo-card picture,
 .hero-photo-stack .hero-photo-card img {
+    position: absolute;
+    inset: 0;
+
     width: 100%;
     height: 100%;
 
-    display: block;
+    max-width: none;
+    max-height: none;
 
+    display: block;
+}
+
+.hero-photo-stack .hero-photo-card img {
     object-fit: cover;
     object-position: center top;
 
@@ -5421,6 +5460,186 @@ nav.nav-scrolled {
     .hero-photo-card[data-position="2"],
     .hero-photo-stack.is-spread .hero-photo-card[data-position="2"] {
         transform: translate(16px, 0) rotate(0deg) scale(0.94);
+    }
+
+}
+
+
+/* =========================================
+   HERO PHOTO STACK — JUMLAH KARTU ADAPTIF
+
+   Foto 2 dan 3 bisa disembunyikan dari Admin. Kalau disembunyikan,
+   kartunya benar-benar dihapus dari DOM (bukan disembunyikan pakai
+   CSS), jadi stack bisa berisi 1, 2, atau 3 kartu.
+
+   js/hero-photo-stack.js menulis data-count dari JUMLAH KARTU YANG
+   BENAR-BENAR ADA di DOM, bukan dari data CMS, sehingga geometri di
+   bawah ini tidak mungkin berbeda dengan isi stack-nya.
+
+   Semua aturan di atas adalah kasus TIGA KARTU dan sengaja tidak
+   diubah sedikit pun — tampilan itu sudah disetujui. Blok ini hanya
+   MENAMBAH kasus 2 dan 1 kartu, dengan spesifisitas yang lebih
+   tinggi ([data-count] menambah satu attribute selector), jadi
+   menang tanpa bergantung urutan file.
+========================================= */
+
+
+/* -----------------------------------------
+   DUA KARTU
+
+   Geometri tiga kartu tidak bisa dipakai apa adanya: posisi 1 di
+   sana digeser ke KIRI dengan asumsi ada kartu ketiga yang
+   mengimbangi di kanan. Dengan dua kartu, asumsi itu hilang dan
+   komposisinya jadi berat sebelah.
+
+   Diam: kartu belakang duduk di tengah, sedikit turun dan diputar
+   kecil — sudutnya mengintip di KEDUA sisi, jadi terbaca sebagai
+   tumpukan yang seimbang, bukan satu kartu yang melenceng.
+
+   Terbuka: keduanya bergerak menjauh sama besar dari sumbu tengah,
+   sehingga titik berat komposisinya tetap di tengah panggung.
+----------------------------------------- */
+
+.hero-photo-stack[data-count="2"] .hero-photo-card[data-position="1"] {
+    transform: translate(0, 18px) rotate(-4deg) scale(0.94);
+    z-index: 2;
+}
+
+.hero-photo-stack[data-count="2"].is-spread
+.hero-photo-card[data-position="0"] {
+    transform: translate(-19%, 0) rotate(-4deg) scale(1);
+}
+
+.hero-photo-stack[data-count="2"].is-spread
+.hero-photo-card[data-position="1"] {
+    transform: translate(19%, 2%) rotate(4deg) scale(0.97);
+}
+
+.hero-photo-stack[data-count="2"].is-spread
+.hero-photo-card[data-position="0"]:hover,
+.hero-photo-stack[data-count="2"].is-spread
+.hero-photo-card[data-position="0"]:focus-visible {
+    transform: translate(-19%, 0) rotate(-4deg) scale(1.04);
+}
+
+.hero-photo-stack[data-count="2"].is-spread
+.hero-photo-card[data-position="1"]:hover,
+.hero-photo-stack[data-count="2"].is-spread
+.hero-photo-card[data-position="1"]:focus-visible {
+    transform: translate(19%, 2%) rotate(4deg) scale(1.01);
+}
+
+
+/* -----------------------------------------
+   SATU KARTU
+
+   Bukan tumpukan, jadi jangan berpura-pura jadi tumpukan: tidak ada
+   offset, tidak ada rotasi, tidak ada spread. Kartunya juga sudah
+   di-disable di JS sehingga keluar dari tab order — di sini tinggal
+   menghapus isyarat visual bahwa ia bisa diklik.
+----------------------------------------- */
+
+.hero-photo-stack[data-count="1"] .hero-photo-card,
+.hero-photo-stack[data-count="1"].is-spread .hero-photo-card,
+.hero-photo-stack[data-count="1"] .hero-photo-card:hover,
+.hero-photo-stack[data-count="1"] .hero-photo-card[data-position="0"] {
+    transform: none;
+    cursor: default;
+}
+
+/* Bayangannya tetap ada supaya kartunya tidak terlihat "datar",
+   tapi tidak ikut menguat seperti saat stack terbuka. */
+.hero-photo-stack[data-count="1"].is-spread .hero-photo-card {
+    box-shadow:
+        0 10px 24px rgba(29, 29, 31, 0.10),
+        0 2px 6px rgba(29, 29, 31, 0.06);
+}
+
+
+/* -----------------------------------------
+   TABLET / MOBILE — DUA KARTU
+
+   Sejalan dengan kasus tiga kartu: makin sempit layarnya, makin
+   rapat rentangnya supaya kartu tidak menyentuh tepi panggung.
+----------------------------------------- */
+
+@media (max-width: 900px) {
+
+    .hero-photo-stack[data-count="2"].is-spread
+    .hero-photo-card[data-position="0"],
+    .hero-photo-stack[data-count="2"].is-spread
+    .hero-photo-card[data-position="0"]:hover,
+    .hero-photo-stack[data-count="2"].is-spread
+    .hero-photo-card[data-position="0"]:focus-visible {
+        transform: translate(-14%, 0) rotate(-3deg) scale(1);
+    }
+
+    .hero-photo-stack[data-count="2"].is-spread
+    .hero-photo-card[data-position="1"],
+    .hero-photo-stack[data-count="2"].is-spread
+    .hero-photo-card[data-position="1"]:hover,
+    .hero-photo-stack[data-count="2"].is-spread
+    .hero-photo-card[data-position="1"]:focus-visible {
+        transform: translate(14%, 2%) rotate(3deg) scale(0.97);
+    }
+
+}
+
+
+@media (max-width: 650px) {
+
+    .hero-photo-stack[data-count="2"] .hero-photo-card[data-position="1"] {
+        transform: translate(0, 13px) rotate(-3deg) scale(0.95);
+    }
+
+    .hero-photo-stack[data-count="2"].is-spread
+    .hero-photo-card[data-position="0"],
+    .hero-photo-stack[data-count="2"].is-spread
+    .hero-photo-card[data-position="0"]:hover,
+    .hero-photo-stack[data-count="2"].is-spread
+    .hero-photo-card[data-position="0"]:focus-visible {
+        transform: translate(-9%, 0) rotate(-3deg) scale(1);
+    }
+
+    .hero-photo-stack[data-count="2"].is-spread
+    .hero-photo-card[data-position="1"],
+    .hero-photo-stack[data-count="2"].is-spread
+    .hero-photo-card[data-position="1"]:hover,
+    .hero-photo-stack[data-count="2"].is-spread
+    .hero-photo-card[data-position="1"]:focus-visible {
+        transform: translate(9%, 2%) rotate(3deg) scale(0.96);
+    }
+
+}
+
+
+/* -----------------------------------------
+   GERAK MINIMAL
+
+   Aturan reduced-motion di atas menyebut [data-position] saja, jadi
+   spesifisitasnya kalah dari blok dua-kartu ini. Kasus 2 kartu
+   diulang di sini supaya preferensi pengguna tetap yang menang.
+----------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .hero-photo-stack[data-count="2"] .hero-photo-card[data-position="1"],
+    .hero-photo-stack[data-count="2"].is-spread
+    .hero-photo-card[data-position="1"],
+    .hero-photo-stack[data-count="2"].is-spread
+    .hero-photo-card[data-position="1"]:hover,
+    .hero-photo-stack[data-count="2"].is-spread
+    .hero-photo-card[data-position="1"]:focus-visible {
+        transform: translate(0, 10px) rotate(0deg) scale(0.96);
+    }
+
+    .hero-photo-stack[data-count="2"].is-spread
+    .hero-photo-card[data-position="0"],
+    .hero-photo-stack[data-count="2"].is-spread
+    .hero-photo-card[data-position="0"]:hover,
+    .hero-photo-stack[data-count="2"].is-spread
+    .hero-photo-card[data-position="0"]:focus-visible {
+        transform: none;
     }
 
 }
@@ -8410,27 +8629,17 @@ a.footer-contact-item:hover {
     }
 
 
-    .simple-hero-photo img {
-        width: 92%;
-        max-width: 340px;
+    /* Aturan .simple-hero-photo img dihapus (dulu di sini).
 
-        height: auto;
-        max-height: 420px;
+       max-width: 340px adalah penyebab utama pita putih di HP
+       lebar: kartu selebar min(88vw, 360px) — 343px di layar
+       390px, 360px di layar 430px — sementara gambarnya dipatok
+       340px. Aturan kartu tidak pernah menyetel max-width, jadi
+       batas ini lolos dan gambar jadi lebih sempit dari kartunya.
 
-        display: block;
-
-        object-fit: contain;
-        object-position:
-            center bottom;
-
-        transform: none;
-
-        -webkit-mask-image:
-            none;
-
-        mask-image:
-            none;
-    }
+       mask-image/transform di sini hanya reset defensif untuk
+       aturan yang tidak pernah ada (tidak ada satu pun mask di
+       stylesheet ini selain reset tersebut). */
 
 
 
@@ -8752,15 +8961,9 @@ a.footer-contact-item:hover {
         display: none;
     }
 
-    .simple-hero-photo img {
-        width: 92%;
-        max-width: 340px;
-        height: auto;
-        max-height: 420px;
-        display: block;
-        object-fit: contain;
-        object-position: center bottom;
-    }
+    /* Aturan .simple-hero-photo img dihapus (dulu di sini) —
+       duplikat dari blok 650px sebelumnya, dengan max-width
+       340px yang sama. Lihat catatan di blok itu. */
 
     /* =========================
        CONTENT MOBILE
@@ -9136,9 +9339,12 @@ a.footer-contact-item:hover {
         margin-bottom: 0;
     }
 
-    .simple-hero-photo img {
-        max-height: 430px;
-    }
+    /* Aturan .simple-hero-photo img dihapus (dulu di sini).
+
+       max-height: 430px memotong gambar di tablet: kartu selebar
+       330px dengan aspect-ratio 3/4 tingginya 440px, jadi
+       gambarnya 10px lebih pendek dari kartunya dan menyisakan
+       pita putih di bawah. */
 
     .simple-hero-scroll {
         display: none;
@@ -9651,6 +9857,15 @@ a.footer-contact-item:hover {
 .project-image picture {
     display: contents;
 }
+
+/* Pengecualian: <picture> di dalam hero photo stack TIDAK memakai
+   display: contents. Kartunya adalah <button>, dan display:
+   contents di dalam <button> termasuk sudut yang penanganannya
+   berbeda-beda antar mesin render. Di sana picture dijadikan
+   kotak absolut yang mengisi kartu — lihat
+   ".hero-photo-stack .hero-photo-card picture" di blok HERO PHOTO
+   STACK. Spesifisitasnya (0,2,1) lebih tinggi dari aturan di
+   atas (0,1,1), jadi override-nya tidak bergantung urutan. */
 /* =========================================================
    GUESTBOOK V2 - SIGNATURE REVEAL ANIMATION
 ========================================================= */
@@ -12292,8 +12507,15 @@ a.footer-contact-item:hover {
 
 .certificates-section {
 
-    /* ---- PALET ---- */
-    --cert-red: #ff453a;
+    /* ---- PALET ----
+
+       --cert-accent adalah biru aksen portofolio untuk permukaan
+       GELAP (#2997ff) — biru yang sama yang sudah dipakai footer,
+       nomor kategori tech stack, dan eyebrow section. Bukan biru
+       baru. #0071e3 tetap dipakai untuk kontrol di atas latar
+       terang (label section, titik aktif, cincin fokus tombol),
+       jadi dua-duanya tetap pada perannya masing-masing. */
+    --cert-accent: #2997ff;
     --cert-card-bg: #131313;
     --cert-card-border: rgba(255, 255, 255, 0.07);
 
@@ -12502,7 +12724,23 @@ a.footer-contact-item:hover {
 /* ---- SLOT: posisi kartu di lingkaran ----
    Transform-nya di-set sekali oleh JS dan tidak pernah
    berubah lagi (menyebut var(--cert-radius), jadi otomatis
-   ikut breakpoint). Yang bertransisi hanya opacity. */
+   ikut breakpoint).
+
+   SLOT SENGAJA TIDAK PUNYA OPACITY.
+
+   Menurut CSS Transforms Level 2, properti "grouping" —
+   opacity < 1, filter, clip-path, mask — memaksa nilai terpakai
+   transform-style menjadi flat. Dulu JS menulis opacity pecahan
+   langsung ke elemen ini, jadi setiap kartu yang sedang meredup
+   kehilangan preserve-3d-nya: .cert-flip dan kedua .cert-face
+   gepeng ke satu bidang, dan backface-visibility berhenti
+   memotong muka yang membelakangi kita. Hasilnya kartu belakang
+   ikut tergambar dan menumpuk. Blink lebih longgar soal ini
+   daripada WebKit — itulah kenapa emulasi DevTools terlihat
+   sehat sementara HP asli tidak.
+
+   Peredupan sekarang dipasang di .cert-face (daun, tidak
+   menurunkan konteks 3D ke siapa pun). Lihat blok KARTU. */
 
 .cert-slot {
     position: absolute;
@@ -12510,16 +12748,15 @@ a.footer-contact-item:hover {
 
     transform-style: preserve-3d;
 
-    transition:
-        opacity var(--cert-spin);
-
     cursor: pointer;
 }
 
 
-/* Saat di-drag, rotasi harus mengikuti jari tanpa jeda. */
+/* Saat di-drag, rotasi dan peredupan harus mengikuti jari tanpa
+   jeda. .cert-face ikut di sini karena opacity/visibility-nya
+   yang sekarang bertransisi, bukan slot-nya. */
 .certificates-carousel.is-dragging .cert-ring,
-.certificates-carousel.is-dragging .cert-slot {
+.certificates-carousel.is-dragging .cert-face {
     transition: none;
 }
 
@@ -12533,7 +12770,7 @@ a.footer-contact-item:hover {
    .cert-slot ada di dalam rantai 3D dan kotaknya tidak
    selalu sejajar dengan kartu yang terlihat. */
 .cert-slot:focus-visible .cert-face {
-    outline: 2px solid var(--cert-red);
+    outline: 2px solid var(--cert-accent);
 
     outline-offset: 3px;
 }
@@ -12558,6 +12795,20 @@ a.footer-contact-item:hover {
 
 .cert-slot.is-flipped .cert-flip {
     transform: rotateY(180deg);
+}
+
+/* Kartu yang sudah lewat 90 derajat menampilkan sisi belakangnya, dan
+   isinya terbaca terbalik. Ini hanya muncul kalau kartunya sedikit:
+   dengan 3 kartu, tetangganya persis di 120 derajat.
+
+   Yang disembunyikan hanya isinya. Permukaan kartunya tetap tergambar,
+   jadi komposisi globe-nya utuh: kartu samping masih terlihat sebagai
+   bidang gelap, hanya tanpa teks cermin. Kelasnya dipasang oleh JS di
+   render(); saat kartu depan dibalik, |rel| mendekati 0 sehingga aturan
+   ini tidak aktif. */
+
+.cert-slot.is-reversed .cert-back-inner {
+    visibility: hidden;
 }
 
 
@@ -12585,6 +12836,26 @@ a.footer-contact-item:hover {
     backface-visibility: hidden;
 
     overflow: hidden;
+
+    /* Peredupan kartu hidup DI SINI, bukan di .cert-slot —
+       lihat catatan panjang di blok SLOT. Muka kartu adalah
+       daun: tidak ada transform 3D di bawahnya, jadi opacity di
+       sini tidak bisa menggepengkan konteks 3D milik siapa pun.
+       JS menulis nilai yang sama ke kedua muka satu kartu.
+
+       visibility ikut bertransisi dengan sengaja. Sesuai spesifikasi
+       visibility di-interpolasi sebagai langkah diskret yang tetap
+       "visible" selama transisi berjalan, jadi:
+         - menuju hidden : kartu tetap tergambar sampai fade
+                           selesai, baru benar-benar hilang;
+         - menuju visible: langsung tampak di frame pertama,
+                           sebelum ia perlu terlihat.
+       Efeknya kartu yang sudah 0 opacity berhenti jadi lapisan
+       yang masih dicat compositor, tanpa mengubah animasinya. */
+
+    transition:
+        opacity var(--cert-spin),
+        visibility var(--cert-spin);
 }
 
 
@@ -12622,7 +12893,7 @@ a.footer-contact-item:hover {
 
     border-radius: 0 0 3px 3px;
 
-    background-color: var(--cert-red);
+    background-color: var(--cert-accent);
 }
 
 
@@ -12633,7 +12904,7 @@ a.footer-contact-item:hover {
 
     line-height: 1;
 
-    color: var(--cert-red);
+    color: var(--cert-accent);
 }
 
 
@@ -12659,7 +12930,7 @@ a.footer-contact-item:hover {
 
     text-transform: uppercase;
 
-    color: var(--cert-red);
+    color: var(--cert-accent);
 }
 
 
@@ -12734,6 +13005,14 @@ a.footer-contact-item:hover {
 }
 
 
+/* Pill isian tipis, bukan blok biru solid.
+
+   Biru solid + teks putih hanya mencapai rasio kontras ~2.6:1 —
+   di bawah AA untuk teks 12px (versi merah sebelumnya juga
+   ~3.1:1, sama-sama kurang). Dengan latar transparan dan teks
+   #2997ff di atas kartu #131313 rasionya ~6.5:1, lolos AA, dan
+   secara visual lebih tenang di kartu gelap. */
+
 .cert-badge {
     display: inline-block;
 
@@ -12741,7 +13020,9 @@ a.footer-contact-item:hover {
 
     border-radius: 20px;
 
-    background-color: var(--cert-red);
+    background-color: rgba(41, 151, 255, 0.14);
+
+    border: 1px solid rgba(41, 151, 255, 0.35);
 
     font-size: 12px;
 
@@ -12749,7 +13030,7 @@ a.footer-contact-item:hover {
 
     letter-spacing: 0.4px;
 
-    color: #ffffff;
+    color: var(--cert-accent);
 }
 
 
@@ -12804,9 +13085,9 @@ a.footer-contact-item:hover {
 
 
 .cert-link:hover {
-    background-color: var(--cert-red);
+    background-color: var(--cert-accent);
 
-    border-color: var(--cert-red);
+    border-color: var(--cert-accent);
 }
 
 
@@ -13214,6 +13495,90 @@ a.footer-contact-item:hover {
     .contact-social-icon {
 
         animation: none;
+    }
+
+}
+
+/* =========================================
+   TECH STACK — CMS ICON SIZING
+
+   The CMS renders the same tile as the static
+   V1 markup — icon + name — so nothing here
+   changes layout, spacing or backgrounds. The
+   one difference is the icon element: static
+   tiles use an icon font (.tech-item > i), CMS
+   tiles use an <img>, which needs its own box.
+
+   No background, border or card is drawn. The
+   icon sits directly on the Tech Stack surface
+   and whatever transparency the source artwork
+   has is preserved, including its own colours.
+========================================= */
+
+/*
+   A fixed box with contain: every logo occupies
+   the same 33px footprint as the icon font it
+   replaces, and a non-square logo is letterboxed
+   inside it rather than stretched to fill it.
+*/
+
+.tech-item-cms .tech-icon-img {
+    width: 33px;
+    height: 33px;
+
+    max-width: 100%;
+    max-height: 100%;
+
+    object-fit: contain;
+
+    flex-shrink: 0;
+
+    display: block;
+
+    background: none;
+
+    transition:
+        transform 0.35s
+        cubic-bezier(
+            0.22,
+            1,
+            0.36,
+            1
+        );
+}
+
+
+/* Same lift the static icons already use. */
+
+.tech-item-cms:hover .tech-icon-img {
+    transform:
+        scale(1.12)
+        rotate(-3deg);
+}
+
+
+/* =========================================
+   MOBILE
+
+   Matches the 28px the static .tech-item > i
+   drops to at this width, so a mixed list
+   stays even.
+========================================= */
+
+@media (max-width: 650px) {
+
+    .tech-item-cms .tech-icon-img {
+        width: 28px;
+        height: 28px;
+    }
+
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+
+    .tech-item-cms .tech-icon-img {
+        transition: none !important;
     }
 
 }
