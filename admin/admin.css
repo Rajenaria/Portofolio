@@ -580,6 +580,10 @@ svg {
   border-left: 3px solid var(--admin-danger);
 }
 
+.admin-alert-warning {
+  border-left: 3px solid var(--admin-warning);
+}
+
 .admin-alert-title {
   font-size: 15px;
   font-weight: 600;
@@ -2772,4 +2776,173 @@ body.has-modal-open {
   .icon-option {
     height: 52px;
   }
+}
+
+/* --------------------------------------------------------------------------
+   13g-c. CERTIFICATES — LIST, CATEGORY CELL, CARD PREVIEW
+   -------------------------------------------------------------------------- */
+
+.cert-minimum {
+  margin-bottom: 20px;
+}
+
+.cert-category-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.cert-category-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  object-fit: contain;
+  opacity: 0.75;
+}
+
+/* ---- CARD PREVIEW ----
+
+   Deliberately mirrors the public card rather than the Admin surface: black
+   card, white type, the same #2997ff dark-surface accent the public
+   --cert-accent uses. The owner is checking how the card will look, so the
+   preview has to look like the card.
+
+   It is a static front/back pair. The rotating globe belongs to
+   js/certificates.js and is not reimplemented here. */
+
+.cert-preview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.cert-preview-column {
+  min-width: 0;
+}
+
+.cert-preview-caption {
+  margin-bottom: 8px;
+  color: var(--admin-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+}
+
+.cert-preview-face {
+  position: relative;
+  display: flex;
+  min-height: 300px;
+  padding: 30px 22px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 18px;
+  background-color: #131313;
+  overflow: hidden;
+}
+
+.cert-preview-front {
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.cert-preview-accent-line {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 46px;
+  height: 4px;
+  margin-left: -23px;
+  border-radius: 0 0 3px 3px;
+  background-color: #2997ff;
+}
+
+.cert-preview-icon {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+}
+
+.cert-preview-front-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cert-preview-year {
+  color: #2997ff;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.cert-preview-title,
+.cert-preview-back-title {
+  color: #ffffff;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.cert-preview-publisher,
+.cert-preview-back-subtitle {
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+.cert-preview-back-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+}
+
+/* Tinted pill, not a solid fill: #2997ff on #131313 reaches ~6.5:1, while
+   white on solid blue is ~2.6:1 and fails AA at this size. Matches the
+   public .cert-badge. */
+.cert-preview-badge {
+  display: inline-block;
+  padding: 5px 12px;
+  border: 1px solid rgba(41, 151, 255, 0.35);
+  border-radius: 20px;
+  background-color: rgba(41, 151, 255, 0.14);
+  color: #2997ff;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+}
+
+.cert-preview-desc {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 13px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.cert-preview-link {
+  display: inline-flex;
+  align-items: center;
+  margin-top: auto;
+  padding: 8px 15px;
+  border: 1px dashed rgba(255, 255, 255, 0.16);
+  border-radius: 20px;
+  color: rgba(255, 255, 255, 0.32);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.1px;
+}
+
+.cert-preview-host {
+  padding: 4px 0;
+}
+
+.cert-preview-body .cert-preview {
+  margin-top: 4px;
 }

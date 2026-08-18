@@ -139,6 +139,39 @@ export function textareaField({ id, label, required, maxLength, value, help, row
   return baseField(area, shell, id);
 }
 
+/*
+  Select built on the same shell as textField, so a dropdown carries the same
+  label/help/error wiring as every other field.
+
+  `options` is [{ value, label }]. Option text is set with textContent through
+  el(), never innerHTML, and callers are expected to pass a fixed allow-list —
+  the Certificate category picker passes the frozen category table.
+*/
+export function selectField({ id, label, required, options = [], value, help }) {
+  const shell = fieldShell({ id, label, required, help });
+
+  const select = el("select", "admin-select");
+  select.id = id;
+
+  options.forEach(option => {
+    const node = el("option", null, option.label);
+    node.value = option.value;
+    append(select, node);
+  });
+
+  if (required) {
+    select.required = true;
+  }
+
+  if (value !== null && value !== undefined && value !== "") {
+    select.value = String(value);
+  }
+
+  append(shell.node, select);
+
+  return baseField(select, shell, id);
+}
+
 export function checkboxField({ id, label, checked, help }) {
   const node = el("div", "form-field form-field-toggle");
 

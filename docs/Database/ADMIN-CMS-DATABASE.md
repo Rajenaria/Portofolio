@@ -1178,6 +1178,89 @@ AND show_in_public_stack = true
 
 ---
 
+# 33b. `certificates`
+
+Added by `20260818110000_certificates_schema.sql` (Phase C).
+
+Purpose:
+
+Backs the public Sertifikat carousel, which shipped as a hardcoded array in
+`js/certificates.js`. Phase C creates the table and the Admin module only —
+the public section still renders its static array and is wired to the
+database in a later phase.
+
+Fields:
+
+```text
+certificates
+├── id uuid PK
+├── title varchar(180) NOT NULL          front + back
+├── publisher varchar(140)               front, small line
+├── period varchar(60)                   front, free text ("2021 — 2025")
+├── category varchar(40) NOT NULL        controlled allow-list -> icon
+├── issuer_line varchar(180)             back, uppercase line
+├── badge_text varchar(60)               back, optional pill
+├── description varchar(400)             back, plain text
+├── status varchar(20) NOT NULL          draft | published | archived
+├── sort_order integer NOT NULL
+├── published_at timestamptz
+├── archived_at timestamptz
+├── deleted_at timestamptz               soft delete / Trash
+├── created_at timestamptz NOT NULL
+└── updated_at timestamptz NOT NULL
+```
+
+`title` is one column on purpose: the card renders it on both faces, and
+storing it twice would let the two sides drift apart.
+
+## No icon column
+
+The glyph is derived from `category` through a frozen table in application
+code (`admin/js/modules/certificates/categories.js`). No SVG, markup, URL or
+free-form icon id is ever stored, so nothing icon-shaped can reach a renderer
+through the database. The `certificates_category_check` allow-list is the
+database half of that guarantee; the renderer falls back to `other` for any
+value it does not recognise.
+
+This is deliberately stricter than `technologies.icon_key`, which stores
+validated Iconify ids because brand coverage needs open search.
+
+## No document columns yet
+
+Certificate upload is Phase D. Adding nullable columns later is a trivial
+additive migration — exactly like `hero_media.is_visible` — so nothing is
+gained by reserving them now.
+
+## Minimum published invariant
+
+Added by `20260818110100_certificates_minimum_published.sql`.
+
+The public carousel needs at least three cards; below three the 3D geometry
+degenerates. The rule cannot be "1 or 2 published is illegal", because that
+makes the first certificate impossible to create. It is a one-way latch:
+
+```text
+before the CMS has ever reached 3 published   any count is allowed
+once it has reached 3                          it may never fall below 3
+```
+
+That needs memory, so `app_private.certificate_cms_state` holds a single
+`is_activated` row. A `DEFERRABLE INITIALLY DEFERRED` constraint trigger
+checks the count at COMMIT — which is what lets a transaction unpublish one
+certificate and publish another and be judged on its end state — and arms the
+latch the first time the count reaches three. The trigger takes `FOR UPDATE`
+on the state row, so two concurrent unpublishes cannot each see a valid final
+count and both commit.
+
+`app_private.certificate_cms_state` grants nothing to `anon` or
+`authenticated`; only the `SECURITY DEFINER` trigger function touches it.
+
+The Admin needs no extra RPC to render its banner: activation is derivable
+from the published count it already loads, because a count below three can
+only exist before the latch armed.
+
+---
+
 # 34. `project_technologies`
 
 Purpose:

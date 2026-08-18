@@ -34,6 +34,10 @@ import {
 } from "./js/modules/experience/index.js";
 
 import {
+  certificatesRoute
+} from "./js/modules/certificates/index.js";
+
+import {
   technologiesRoute
 } from "./js/modules/technologies.js";
 
@@ -89,6 +93,7 @@ function mountAdminApp() {
       dashboardRoute,
       profileRoute,
       experienceRoute,
+      certificatesRoute,
       projectsRoute,
       technologiesRoute
     ],
