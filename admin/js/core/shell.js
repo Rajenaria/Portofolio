@@ -177,17 +177,24 @@ export function initShell() {
   let activeRouteName = null;
 
   /*
-    Top bar, right-hand side, at every breakpoint. The bar is shown on desktop
-    too (it used to be mobile-only), so this is a single reachable home for the
-    control rather than two conditional ones.
-  */
-  const languageEl =
-    document.getElementById("admin-topbar-actions") ||
-    document.getElementById("admin-sidebar-language");
+    Two mounts, one control.
 
-  if (languageEl && languageEl.childElementCount === 0) {
-    languageEl.appendChild(createLanguageSwitch("lang-switch lang-switch-compact"));
-  }
+    The rail's brand line is the home on desktop, where the rail is always
+    visible. On mobile the rail is a drawer, so the compact header carries its
+    own copy rather than making the owner open the drawer to change language.
+
+    Duplicating is safe: createLanguageSwitch subscribes each instance to
+    onLanguageChange, so both stay in step with the stored preference and with
+    each other. Neither instance owns any state.
+  */
+  [
+    document.getElementById("admin-brand-language"),
+    document.getElementById("admin-topbar-actions")
+  ].forEach(slot => {
+    if (slot && slot.childElementCount === 0) {
+      slot.appendChild(createLanguageSwitch("lang-switch-inline"));
+    }
+  });
 
   /* Re-labels the parts of the shell that are static markup, then the
      header title, which is derived from the active route. */

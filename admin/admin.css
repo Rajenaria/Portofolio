@@ -407,13 +407,22 @@ svg {
   color: var(--rail-text);
 }
 
+/*
+  Brand line: identity on the left, language on the right, drawer close button
+  after it on mobile. Aligned to the top so ID / EN sits on the eyebrow line
+  rather than floating between the two rows of the wordmark.
+*/
 .sidebar-brand {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
   padding: 22px 18px 18px;
   border-bottom: 1px solid var(--rail-border);
+}
+
+.brand-language {
+  margin-top: 1px;
 }
 
 .sidebar-brand-text {
@@ -2892,8 +2901,15 @@ body.has-modal-open {
     height: 100vh;
   }
 
-  /* Persistent sidebar: no hamburger, no backdrop.
-     The top bar itself is kept, and styled further down. */
+  /* Persistent sidebar: no hamburger, no backdrop, no mobile top bar. */
+  .admin-topbar {
+    display: none;
+  }
+
+  /* With the bar gone there is nothing above the editor header to clear. */
+  .editor-header {
+    top: 0;
+  }
 
   .admin-backdrop {
     display: none !important;
@@ -4061,55 +4077,16 @@ a.admin-button {
    -------------------------------------------------------------------------- */
 
 /*
-  The top bar is now shown at every breakpoint. On mobile it carries the drawer
-  trigger and the route name; on desktop it is a slim strip whose only job is
-  to anchor the account controls to the top-right corner, so the workspace
-  keeps a consistent edge instead of starting flush against the page title.
+  Mobile only. It exists for the drawer trigger and the route name; with the
+  language control now living on the rail's brand line, there is nothing left
+  for it to hold on desktop, and reserving a blank 56px band above every page
+  bought nothing.
 */
 .admin-topbar {
   min-height: 56px;
 }
 
-/*
-  Compact segmented switch. Same language as the profile tabs — sunken track,
-  raised selected segment — at control scale, so it reads as a setting rather
-  than as a panel.
-*/
-.lang-switch-compact {
-  display: inline-flex;
-  gap: 2px;
-  padding: 2px;
-  background: var(--admin-surface-sunken);
-  border: 1px solid var(--admin-border-soft);
-  border-radius: 999px;
-}
 
-.lang-switch-compact .lang-switch-option {
-  min-width: 34px;
-  min-height: 26px;
-  padding: 0 10px;
-  border-radius: 999px;
-  color: var(--admin-text-muted);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.lang-switch-compact .lang-switch-option:hover {
-  color: var(--admin-text-primary);
-}
-
-.lang-switch-compact .lang-switch-option.is-active {
-  background: var(--admin-surface);
-  color: var(--admin-text-primary);
-  box-shadow: 0 1px 2px rgba(17, 17, 17, 0.06);
-}
-
-.lang-switch-compact .lang-switch-option:focus-visible {
-  outline: 2px solid var(--admin-accent);
-  outline-offset: 1px;
-}
 
 /* ---- desktop composition ---- */
 
@@ -4152,21 +4129,6 @@ a.admin-button {
     duplicated route title (the page header already states it), just the
     account controls on the right.
   */
-  /* Same opaque bar as mobile, aligned to the content gutter. */
-  .admin-topbar {
-    padding: 0 clamp(24px, 3.4vw, 48px);
-  }
-
-  .admin-topbar .topbar-toggle,
-  .admin-topbar .topbar-title {
-    display: none;
-  }
-
-  /* The top bar is sticky at top: 0, so the editor header stacks beneath it. */
-  .editor-header {
-    top: 56px;
-  }
-
   .admin-content {
     padding-top: 32px;
   }
@@ -4186,4 +4148,77 @@ a.admin-button {
   .kpi-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
+}
+
+/* --------------------------------------------------------------------------
+   20. LANGUAGE SWITCH — inline text buttons
+
+   Two words, no container. A pill or track here would be a box drawn around
+   a control that is already only four characters wide, and on the brand line
+   it would compete with the wordmark beside it.
+   -------------------------------------------------------------------------- */
+
+.lang-switch-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lang-switch-inline .lang-switch-option {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  padding: 2px 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--admin-text-muted);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.lang-switch-inline .lang-switch-option:hover {
+  color: var(--admin-text-primary);
+}
+
+.lang-switch-inline .lang-switch-option.is-active {
+  background: none;
+  box-shadow: none;
+  color: var(--admin-text-primary);
+  font-weight: 600;
+}
+
+/* A 2px accent rule under the active word: enough to read as selected,
+   small enough not to become a chip. */
+.lang-switch-inline .lang-switch-option.is-active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -2px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--admin-accent);
+}
+
+.lang-switch-inline .lang-switch-option:focus-visible {
+  outline: 2px solid var(--admin-accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* On the dark rail the same control inverts its text scale. */
+.sidebar-brand .lang-switch-inline .lang-switch-option {
+  color: var(--rail-text-muted);
+}
+
+.sidebar-brand .lang-switch-inline .lang-switch-option:hover,
+.sidebar-brand .lang-switch-inline .lang-switch-option.is-active {
+  color: var(--rail-text);
 }
