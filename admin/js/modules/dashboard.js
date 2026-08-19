@@ -18,6 +18,7 @@
 */
 
 import { supabaseClient } from "../core/supabase.js";
+import { t } from "../core/i18n.js";
 
 import {
   el,
@@ -30,6 +31,69 @@ import {
 } from "../core/dom.js";
 
 const RECENT_LIMIT = 5;
+
+/*
+  The four things this CMS manages. Declared once so the skeleton, the error
+  state and the loaded state can never drift out of step with each other.
+*/
+const CARDS = [
+  { key: "projects", labelKey: "dashboard.projects" },
+  { key: "experiences", labelKey: "dashboard.experiences" },
+  { key: "certificates", labelKey: "dashboard.certificates" },
+  { key: "technologies", labelKey: "dashboard.technologies" }
+];
+
+/*
+  One line-art glyph per card, drawn inline so the Admin loads no icon font
+  and no third-party script. They are decorative — every card states its
+  subject in text — so each is aria-hidden.
+*/
+const CARD_GLYPHS = {
+  projects: "M3 6.5A1.5 1.5 0 014.5 5h3.2l1.6 2h6.2A1.5 1.5 0 0117 8.5v6A1.5 1.5 0 0115.5 16h-11A1.5 1.5 0 013 14.5v-8Z",
+  experiences: "M4 7h12v8.5A1.5 1.5 0 0114.5 17h-9A1.5 1.5 0 014 15.5V7Zm3 0V5.5A1.5 1.5 0 018.5 4h3A1.5 1.5 0 0113 5.5V7",
+  certificates: "M10 3l2 4.2 4.5.6-3.3 3.2.8 4.5L10 13.4 5.9 15.5l.8-4.5L3.5 7.8 8 7.2 10 3Z",
+  technologies: "M7 6.5L3.5 10 7 13.5M13 6.5L16.5 10 13 13.5M11.2 4.5l-2.4 11"
+};
+
+function cardGlyph(key) {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", "0 0 20 20");
+  svg.setAttribute("aria-hidden", "true");
+  svg.setAttribute("focusable", "false");
+
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("d", CARD_GLYPHS[key] || CARD_GLYPHS.projects);
+  path.setAttribute("fill", "none");
+  path.setAttribute("stroke", "currentColor");
+  path.setAttribute("stroke-width", "1.5");
+  path.setAttribute("stroke-linecap", "round");
+  path.setAttribute("stroke-linejoin", "round");
+
+  svg.appendChild(path);
+
+  const wrap = el("span", "kpi-glyph");
+  wrap.appendChild(svg);
+
+  return wrap;
+}
+
+const TYPE_LABELS = {
+  project: "dashboard.typeProject",
+  experience: "dashboard.typeExperience",
+  certificate: "dashboard.typeCertificate"
+};
+
+function typeLabel(kind) {
+  return t(TYPE_LABELS[kind] || "common.type");
+}
+
+function statusBreakdown(counts) {
+  return [
+    { label: t("dashboard.published"), value: counts.published },
+    { label: t("dashboard.draft"), value: counts.draft },
+    { label: t("dashboard.archived"), value: counts.archived }
+  ];
+}
 
 export const dashboardRoute = {
   name: "dashboard",
@@ -47,17 +111,22 @@ function paintFrame(container) {
   append(
     container,
     pageHeader({
-      title: "Dashboard",
-      subtitle: "Manage and publish your portfolio content.",
+      title: t("dashboard.title"),
+      subtitle: t("dashboard.subtitle"),
       actions: [
         {
-          label: "+ New Project",
+          label: t("dashboard.newProject"),
           href: "#/projects",
           variant: "primary"
         },
         {
-          label: "+ New Experience",
+          label: t("dashboard.newExperience"),
           href: "#/experience",
+          variant: "secondary"
+        },
+        {
+          label: t("dashboard.newCertificate"),
+          href: "#/certificates",
           variant: "secondary"
         }
       ]
@@ -71,7 +140,7 @@ function paintFrame(container) {
   kpiGrid.id = "dashboard-kpi";
 
   const recentSection = el("section", "admin-section");
-  append(recentSection, el("h2", "section-title", "Recent Content"));
+  append(recentSection, el("h2", "section-title", t("dashboard.recent")));
 
   const recentSlot = el("div", "recent-slot");
   recentSlot.id = "dashboard-recent";
@@ -90,7 +159,7 @@ async function load(container, signal) {
   clear(recentSlot);
 
   renderKpiSkeleton(kpiGrid);
-  append(recentSlot, el("p", "loading-text", "Loading recent content..."));
+  append(recentSlot, el("p", "loading-text", t("common.loading")));
 
   let data;
 
@@ -108,12 +177,12 @@ async function load(container, signal) {
     clear(recentSlot);
 
     append(alertSlot, buildErrorAlert(container, signal));
-    append(kpiGrid, unavailableCard("Projects"));
-    append(kpiGrid, unavailableCard("Experience"));
-    append(kpiGrid, unavailableCard("Technologies"));
+
+    CARDS.forEach(card => append(kpiGrid, unavailableCard(t(card.labelKey))));
+
     append(
       recentSlot,
-      el("p", "loading-text", "Recent content is unavailable.")
+      el("p", "loading-text", t("dashboard.recentUnavailable"))
     );
 
     return;
@@ -129,33 +198,43 @@ async function load(container, signal) {
   append(
     kpiGrid,
     kpiCard({
-      label: "Projects",
+      label: t("dashboard.projects"),
       total: data.projects.total,
-      unit: "total active",
-      breakdown: [
-        { label: "Published", value: data.projects.published },
-        { label: "Draft", value: data.projects.draft },
-        { label: "Archived", value: data.projects.archived }
-      ]
+      unit: t("dashboard.totalActive"),
+      breakdown: statusBreakdown(data.projects),
+      href: "#/projects",
+      linkLabel: t("dashboard.manageProjects"),
+      glyph: "projects"
     }),
     kpiCard({
-      label: "Experience",
+      label: t("dashboard.experiences"),
       total: data.experiences.total,
-      unit: "total active",
-      breakdown: [
-        { label: "Published", value: data.experiences.published },
-        { label: "Draft", value: data.experiences.draft },
-        { label: "Archived", value: data.experiences.archived }
-      ]
+      unit: t("dashboard.totalActive"),
+      breakdown: statusBreakdown(data.experiences),
+      href: "#/experience",
+      linkLabel: t("dashboard.manageExperience"),
+      glyph: "experiences"
     }),
     kpiCard({
-      label: "Technologies",
+      label: t("dashboard.certificates"),
+      total: data.certificates.total,
+      unit: t("dashboard.totalActive"),
+      breakdown: statusBreakdown(data.certificates),
+      href: "#/certificates",
+      linkLabel: t("dashboard.manageCertificates"),
+      glyph: "certificates"
+    }),
+    kpiCard({
+      label: t("dashboard.technologies"),
       total: data.technologies.total,
-      unit: "total",
+      unit: t("dashboard.total"),
       breakdown: [
-        { label: "Active", value: data.technologies.active },
-        { label: "Inactive", value: data.technologies.inactive }
-      ]
+        { label: t("dashboard.active"), value: data.technologies.active },
+        { label: t("dashboard.inactive"), value: data.technologies.inactive }
+      ],
+      href: "#/technologies",
+      linkLabel: t("dashboard.manageTechnologies"),
+      glyph: "technologies"
     })
   );
 
@@ -168,13 +247,13 @@ async function load(container, signal) {
 
 async function loadDashboardData() {
   /*
-    Three queries instead of eight count queries.
+    Four queries instead of one count query per status.
 
     CMS volume is small (see ADMIN-CMS-DATABASE.md section 66), so fetching the
     rows once and deriving both the KPI breakdown and the Recent Content list
     from the same result is cheaper than issuing a count query per status.
   */
-  const [projects, experiences, technologies] = await Promise.all([
+  const [projects, experiences, certificates, technologies] = await Promise.all([
     supabaseClient
       .from("projects")
       .select("id, title, status, updated_at")
@@ -188,11 +267,17 @@ async function loadDashboardData() {
       .order("updated_at", { ascending: false }),
 
     supabaseClient
+      .from("certificates")
+      .select("id, title, status, updated_at")
+      .is("deleted_at", null)
+      .order("updated_at", { ascending: false }),
+
+    supabaseClient
       .from("technologies")
       .select("id, is_active")
   ]);
 
-  const failure = [projects, experiences, technologies].find(
+  const failure = [projects, experiences, certificates, technologies].find(
     result => result.error
   );
 
@@ -202,13 +287,15 @@ async function loadDashboardData() {
 
   const projectRows = projects.data || [];
   const experienceRows = experiences.data || [];
+  const certificateRows = certificates.data || [];
   const technologyRows = technologies.data || [];
 
   return {
     projects: summariseStatus(projectRows),
     experiences: summariseStatus(experienceRows),
+    certificates: summariseStatus(certificateRows),
     technologies: summariseTechnologies(technologyRows),
-    recent: buildRecentList(projectRows, experienceRows)
+    recent: buildRecentList(projectRows, experienceRows, certificateRows)
   };
 }
 
@@ -249,26 +336,26 @@ function summariseTechnologies(rows) {
   };
 }
 
-function buildRecentList(projectRows, experienceRows) {
+function buildRecentList(projectRows, experienceRows, certificateRows) {
   const items = [];
 
-  projectRows.forEach(row => {
-    items.push({
-      id: `project-${row.id}`,
-      type: "Project",
-      title: row.title,
-      status: row.status,
-      updatedAt: row.updated_at
-    });
-  });
+  /* The visible type label is resolved at render time, not here, so switching
+     language re-labels these rows without another round trip. */
+  const sources = [
+    { rows: projectRows, kind: "project" },
+    { rows: experienceRows, kind: "experience" },
+    { rows: certificateRows, kind: "certificate" }
+  ];
 
-  experienceRows.forEach(row => {
-    items.push({
-      id: `experience-${row.id}`,
-      type: "Experience",
-      title: row.title,
-      status: row.status,
-      updatedAt: row.updated_at
+  sources.forEach(source => {
+    source.rows.forEach(row => {
+      items.push({
+        id: `${source.kind}-${row.id}`,
+        kind: source.kind,
+        title: row.title,
+        status: row.status,
+        updatedAt: row.updated_at
+      });
     });
   });
 
@@ -287,17 +374,20 @@ function buildRecentList(projectRows, experienceRows) {
 /* ------------------------------------------------------------------ */
 
 function renderKpiSkeleton(grid) {
-  ["Projects", "Experience", "Technologies"].forEach(label => {
-    const card = el("article", "kpi-card is-loading");
+  CARDS.forEach(card => {
+    const node = el("article", "kpi-card is-loading");
+
+    const head = el("div", "kpi-head");
+    append(head, el("p", "kpi-label", t(card.labelKey)), cardGlyph(card.key));
 
     append(
-      card,
-      el("p", "kpi-label", label),
+      node,
+      head,
       el("p", "kpi-value", "—"),
-      el("p", "kpi-unit", "Loading...")
+      el("p", "kpi-unit", t("common.loading"))
     );
 
-    append(grid, card);
+    append(grid, node);
   });
 }
 
@@ -308,18 +398,25 @@ function unavailableCard(label) {
     card,
     el("p", "kpi-label", label),
     el("p", "kpi-value", "—"),
-    el("p", "kpi-unit", "Unavailable")
+    el("p", "kpi-unit", t("dashboard.unavailable"))
   );
 
   return card;
 }
 
-function kpiCard({ label, total, unit, breakdown }) {
+function kpiCard({ label, total, unit, breakdown, href, linkLabel, glyph }) {
   const card = el("article", "kpi-card");
+
+  const head = el("div", "kpi-head");
+  append(head, el("p", "kpi-label", label));
+
+  if (glyph) {
+    append(head, cardGlyph(glyph));
+  }
 
   append(
     card,
-    el("p", "kpi-label", label),
+    head,
     el("p", "kpi-value", total),
     el("p", "kpi-unit", unit)
   );
@@ -340,15 +437,22 @@ function kpiCard({ label, total, unit, breakdown }) {
 
   append(card, list);
 
+  /* Each card ends where its content is edited, so the overview is a way in
+     rather than a dead end. A plain link: the router owns navigation. */
+  if (href) {
+    const link = el("a", "kpi-link", linkLabel);
+    link.href = href;
+    append(card, link);
+  }
+
   return card;
 }
 
 function buildRecentContent(items) {
   if (items.length === 0) {
     return emptyState({
-      title: "No content yet.",
-      description:
-        "Projects and experiences you create will appear here, most recently updated first."
+      title: t("dashboard.empty"),
+      description: t("dashboard.emptyHelp")
     });
   }
 
@@ -358,10 +462,10 @@ function buildRecentContent(items) {
 
   append(
     head,
-    el("span", "recent-cell recent-cell-title", "Title"),
-    el("span", "recent-cell recent-cell-type", "Type"),
-    el("span", "recent-cell recent-cell-status", "Status"),
-    el("span", "recent-cell recent-cell-updated", "Updated")
+    el("span", "recent-cell recent-cell-title", t("common.title")),
+    el("span", "recent-cell recent-cell-type", t("common.type")),
+    el("span", "recent-cell recent-cell-status", t("common.status")),
+    el("span", "recent-cell recent-cell-updated", t("common.updated"))
   );
 
   append(wrapper, head);
@@ -373,10 +477,16 @@ function buildRecentContent(items) {
 
     // Every value below is written as text, never as markup.
     const title = el("span", "recent-cell recent-cell-title");
-    append(title, el("span", "recent-title", item.title || "Untitled"));
+    append(
+      title,
+      el("span", "recent-title", item.title || t("certificates.untitled"))
+    );
 
     const type = el("span", "recent-cell recent-cell-type");
-    append(type, el("span", "type-badge", item.type));
+    append(
+      type,
+      el("span", `type-badge type-badge-${item.kind}`, typeLabel(item.kind))
+    );
 
     const status = el("span", "recent-cell recent-cell-status");
     append(status, statusBadge(item.status));
@@ -399,15 +509,15 @@ function buildErrorAlert(container, signal) {
 
   append(
     alert,
-    el("p", "admin-alert-title", "Could not load dashboard data."),
-    el(
-      "p",
-      "admin-alert-text",
-      "Check your connection and try again. If the problem continues, sign out and sign in again."
-    )
+    el("p", "admin-alert-title", t("dashboard.loadError")),
+    el("p", "admin-alert-text", t("dashboard.loadErrorHelp"))
   );
 
-  const retry = el("button", "admin-button admin-button-secondary", "Try Again");
+  const retry = el(
+    "button",
+    "admin-button admin-button-secondary",
+    t("common.tryAgain")
+  );
   retry.type = "button";
 
   retry.addEventListener("click", async () => {
@@ -416,7 +526,7 @@ function buildErrorAlert(container, signal) {
     }
 
     retry.disabled = true;
-    retry.textContent = "Loading...";
+    retry.textContent = t("common.loading");
 
     await load(container, signal);
   });

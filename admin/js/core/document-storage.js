@@ -24,6 +24,7 @@
 
 import { supabaseClient } from "./supabase.js";
 import { publicUrl, removeObjects, MediaStorageError } from "./media-storage.js";
+import { t } from "./i18n.js";
 
 export const DOCUMENT_BUCKET = "portfolio-documents";
 
@@ -75,7 +76,7 @@ async function uploadObject(path, file, type) {
 
   if (error || !data || !data.path) {
     throw new MediaStorageError(
-      "Could not upload the certificate document. Your changes have not been saved.",
+      t("doc.errUpload"),
       "UPLOAD_FAILED",
       error
     );
@@ -95,7 +96,7 @@ async function verifyUpload(path) {
 
   if (error) {
     throw new MediaStorageError(
-      "Could not verify the uploaded document. Your changes have not been saved.",
+      t("doc.errVerify"),
       "VERIFY_FAILED",
       error
     );
@@ -103,7 +104,7 @@ async function verifyUpload(path) {
 
   if (!(data || []).some(entry => entry.name === name)) {
     throw new MediaStorageError(
-      "The uploaded document could not be confirmed. Your changes have not been saved.",
+      t("doc.errConfirm"),
       "VERIFY_FAILED"
     );
   }
@@ -157,7 +158,7 @@ export async function replaceDocument({ file, type, previous, commit }) {
       // The new document is live and correct; the old file simply lingers.
       // Rolling the database back here would be strictly worse.
       cleanupWarning =
-        "Saved. The previous document file could not be removed and may need manual cleanup.";
+        t("doc.cleanupWarning");
     }
   }
 

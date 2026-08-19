@@ -13,6 +13,8 @@
   authorization lives in the database.
 */
 
+import { t, applyStaticTranslations, createLanguageSwitch } from "./i18n.js";
+
 const DESKTOP_QUERY = "(min-width: 1024px)";
 
 const FOCUSABLE = [
@@ -172,6 +174,40 @@ export function initShell() {
 
   syncSidebarHiddenState();
 
+  let activeRouteName = null;
+
+  /*
+    Two mounts, one control.
+
+    The rail's brand line is the home on desktop, where the rail is always
+    visible. On mobile the rail is a drawer, so the compact header carries its
+    own copy rather than making the owner open the drawer to change language.
+
+    Duplicating is safe: createLanguageSwitch subscribes each instance to
+    onLanguageChange, so both stay in step with the stored preference and with
+    each other. Neither instance owns any state.
+  */
+  [
+    document.getElementById("admin-brand-language"),
+    document.getElementById("admin-topbar-actions")
+  ].forEach(slot => {
+    if (slot && slot.childElementCount === 0) {
+      slot.appendChild(createLanguageSwitch("lang-switch-inline"));
+    }
+  });
+
+  /* Re-labels the parts of the shell that are static markup, then the
+     header title, which is derived from the active route. */
+  function applyLanguage() {
+    applyStaticTranslations(shellEl);
+
+    if (activeRouteName) {
+      const label = t("nav." + activeRouteName);
+      topbarTitleEl.textContent = label;
+      document.title = `${label} · ${t("shell.brandName")}`;
+    }
+  }
+
   function setActiveRoute(route) {
     navLinks.forEach(link => {
       const isActive = link.dataset.route === route.name;
@@ -185,8 +221,13 @@ export function initShell() {
       }
     });
 
-    topbarTitleEl.textContent = route.title;
-    document.title = `${route.title} · Admin CMS`;
+    /* Route titles come from the dictionary via nav.<name>, so the header
+       and the sidebar always agree in whichever language is active. */
+    activeRouteName = route.name;
+    const label = t("nav." + route.name);
+
+    topbarTitleEl.textContent = label;
+    document.title = `${label} · ${t("shell.brandName")}`;
   }
 
   function destroy() {
@@ -213,6 +254,7 @@ export function initShell() {
   return {
     contentEl,
     setActiveRoute,
+    applyLanguage,
     destroy
   };
 }

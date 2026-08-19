@@ -2,18 +2,26 @@
   Certificate editor (Phase C).
 
   Full-page Add/Edit form, never a modal, matching the Experience and Projects
-  editors. The form is organised by WHICH FACE OF THE CARD each field appears
-  on, because that is how the owner thinks about it:
+  editors. Five groups, in the order the owner fills them in:
 
-      FRONT   title, publisher, period, category (-> icon)
-      BACK    title (shared), issuer line, badge, description
+      BASIC INFORMATION   title, publisher, period, category (-> icon)
+      CARD DETAILS        issuer line, badge, description
+      DOCUMENT            the certificate file, plus the issuer URL
+      VISIBILITY          where this record currently stands
+      PREVIEW             both faces of the card
+
+  The group help text still says which face each field lands on, because that
+  is what the owner is really deciding — the grouping just no longer forces
+  them to think in terms of card geometry first.
 
   `title` appears once. The public card renders it on both faces; giving it two
   inputs would let the two sides drift apart.
 
-  The badge stays on the BACK. The public front is deliberately sparse — icon,
-  period, title, publisher — and this editor previews the card, it does not
-  redesign it.
+  VISIBILITY IS READ-ONLY HERE
+  ----------------------------
+  Status is shown, never edited. Publishing is an explicit action in the list
+  view, where the minimum-published rule is explained and enforced; a status
+  dropdown buried in a form would let the owner trip that rule with no context.
 
   REQUIRED FIELDS
   --------------
@@ -31,8 +39,9 @@
 */
 
 import { supabaseClient } from "../../core/supabase.js";
-import { el, append, clear } from "../../core/dom.js";
+import { el, append, clear, statusBadge } from "../../core/dom.js";
 import { toast } from "../../core/toast.js";
+import { t } from "../../core/i18n.js";
 
 import {
   textField,
@@ -68,72 +77,72 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
   const fields = {
     title: textField({
       id: "certificate-title",
-      label: "Title",
+      label: t("certEditor.fieldTitle"),
       required: true,
       maxLength: LIMITS.title,
       value: record ? record.title : "",
-      help: "Shown large on the front of the card, and again on the back."
+      help: t("certEditor.fieldTitleHelp")
     }),
 
     publisher: textField({
       id: "certificate-publisher",
-      label: "Publisher / Institution",
+      label: t("certEditor.fieldPublisher"),
       maxLength: LIMITS.publisher,
       value: record ? record.publisher : "",
-      help: "Small uppercase line under the title on the front. For example: Udemy."
+      help: t("certEditor.fieldPublisherHelp")
     }),
 
     period: textField({
       id: "certificate-period",
-      label: "Period / Year",
+      label: t("certEditor.fieldPeriod"),
       maxLength: LIMITS.period,
       value: record ? record.period : "",
-      help: "Free text, so ranges work. For example: 2025, or 2021 — 2025."
+      help: t("certEditor.fieldPeriodHelp")
     }),
 
     category: selectField({
       id: "certificate-category",
-      label: "Category",
+      label: t("certEditor.fieldCategory"),
       required: true,
       options: categoryOptions(),
       value:
         record && isKnownCategory(record.category)
           ? record.category
           : DEFAULT_CATEGORY,
-      help: "Chooses the icon shown on the front of the card. The icon itself is not editable."
+      help: t("certEditor.fieldCategoryHelp")
     }),
 
     issuerLine: textField({
       id: "certificate-issuer-line",
-      label: "Issuer Line",
+      label: t("certEditor.fieldIssuer"),
       maxLength: LIMITS.issuerLine,
       value: record ? record.issuer_line : "",
-      help: "Uppercase line on the back. For example: Universitas Telkom · Bandung."
+      help: t("certEditor.fieldIssuerHelp")
     }),
 
     badgeText: textField({
       id: "certificate-badge-text",
-      label: "Badge / Value",
+      label: t("certEditor.fieldBadge"),
       maxLength: LIMITS.badgeText,
       value: record ? record.badge_text : "",
-      help: "Optional pill on the back. For example: GPA 3.51/4.00. Left empty, no pill is rendered."
+      help: t("certEditor.fieldBadgeHelp")
     }),
 
     description: textareaField({
       id: "certificate-description",
-      label: "Description",
+      label: t("certEditor.fieldDescription"),
       maxLength: LIMITS.description,
       value: record ? record.description : "",
       rows: 4,
-      help: "Plain text only, shown on the back. No HTML or formatting markup."
+      help: t("certEditor.fieldDescriptionHelp")
     }),
 
     externalUrl: textField({
       id: "certificate-external-url",
-      label: "External verification URL",
+      label: t("certEditor.fieldExternalUrl"),
       maxLength: LIMITS.externalUrl,
       value: record ? record.external_url : "",
-      help: "Optional. A link the issuer hosts, for example a Credly badge. Must start with http:// or https://."
+      help: t("certEditor.fieldExternalUrlHelp")
     })
   };
 
@@ -156,72 +165,96 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
 
   /* ---------------- layout ---------------- */
 
-  const backButton = el("button", "admin-button admin-button-ghost", "← Back to Certificates");
+  const backButton = el(
+    "button",
+    "admin-button admin-button-ghost",
+    t("certEditor.back")
+  );
   backButton.type = "button";
   backButton.addEventListener("click", () => onBack());
 
   append(root, backButton);
 
-  const frontSection = el("section", "admin-subsection");
-  append(
-    frontSection,
-    el("h3", "subsection-title", "Front of card"),
-    el(
-      "p",
-      "form-help",
-      "The front is deliberately sparse: icon, period, title and publisher."
-    )
+  /* One shape for every group, so the five sections read as one form rather
+     than five improvised panels. */
+  function group(titleKey, helpKey) {
+    const node = el("section", "admin-subsection");
+
+    append(node, el("h3", "subsection-title", t(titleKey)));
+
+    if (helpKey) {
+      append(node, el("p", "form-help", t(helpKey)));
+    }
+
+    return node;
+  }
+
+  const basicSection = group("certEditor.basic", "certEditor.basicHelp");
+
+  const basicGrid = el("div", "form-grid");
+  append(basicGrid, fields.title.node, fields.publisher.node);
+  append(basicSection, basicGrid);
+
+  const basicGrid2 = el("div", "form-grid");
+  append(basicGrid2, fields.period.node, fields.category.node);
+  append(basicSection, basicGrid2);
+
+  const detailsSection = group("certEditor.details", "certEditor.detailsHelp");
+
+  const detailsGrid = el("div", "form-grid");
+  append(detailsGrid, fields.issuerLine.node, fields.badgeText.node);
+  append(detailsSection, detailsGrid, fields.description.node);
+
+  const documentSection = group("certEditor.document", "certEditor.documentHelp");
+  append(documentSection, documentField.element, fields.externalUrl.node);
+
+  const visibilitySection = group(
+    "certEditor.visibility",
+    "certEditor.visibilityHelp"
   );
 
-  const frontGrid = el("div", "form-grid");
-  append(frontGrid, fields.title.node, fields.publisher.node);
-  append(frontSection, frontGrid);
+  const statusRow = el("div", "cert-status-row");
 
-  const frontGrid2 = el("div", "form-grid");
-  append(frontGrid2, fields.period.node, fields.category.node);
-  append(frontSection, frontGrid2);
+  if (isNew) {
+    append(
+      statusRow,
+      statusBadge("draft"),
+      el("span", "form-help", t("certEditor.newRecordStatus"))
+    );
+  } else {
+    append(
+      statusRow,
+      el("span", "cert-status-label", t("certEditor.currentStatus")),
+      statusBadge(record.status)
+    );
+  }
 
-  const backSection = el("section", "admin-subsection");
-  append(
-    backSection,
-    el("h3", "subsection-title", "Back of card"),
-    el(
-      "p",
-      "form-help",
-      "The back repeats the title, then adds the issuer line, an optional badge and a short description."
-    )
-  );
+  append(visibilitySection, statusRow);
 
-  const backGrid = el("div", "form-grid");
-  append(backGrid, fields.issuerLine.node, fields.badgeText.node);
-  append(backSection, backGrid, fields.description.node);
-
-  const documentSection = el("section", "admin-subsection");
-  append(
-    documentSection,
-    el("h3", "subsection-title", "Certificate document"),
-    el(
-      "p",
-      "form-help",
-      "The certificate itself. It opens in a new tab from the public card once the public section is connected to the CMS."
-    ),
-    documentField.element,
-    fields.externalUrl.node
-  );
-
-  const previewSection = el("section", "admin-subsection");
-  append(previewSection, el("h3", "subsection-title", "Preview"));
+  const previewSection = group("certEditor.preview", null);
 
   const previewHost = el("div", "cert-preview-host");
   append(previewSection, previewHost);
 
   const actions = el("div", "form-actions");
 
-  const saveButton = el("button", "admin-button admin-button-primary", "Save Certificate");
+  const saveButton = el(
+    "button",
+    "admin-button admin-button-primary",
+    t("certEditor.save")
+  );
   saveButton.type = "button";
 
   append(actions, saveButton);
-  append(root, frontSection, backSection, documentSection, previewSection, actions);
+  append(
+    root,
+    basicSection,
+    detailsSection,
+    documentSection,
+    visibilitySection,
+    previewSection,
+    actions
+  );
 
   /* ---------------- live preview ---------------- */
 
@@ -289,7 +322,7 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
     saving = next;
     saveButton.disabled = next;
     backButton.disabled = next;
-    saveButton.textContent = next ? "Saving..." : "Save Certificate";
+    saveButton.textContent = next ? t("common.saving") : t("certEditor.save");
   }
 
   async function save() {
@@ -298,17 +331,36 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
     }
 
     const valid = applyValidation(fields, {
-      title: { label: "Title", required: true, maxLength: LIMITS.title },
-      publisher: { label: "Publisher / Institution", maxLength: LIMITS.publisher },
-      period: { label: "Period / Year", maxLength: LIMITS.period },
-      issuerLine: { label: "Issuer Line", maxLength: LIMITS.issuerLine },
-      badgeText: { label: "Badge / Value", maxLength: LIMITS.badgeText },
-      description: { label: "Description", maxLength: LIMITS.description },
-      externalUrl: { label: "External verification URL", maxLength: LIMITS.externalUrl }
+      title: {
+        label: t("certEditor.fieldTitle"),
+        required: true,
+        maxLength: LIMITS.title
+      },
+      publisher: {
+        label: t("certEditor.fieldPublisher"),
+        maxLength: LIMITS.publisher
+      },
+      period: { label: t("certEditor.fieldPeriod"), maxLength: LIMITS.period },
+      issuerLine: {
+        label: t("certEditor.fieldIssuer"),
+        maxLength: LIMITS.issuerLine
+      },
+      badgeText: {
+        label: t("certEditor.fieldBadge"),
+        maxLength: LIMITS.badgeText
+      },
+      description: {
+        label: t("certEditor.fieldDescription"),
+        maxLength: LIMITS.description
+      },
+      externalUrl: {
+        label: t("certEditor.fieldExternalUrl"),
+        maxLength: LIMITS.externalUrl
+      }
     });
 
     if (!valid) {
-      toast("Please correct the highlighted fields.", "error");
+      toast(t("certEditor.errFields"), "error");
       return false;
     }
 
@@ -317,14 +369,14 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
     /* Mirrors certificates_external_url_check; the database rejects anything
        else regardless, this just explains it before the round trip. */
     if (externalUrl !== "" && !HTTP_URL.test(externalUrl)) {
-      fields.externalUrl.setError("Enter a full URL starting with http:// or https://.");
-      toast("Please correct the highlighted fields.", "error");
+      fields.externalUrl.setError(t("certEditor.errUrl"));
+      toast(t("certEditor.errFields"), "error");
       return false;
     }
 
     if (!isKnownCategory(fields.category.value)) {
-      fields.category.setError("Choose a category from the list.");
-      toast("Please correct the highlighted fields.", "error");
+      fields.category.setError(t("certEditor.errCategory"));
+      toast(t("certEditor.errFields"), "error");
       return false;
     }
 
@@ -435,8 +487,7 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
           const removed = await removeDocument(storedDocument.bucket, storedDocument.path);
 
           if (removed.failed.length > 0) {
-            cleanupWarning =
-              "Saved. The old document file could not be removed and may need manual cleanup.";
+            cleanupWarning = t("certEditor.docCleanupWarning");
           }
         }
 
@@ -451,9 +502,7 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
       toast(
         error && error.name === "MediaStorageError" && error.message
           ? error.message
-          : isNew
-            ? "Could not create this certificate. Your changes are still here."
-            : "Could not save this certificate. Your changes are still here.",
+          : t(isNew ? "certEditor.errCreate" : "certEditor.errSave"),
         "error"
       );
       return false;
@@ -466,12 +515,7 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
         console.error(result.error);
       }
 
-      toast(
-        isNew
-          ? "Could not create this certificate. Your changes are still here."
-          : "Could not save this certificate. Your changes are still here.",
-        "error"
-      );
+      toast(t(isNew ? "certEditor.errCreate" : "certEditor.errSave"), "error");
       return false;
     }
 
@@ -484,7 +528,7 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
     if (cleanupWarning) {
       toast(cleanupWarning, "error");
     } else {
-      toast(isNew ? "Certificate created as a draft." : "Certificate saved.");
+      toast(t(isNew ? "certEditor.created" : "certEditor.saved"));
     }
 
     if (typeof onSaved === "function") {

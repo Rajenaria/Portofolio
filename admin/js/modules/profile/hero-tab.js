@@ -44,6 +44,7 @@ import {
 
 import { replaceMedia, MEDIA_BUCKET } from "../../core/media-storage.js";
 import { createMediaField } from "./media-field.js";
+import { t } from "../../core/i18n.js";
 
 const LIMITS = {
   name: 100,
@@ -58,47 +59,50 @@ export function createHeroTab({ profile, heroSlots, onDirtyChange }) {
   const fields = {
     name: textField({
       id: "hero-name",
-      label: "Name",
+      label: t("hero.fieldName"),
       required: true,
       maxLength: LIMITS.name,
       value: profile.name,
-      help: "Shown as the main Hero name."
+      help: t("hero.fieldNameHelp")
     }),
     professionalTitle: textField({
       id: "hero-professional-title",
-      label: "Professional Title",
+      label: t("hero.fieldTitle"),
       required: true,
       maxLength: LIMITS.professionalTitle,
       value: profile.professional_title
     }),
     heroDescription: textareaField({
       id: "hero-description",
-      label: "Hero Description",
+      label: t("hero.fieldDescription"),
       required: true,
       maxLength: LIMITS.heroDescription,
       value: profile.hero_description,
       rows: 4,
-      help: "Plain text only. No HTML or formatting markup."
+      help: t("hero.fieldDescriptionHelp")
     })
   };
 
-  const textSection = el("section", "admin-subsection");
-  append(textSection, el("h3", "subsection-title", "Hero Content"));
+  /* One shape for every group, matching the editors in the other modules. */
+  function group(titleKey, helpKey) {
+    const node = el("section", "admin-subsection");
+
+    append(node, el("h3", "subsection-title", t(titleKey)));
+
+    if (helpKey) {
+      append(node, el("p", "form-help", t(helpKey)));
+    }
+
+    return node;
+  }
+
+  const textSection = group("hero.contentTitle", "hero.contentHelp");
 
   const grid = el("div", "form-grid");
   append(grid, fields.name.node, fields.professionalTitle.node);
   append(textSection, grid, fields.heroDescription.node);
 
-  const photosSection = el("section", "admin-subsection");
-  append(photosSection, el("h3", "subsection-title", "Hero Photos"));
-  append(
-    photosSection,
-    el(
-      "p",
-      "form-help",
-      "The public Hero uses exactly three photo positions. Slots can be replaced but not added, removed or reordered. Photos 02 and 03 can be hidden from the public site; hiding keeps the uploaded image."
-    )
-  );
+  const photosSection = group("hero.photosTitle", "hero.photosHelp");
 
   const slotsGrid = el("div", "hero-slots");
   const slots = [];
@@ -114,9 +118,35 @@ export function createHeroTab({ profile, heroSlots, onDirtyChange }) {
 
     const wrapper = el("div", "hero-slot");
 
+    /*
+      The primary slot is named for what it is rather than for its position:
+      slot 01 is the one the public renderer keys on, so "Primary photo /
+      Always visible" is the honest description of the rule the database
+      enforces.
+    */
+    const slotHeading = el("div", "hero-slot-heading");
+
+    append(
+      slotHeading,
+      el(
+        "span",
+        "hero-slot-name",
+        isPrimary
+          ? t("hero.primarySlot")
+          : t("hero.additionalSlot", { number: slotNumber - 1 })
+      )
+    );
+
+    if (isPrimary) {
+      append(
+        slotHeading,
+        el("span", "status-badge status-badge-active", t("hero.primaryAlways"))
+      );
+    }
+
     const media = createMediaField({
-      title: `Hero Photo 0${slotNumber}`,
-      emptyText: "No image configured.",
+      title: t("hero.slotLabel", { number: slotNumber }),
+      emptyText: t("pmedia.empty"),
       current: record.desktop_path
         ? {
             bucket: record.bucket_name || MEDIA_BUCKET,
@@ -129,10 +159,10 @@ export function createHeroTab({ profile, heroSlots, onDirtyChange }) {
 
     const alt = textField({
       id: `hero-alt-${slotNumber}`,
-      label: "Alt Text",
+      label: t("hero.altLabel"),
       maxLength: LIMITS.altText,
       value: record.alt_text,
-      help: "Describes the photo for screen readers."
+      help: t("hero.altHelp")
     });
 
     alt.control.addEventListener("input", markDirty);
@@ -144,11 +174,9 @@ export function createHeroTab({ profile, heroSlots, onDirtyChange }) {
     */
     const visible = checkboxField({
       id: `hero-visible-${slotNumber}`,
-      label: "Visible on public site",
+      label: t(isPrimary ? "hero.primaryAlways" : "hero.showOnSite"),
       checked: isPrimary ? true : initialVisible,
-      help: isPrimary
-        ? "Primary photo — always visible. The Hero cannot be published without it."
-        : "Hidden photos keep their image and alt text, and are not rendered on the public site."
+      help: t(isPrimary ? "hero.primaryHelp" : "hero.additionalHelp")
     });
 
     const statusSlot = el("div", "hero-slot-status");
@@ -163,7 +191,7 @@ export function createHeroTab({ profile, heroSlots, onDirtyChange }) {
       });
     }
 
-    append(wrapper, media.element, alt.node, visible.node, statusSlot);
+    append(wrapper, slotHeading, media.element, alt.node, visible.node, statusSlot);
     append(slotsGrid, wrapper);
 
     slots.push({
@@ -198,7 +226,7 @@ export function createHeroTab({ profile, heroSlots, onDirtyChange }) {
           el(
             "span",
             "status-badge status-badge-inactive",
-            "Hidden on public site"
+            t("hero.hiddenBadge")
           )
         );
       }
@@ -211,10 +239,18 @@ export function createHeroTab({ profile, heroSlots, onDirtyChange }) {
 
   const actions = el("div", "form-actions");
 
-  const previewButton = el("button", "admin-button admin-button-secondary", "Preview");
+  const previewButton = el(
+    "button",
+    "admin-button admin-button-secondary",
+    t("common.preview")
+  );
   previewButton.type = "button";
 
-  const saveButton = el("button", "admin-button admin-button-primary", "Save Changes");
+  const saveButton = el(
+    "button",
+    "admin-button admin-button-primary",
+    t("common.saveChanges")
+  );
   saveButton.type = "button";
 
   append(actions, previewButton, saveButton);
@@ -276,7 +312,9 @@ export function createHeroTab({ profile, heroSlots, onDirtyChange }) {
     saving = next;
     saveButton.disabled = next;
     previewButton.disabled = next;
-    saveButton.textContent = next ? label || "Saving..." : "Save Changes";
+    saveButton.textContent = next
+      ? label || t("common.saving")
+      : t("common.saveChanges");
   }
 
   async function save() {
@@ -285,21 +323,21 @@ export function createHeroTab({ profile, heroSlots, onDirtyChange }) {
     }
 
     const valid = applyValidation(fields, {
-      name: { label: "Name", required: true, maxLength: LIMITS.name },
+      name: { label: t("hero.fieldName"), required: true, maxLength: LIMITS.name },
       professionalTitle: {
-        label: "Professional Title",
+        label: t("hero.fieldTitle"),
         required: true,
         maxLength: LIMITS.professionalTitle
       },
       heroDescription: {
-        label: "Hero Description",
+        label: t("hero.fieldDescription"),
         required: true,
         maxLength: LIMITS.heroDescription
       }
     });
 
     if (!valid) {
-      toast("Please correct the highlighted fields.", "error");
+      toast(t("hero.errFields"), "error");
       return false;
     }
 
@@ -309,13 +347,13 @@ export function createHeroTab({ profile, heroSlots, onDirtyChange }) {
 
     if (altErrors.length > 0) {
       altErrors.forEach(slot =>
-        slot.alt.setError(`Alt text must be ${LIMITS.altText} characters or fewer.`)
+        slot.alt.setError(t("hero.errAltTooLong", { max: LIMITS.altText }))
       );
-      toast("Please correct the highlighted fields.", "error");
+      toast(t("hero.errFields"), "error");
       return false;
     }
 
-    setSaving(true, "Saving...");
+    setSaving(true, t("common.saving"));
 
     // 1. Hero text on the profile singleton.
     const profileUpdate = await supabaseClient
@@ -334,7 +372,7 @@ export function createHeroTab({ profile, heroSlots, onDirtyChange }) {
       }
 
       setSaving(false);
-      toast("Could not save the Hero content. Your changes are still here.", "error");
+      toast(t("hero.errSave"), "error");
       return false;
     }
 
@@ -349,7 +387,7 @@ export function createHeroTab({ profile, heroSlots, onDirtyChange }) {
       const files = slot.media.getPendingFiles();
 
       if (files) {
-        setSaving(true, "Uploading...");
+        setSaving(true, t("common.uploading"));
 
         try {
           const result = await replaceMedia({
@@ -386,7 +424,12 @@ export function createHeroTab({ profile, heroSlots, onDirtyChange }) {
           slot.initialVisible = visibleValue;
 
           if (result.cleanupWarning) {
-            warnings.push(`Hero Photo 0${slot.slotNumber}: ${result.cleanupWarning}`);
+            warnings.push(
+              t("hero.slotWarning", {
+                number: slot.slotNumber,
+                warning: result.cleanupWarning
+              })
+            );
           }
         } catch (error) {
           console.error(error);
@@ -394,7 +437,7 @@ export function createHeroTab({ profile, heroSlots, onDirtyChange }) {
           toast(
             error && error.message && error.name === "MediaStorageError"
               ? error.message
-              : `Could not replace Hero Photo 0${slot.slotNumber}. The previous image is unchanged.`,
+              : t("hero.errSlotReplace", { number: slot.slotNumber }),
             "error"
           );
           return false;
@@ -438,7 +481,7 @@ export function createHeroTab({ profile, heroSlots, onDirtyChange }) {
 
         setSaving(false);
         toast(
-          `Could not save the changes to Hero Photo 0${slot.slotNumber}.`,
+          t("hero.errSlotSave", { number: slot.slotNumber }),
           "error"
         );
         return false;
@@ -453,7 +496,7 @@ export function createHeroTab({ profile, heroSlots, onDirtyChange }) {
     if (warnings.length > 0) {
       warnings.forEach(message => toast(message, "error"));
     } else {
-      toast("Changes saved successfully.");
+      toast(t("hero.saved"));
     }
 
     return true;
@@ -480,9 +523,9 @@ export function createHeroTab({ profile, heroSlots, onDirtyChange }) {
 
     append(
       body,
-      previewLine("Name", fields.name.value),
-      previewLine("Professional Title", fields.professionalTitle.value),
-      previewLine("Hero Description", fields.heroDescription.value)
+      previewLine(t("hero.fieldName"), fields.name.value),
+      previewLine(t("hero.fieldTitle"), fields.professionalTitle.value),
+      previewLine(t("hero.fieldDescription"), fields.heroDescription.value)
     );
 
     const photos = el("div", "preview-photo-grid");
@@ -494,27 +537,36 @@ export function createHeroTab({ profile, heroSlots, onDirtyChange }) {
       if (url) {
         const img = el("img", "preview-photo-image");
         img.src = url;
-        img.alt = trimmed(slot.alt.value) || `Hero photo 0${slot.slotNumber}`;
+        img.alt =
+          trimmed(slot.alt.value) ||
+          t("hero.photoAlt", { number: slot.slotNumber });
         append(card, img);
       } else {
-        append(card, el("p", "media-field-empty", "No image configured."));
+        append(card, el("p", "media-field-empty", t("pmedia.empty")));
       }
 
       const caption = el("figcaption", "preview-photo-caption");
       append(
         caption,
-        el("span", "preview-photo-title", `Hero Photo 0${slot.slotNumber}`)
+        el(
+          "span",
+          "preview-photo-title",
+          t("hero.slotLabel", { number: slot.slotNumber })
+        )
       );
 
       if (slot.media.hasPending()) {
-        append(caption, el("span", "status-badge status-badge-pending", "Pending"));
+        append(
+          caption,
+          el("span", "status-badge status-badge-pending", t("projPreview.pending"))
+        );
       }
 
       if (!currentVisible(slot)) {
         card.classList.add("is-hidden-slot");
         append(
           caption,
-          el("span", "status-badge status-badge-inactive", "Hidden")
+          el("span", "status-badge status-badge-inactive", t("status.hidden"))
         );
       }
 
@@ -522,14 +574,16 @@ export function createHeroTab({ profile, heroSlots, onDirtyChange }) {
       append(photos, card);
     });
 
-    append(body, el("h4", "preview-heading", "Hero Photos"), photos);
+    append(body, el("h4", "preview-heading", t("hero.photosTitle")), photos);
 
     openModal({
-      title: "Hero preview",
+      title: t("hero.previewTitle"),
       description:
-        "Read-only preview of the current form values, including unsaved changes. This is an Admin content preview, not the public Hero layout.",
+        t("hero.previewDescription"),
       body,
-      actions: [{ label: "Close", variant: "secondary", onClick: ctl => ctl.close() }]
+      actions: [
+        { label: t("common.close"), variant: "secondary", onClick: ctl => ctl.close() }
+      ]
     });
   });
 

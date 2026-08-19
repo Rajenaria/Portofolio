@@ -21,6 +21,7 @@ import { supabaseClient } from "../../core/supabase.js";
 import { el, append, clear, emptyState } from "../../core/dom.js";
 import { confirmDialog } from "../../core/modal.js";
 import { toast } from "../../core/toast.js";
+import { t } from "../../core/i18n.js";
 
 export function createOrderedList({
   table,
@@ -91,7 +92,10 @@ export function createOrderedList({
     clear(listSlot);
 
     if (status === "loading") {
-      append(listSlot, el("p", "loading-text", `Loading ${title.toLowerCase()}...`));
+      append(
+        listSlot,
+        el("p", "loading-text", t("olist.loading", { title: title.toLowerCase() }))
+      );
       return;
     }
 
@@ -101,11 +105,19 @@ export function createOrderedList({
 
       append(
         panel,
-        el("p", "admin-alert-title", `Could not load ${title.toLowerCase()}.`),
-        el("p", "admin-alert-text", "Check your connection and try again.")
+        el(
+          "p",
+          "admin-alert-title",
+          t("olist.loadError", { title: title.toLowerCase() })
+        ),
+        el("p", "admin-alert-text", t("list.loadErrorHelp"))
       );
 
-      const retry = el("button", "admin-button admin-button-secondary", "Try Again");
+      const retry = el(
+        "button",
+        "admin-button admin-button-secondary",
+        t("common.tryAgain")
+      );
       retry.type = "button";
       retry.addEventListener("click", load);
       append(panel, retry);
@@ -148,10 +160,21 @@ export function createOrderedList({
     append(bodySlot, renderRow(row));
 
     const actions = el("div", "ordered-actions");
-    const label = describeRow ? describeRow(row) : `item ${index + 1}`;
+    const label = describeRow
+      ? describeRow(row)
+      : t("olist.itemAt", { index: index + 1 });
 
-    const up = actionButton("Move up", `Move ${label} up`, () => move(index, -1));
-    const down = actionButton("Move down", `Move ${label} down`, () => move(index, 1));
+    const up = actionButton(
+      t("action.moveUp"),
+      t("olist.moveUpOf", { label }),
+      () => move(index, -1)
+    );
+
+    const down = actionButton(
+      t("action.moveDown"),
+      t("olist.moveDownOf", { label }),
+      () => move(index, 1)
+    );
 
     if (index === 0) {
       up.disabled = true;
@@ -167,7 +190,9 @@ export function createOrderedList({
 
     append(
       actions,
-      actionButton("Edit", `Edit ${label}`, () => onEdit(row, api))
+      actionButton(t("common.edit"), t("olist.editOf", { label }), () =>
+        onEdit(row, api)
+      )
     );
 
     if (supportsActive) {
@@ -175,14 +200,21 @@ export function createOrderedList({
       append(
         actions,
         actionButton(
-          isActive ? "Disable" : "Enable",
-          `${isActive ? "Disable" : "Enable"} ${label}`,
+          t(isActive ? "common.disable" : "common.enable"),
+          t("olist.toggleOf", {
+            action: t(isActive ? "common.disable" : "common.enable"),
+            label
+          }),
           () => toggleActive(row)
         )
       );
     }
 
-    const remove = actionButton("Remove", `Remove ${label}`, () => removeRow(row));
+    const remove = actionButton(
+      t("common.remove"),
+      t("olist.removeOf", { label }),
+      () => removeRow(row)
+    );
     remove.classList.add("is-danger");
     append(actions, remove);
 
@@ -237,14 +269,14 @@ export function createOrderedList({
         }
 
         setBusy(false);
-        toast("Could not change the order. Please try again.", "error");
+        toast(t("olist.errOrder"), "error");
         await load();
         return;
       }
     }
 
     setBusy(false);
-    toast("Order updated.");
+    toast(t("list.orderUpdated"));
     await load();
   }
 
@@ -268,11 +300,11 @@ export function createOrderedList({
         console.error(error);
       }
 
-      toast("Could not update this item. Please try again.", "error");
+      toast(t("olist.errToggle"), "error");
       return;
     }
 
-    toast(row.is_active === false ? "Item enabled." : "Item disabled.");
+    toast(t(row.is_active === false ? "olist.enabled" : "olist.disabled"));
     await load();
   }
 
@@ -285,9 +317,9 @@ export function createOrderedList({
       removeConfirm
         ? removeConfirm(row)
         : {
-            title: "Remove this item?",
-            lines: ["This cannot be undone."],
-            confirmLabel: "Remove",
+            title: t("olist.removeTitle"),
+            lines: [t("confirm.cannotBeUndone")],
+            confirmLabel: t("common.remove"),
             variant: "danger"
           }
     );
@@ -314,7 +346,7 @@ export function createOrderedList({
       }
 
       setBusy(false);
-      toast("Could not remove this item. Please try again.", "error");
+      toast(t("olist.errRemove"), "error");
       return;
     }
 
@@ -326,7 +358,7 @@ export function createOrderedList({
 
     setBusy(false);
 
-    toast(warning || "Item removed.", warning ? "error" : "success");
+    toast(warning || t("olist.removed"), warning ? "error" : "success");
     await load();
   }
 

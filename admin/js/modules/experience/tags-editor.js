@@ -25,6 +25,7 @@
 import { el, append, clear } from "../../core/dom.js";
 import { openModal, confirmDialog } from "../../core/modal.js";
 import { textField, trimmed } from "../../core/form.js";
+import { t } from "../../core/i18n.js";
 
 export const TAG_LABEL_MAX = 100;
 
@@ -34,9 +35,13 @@ export function createTagsEditor({ initialTags = [], onChange }) {
   const root = el("section", "admin-subsection");
 
   const header = el("div", "subsection-header");
-  append(header, el("h3", "subsection-title", "Tags"));
+  append(header, el("h3", "subsection-title", t("expTags.title")));
 
-  const addButton = el("button", "admin-button admin-button-secondary", "+ Add Tag");
+  const addButton = el(
+    "button",
+    "admin-button admin-button-secondary",
+    t("expTags.add")
+  );
   addButton.type = "button";
   addButton.addEventListener("click", () => openEditor(null));
   append(header, addButton);
@@ -46,11 +51,7 @@ export function createTagsEditor({ initialTags = [], onChange }) {
   append(
     root,
     header,
-    el(
-      "p",
-      "form-help",
-      "Short plain-text labels shown as chips on the Experience card, for example: Networking, Cybersecurity, Leadership."
-    ),
+    el("p", "form-help", t("expTags.help")),
     listSlot
   );
 
@@ -77,7 +78,7 @@ export function createTagsEditor({ initialTags = [], onChange }) {
     if (tags.length === 0) {
       append(
         listSlot,
-        el("p", "form-help", "No tags yet. Tags are optional.")
+        el("p", "form-help", t("expTags.empty"))
       );
       return;
     }
@@ -98,8 +99,17 @@ export function createTagsEditor({ initialTags = [], onChange }) {
 
       const actions = el("div", "ordered-actions");
 
-      const up = actionButton("Move up", `Move ${tag.label} up`, () => move(index, -1));
-      const down = actionButton("Move down", `Move ${tag.label} down`, () => move(index, 1));
+      const up = actionButton(
+        t("action.moveUp"),
+        t("expTags.moveUpOf", { label: tag.label }),
+        () => move(index, -1)
+      );
+
+      const down = actionButton(
+        t("action.moveDown"),
+        t("expTags.moveDownOf", { label: tag.label }),
+        () => move(index, 1)
+      );
 
       if (index === 0) {
         up.disabled = true;
@@ -113,10 +123,16 @@ export function createTagsEditor({ initialTags = [], onChange }) {
         actions,
         up,
         down,
-        actionButton("Edit", `Edit ${tag.label}`, () => openEditor(tag))
+        actionButton(t("common.edit"), t("expTags.editOf", { label: tag.label }), () =>
+          openEditor(tag)
+        )
       );
 
-      const remove = actionButton("Remove", `Remove ${tag.label}`, () => removeTag(tag));
+      const remove = actionButton(
+        t("common.remove"),
+        t("expTags.removeOf", { label: tag.label }),
+        () => removeTag(tag)
+      );
       remove.classList.add("is-danger");
       append(actions, remove);
 
@@ -156,9 +172,9 @@ export function createTagsEditor({ initialTags = [], onChange }) {
 
   async function removeTag(tag) {
     const confirmed = await confirmDialog({
-      title: `Remove tag "${tag.label}"?`,
-      lines: ["The tag is removed from this experience when you save."],
-      confirmLabel: "Remove",
+      title: t("expTags.removeTitle", { label: tag.label }),
+      lines: [t("expTags.removeLine")],
+      confirmLabel: t("common.remove"),
       variant: "danger"
     });
 
@@ -185,11 +201,11 @@ export function createTagsEditor({ initialTags = [], onChange }) {
 
     const label = textField({
       id: "experience-tag-label",
-      label: "Tag Label",
+      label: t("expTags.fieldLabel"),
       required: true,
       maxLength: TAG_LABEL_MAX,
       value: existing ? existing.label : "",
-      help: "Plain text only, for example: Cybersecurity."
+      help: t("expTags.fieldLabelHelp")
     });
 
     append(form, formError, label.node);
@@ -202,17 +218,17 @@ export function createTagsEditor({ initialTags = [], onChange }) {
     const initialValue = label.value;
 
     const controller = openModal({
-      title: isNew ? "Add Tag" : "Edit Tag",
+      title: t(isNew ? "expTags.addTitle" : "expTags.editTitle"),
       body: form,
       size: "small",
       actions: [
         {
-          label: "Cancel",
+          label: t("common.cancel"),
           variant: "secondary",
           onClick: ctl => ctl.requestClose("cancel")
         },
         {
-          label: isNew ? "Add Tag" : "Save Tag",
+          label: t(isNew ? "expTags.addTitle" : "expTags.saveTag"),
           variant: "primary",
           onClick: () => apply()
         }
@@ -223,10 +239,10 @@ export function createTagsEditor({ initialTags = [], onChange }) {
         }
 
         return await confirmDialog({
-          title: "Discard changes?",
-          lines: ["You have unsaved changes in this form."],
-          confirmLabel: "Discard",
-          cancelLabel: "Keep Editing",
+          title: t("discard.title"),
+          lines: [t("discard.line")],
+          confirmLabel: t("discard.confirm"),
+          cancelLabel: t("discard.cancel"),
           variant: "danger"
         });
       }
@@ -244,14 +260,14 @@ export function createTagsEditor({ initialTags = [], onChange }) {
       const value = trimmed(label.value);
 
       if (value === "") {
-        label.setError("Tag label is required.");
+        label.setError(t("expTags.errRequired"));
         label.focus();
         return;
       }
 
       if (value.length > TAG_LABEL_MAX) {
         label.setError(
-          `Tag label must be ${TAG_LABEL_MAX} characters or fewer (currently ${value.length}).`
+          t("expTags.errTooLong", { max: TAG_LABEL_MAX, length: value.length })
         );
         label.focus();
         return;
@@ -264,7 +280,7 @@ export function createTagsEditor({ initialTags = [], onChange }) {
       );
 
       if (duplicate) {
-        label.setError("This experience already has a tag with that label.");
+        label.setError(t("expEditor.errDuplicateTag"));
         label.focus();
         return;
       }

@@ -23,8 +23,11 @@
 
 import {
   processImage,
+  formatBytes,
   ACCEPTED_MIME_TYPES as IMAGE_MIME_TYPES
 } from "./image-processor.js";
+
+import { t } from "./i18n.js";
 
 const MEGABYTE = 1024 * 1024;
 
@@ -42,19 +45,28 @@ const DOCUMENT_MAX_DIMENSION = 2400;
 
 const PDF_SIGNATURE = [0x25, 0x50, 0x44, 0x46, 0x2d]; // %PDF-
 
-const MESSAGES = {
-  NO_FILE: "Choose a certificate file first.",
-  TOO_LARGE: "This file is larger than 10 MB.",
-  UNSUPPORTED:
-    "Only PDF, JPG, PNG or WebP certificates are supported.",
-  NOT_A_PDF:
-    "This file is not a real PDF. It may be corrupted, or renamed from another format.",
-  EMPTY: "This file is empty."
+/*
+  Resolved at throw time, not at module load, so a language switch mid-session
+  reaches these too. The size is derived from MAX_DOCUMENT_BYTES rather than
+  written into the sentence twice.
+*/
+const MESSAGE_KEYS = {
+  NO_FILE: "doc.errNoFile",
+  TOO_LARGE: "doc.errTooLarge",
+  UNSUPPORTED: "doc.errUnsupported",
+  NOT_A_PDF: "doc.errNotPdf",
+  EMPTY: "doc.errEmpty"
 };
+
+function messageFor(code) {
+  return t(MESSAGE_KEYS[code] || "doc.errUnsupported", {
+    size: formatBytes(MAX_DOCUMENT_BYTES)
+  });
+}
 
 export class DocumentProcessorError extends Error {
   constructor(code, cause) {
-    super(MESSAGES[code] || MESSAGES.UNSUPPORTED);
+    super(messageFor(code));
     this.name = "DocumentProcessorError";
     this.code = code;
 

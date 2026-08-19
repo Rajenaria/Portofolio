@@ -22,20 +22,22 @@
 import { supabaseClient } from "../../core/supabase.js";
 import { el, append, clear, pageHeader } from "../../core/dom.js";
 import { confirmDialog, closeAllModals } from "../../core/modal.js";
+import { t } from "../../core/i18n.js";
 
 import { createHeroTab } from "./hero-tab.js";
 import { createAboutTab } from "./about-tab.js";
 import { createOrganizationTab } from "./organization-tab.js";
 
+/* Labels resolve at render time so switching language relabels the tabs. */
 const TABS = [
-  { id: "hero", label: "Hero" },
-  { id: "about", label: "About Me" },
-  { id: "organization", label: "Organization" }
+  { id: "hero", key: "profile.tabHero" },
+  { id: "about", key: "profile.tabAbout" },
+  { id: "organization", key: "profile.tabOrganization" }
 ];
 
 export const profileRoute = {
   name: "profile",
-  title: "Profile & About",
+  title: "Profile & About",  // Fallback only: the shell titles routes from nav.*
   render
 };
 
@@ -43,14 +45,14 @@ async function render(container, { signal }) {
   append(
     container,
     pageHeader({
-      title: "Profile & About",
-      subtitle: "Manage the content displayed in your Hero and About sections."
+      title: t("profile.title"),
+      subtitle: t("profile.subtitle")
     })
   );
 
   const tabBar = el("div", "tab-bar");
   tabBar.setAttribute("role", "tablist");
-  tabBar.setAttribute("aria-label", "Profile sections");
+  tabBar.setAttribute("aria-label", t("profile.tabsLabel"));
 
   const panelSlot = el("div", "tab-panel-slot");
   panelSlot.id = "profile-tab-panel";
@@ -115,13 +117,10 @@ async function render(container, { signal }) {
 
   async function confirmUnsaved() {
     return await confirmDialog({
-      title: "Leave without saving?",
-      lines: [
-        "You have unsaved changes on this tab.",
-        "Your changes will be lost if you leave now."
-      ],
-      confirmLabel: "Leave Without Saving",
-      cancelLabel: "Stay",
+      title: t("unsaved.title"),
+      lines: [t("profile.unsavedTab"), t("unsaved.lost")],
+      confirmLabel: t("unsaved.leave"),
+      cancelLabel: t("unsaved.stay"),
       variant: "danger"
     });
   }
@@ -142,7 +141,7 @@ async function render(container, { signal }) {
 
     if (dirty && !marker) {
       marker = el("span", "tab-dirty", "•");
-      marker.setAttribute("aria-label", "unsaved changes");
+      marker.setAttribute("aria-label", t("profile.unsavedMarker"));
       append(button, marker);
       return;
     }
@@ -159,7 +158,7 @@ async function render(container, { signal }) {
     tabButtons.clear();
 
     TABS.forEach(tab => {
-      const button = el("button", "tab-button", tab.label);
+      const button = el("button", "tab-button", t(tab.key));
       button.type = "button";
       button.id = `profile-tab-${tab.id}`;
       button.setAttribute("role", "tab");
@@ -247,7 +246,7 @@ async function render(container, { signal }) {
 
   async function load() {
     clear(statusSlot);
-    append(statusSlot, el("p", "loading-text", "Loading Profile & About..."));
+    append(statusSlot, el("p", "loading-text", t("profile.loading")));
 
     const [profileResult, heroResult, organizationResult] = await Promise.all([
       supabaseClient
@@ -313,15 +312,15 @@ async function render(container, { signal }) {
 
     append(
       panel,
-      el("p", "admin-alert-title", "Could not load Profile & About content."),
-      el(
-        "p",
-        "admin-alert-text",
-        "Check your connection and try again. If the problem continues, sign out and sign in again."
-      )
+      el("p", "admin-alert-title", t("profile.loadError")),
+      el("p", "admin-alert-text", t("list.loadErrorHelp"))
     );
 
-    const retry = el("button", "admin-button admin-button-secondary", "Try Again");
+    const retry = el(
+      "button",
+      "admin-button admin-button-secondary",
+      t("common.tryAgain")
+    );
     retry.type = "button";
     retry.addEventListener("click", () => {
       load();

@@ -41,6 +41,7 @@ import {
 
 import { createMediaField } from "./media-field.js";
 import { createOrderedList } from "./ordered-list.js";
+import { t } from "../../core/i18n.js";
 
 const LIMITS = {
   heading: 160,
@@ -59,35 +60,47 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
   const fields = {
     heading: textField({
       id: "org-heading",
-      label: "Heading",
+      label: t("about.fieldHeading"),
       required: true,
       maxLength: LIMITS.heading,
       value: organization.heading_main
     }),
     highlight: textField({
       id: "org-highlight",
-      label: "Highlighted Text",
+      label: t("about.fieldHighlight"),
       maxLength: LIMITS.highlight,
       value: organization.heading_highlight
     }),
     paragraph1: textareaField({
       id: "org-paragraph-1",
-      label: "Paragraph 1",
+      label: t("org.fieldParagraph1"),
       required: true,
       value: organization.paragraph_1,
       rows: 5,
-      help: "Plain text only. No HTML or formatting markup."
+      help: t("about.fieldDescriptionHelp")
     }),
     paragraph2: textareaField({
       id: "org-paragraph-2",
-      label: "Paragraph 2",
+      label: t("org.fieldParagraph2"),
       value: organization.paragraph_2,
       rows: 5
     })
   };
 
-  const textSection = el("section", "admin-subsection");
-  append(textSection, el("h3", "subsection-title", "Organization Content"));
+  /* One shape for every group, matching the editors in the other modules. */
+  function group(titleKey, helpKey) {
+    const node = el("section", "admin-subsection");
+
+    append(node, el("h3", "subsection-title", t(titleKey)));
+
+    if (helpKey) {
+      append(node, el("p", "form-help", t(helpKey)));
+    }
+
+    return node;
+  }
+
+  const textSection = group("org.contentTitle", "org.contentHelp");
 
   const grid = el("div", "form-grid");
   append(grid, fields.heading.node, fields.highlight.node);
@@ -95,10 +108,14 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
 
   const actions = el("div", "form-actions");
 
-  const previewButton = el("button", "admin-button admin-button-secondary", "Preview");
+  const previewButton = el(
+    "button",
+    "admin-button admin-button-secondary",
+    t("common.preview")
+  );
   previewButton.type = "button";
 
-  const saveButton = el("button", "admin-button admin-button-primary", "Save Changes");
+  const saveButton = el("button", "admin-button admin-button-primary", t("common.saveChanges"));
   saveButton.type = "button";
 
   append(actions, previewButton, saveButton);
@@ -107,10 +124,10 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
 
   const skills = createOrderedList({
     table: "about_organization_skills",
-    title: "Organization Skills",
-    addLabel: "+ Add Skill",
-    emptyTitle: "No organization skills yet.",
-    emptyDescription: "Add the first skill shown in your Organization section.",
+    title: t("org.skillsTitle"),
+    addLabel: t("org.skillAdd"),
+    emptyTitle: t("org.skillEmpty"),
+    emptyDescription: t("org.skillEmptyHelp"),
     selectColumns: "id, title, description, sort_order, is_active, created_at",
     describeRow: row => row.title,
     renderRow: row => {
@@ -119,7 +136,7 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
       append(head, el("span", "ordered-title", row.title));
 
       if (row.is_active === false) {
-        append(head, el("span", "status-badge status-badge-disabled", "Disabled"));
+        append(head, el("span", "status-badge status-badge-disabled", t("status.inactive")));
       }
 
       append(wrap, head, el("p", "ordered-description", row.description));
@@ -127,12 +144,9 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
       return wrap;
     },
     removeConfirm: row => ({
-      title: `Remove "${row.title}"?`,
-      lines: [
-        "This skill will be permanently removed from your Organization section.",
-        "This cannot be undone."
-      ],
-      confirmLabel: "Remove",
+      title: t("org.skillRemoveTitle", { title: row.title }),
+      lines: [t("org.skillRemoveLine"), t("confirm.cannotBeUndone")],
+      confirmLabel: t("common.remove"),
       variant: "danger"
     }),
     onAdd: api => openSkillEditor(null, api),
@@ -149,7 +163,7 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
 
     const title = textField({
       id: "skill-title",
-      label: "Title",
+      label: t("common.title"),
       required: true,
       maxLength: LIMITS.skillTitle,
       value: existing ? existing.title : ""
@@ -157,7 +171,7 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
 
     const description = textareaField({
       id: "skill-description",
-      label: "Description",
+      label: t("common.description"),
       required: true,
       maxLength: LIMITS.skillDescription,
       value: existing ? existing.description : "",
@@ -166,7 +180,7 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
 
     const active = checkboxField({
       id: "skill-active",
-      label: "Active",
+      label: t("status.active"),
       checked: existing ? existing.is_active !== false : true
     });
 
@@ -180,12 +194,16 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
     const initialSnapshot = JSON.stringify([title.value, description.value, active.value]);
 
     const controller = openModal({
-      title: isNew ? "Add Skill" : "Edit Skill",
+      title: t(isNew ? "org.skillAddTitle" : "org.skillEditTitle"),
       body: form,
       actions: [
-        { label: "Cancel", variant: "secondary", onClick: ctl => ctl.requestClose("cancel") },
         {
-          label: isNew ? "Add Skill" : "Save Changes",
+          label: t("common.cancel"),
+          variant: "secondary",
+          onClick: ctl => ctl.requestClose("cancel")
+        },
+        {
+          label: t(isNew ? "org.skillAddTitle" : "common.saveChanges"),
           variant: "primary",
           onClick: () => persist()
         }
@@ -196,10 +214,10 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
         }
 
         return await confirmDialog({
-          title: "Discard changes?",
-          lines: ["You have unsaved changes in this form."],
-          confirmLabel: "Discard",
-          cancelLabel: "Keep Editing",
+          title: t("discard.title"),
+          lines: [t("discard.line")],
+          confirmLabel: t("discard.confirm"),
+          cancelLabel: t("discard.cancel"),
           variant: "danger"
         });
       }
@@ -216,9 +234,13 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
       const ok = applyValidation(
         { title, description },
         {
-          title: { label: "Title", required: true, maxLength: LIMITS.skillTitle },
+          title: {
+            label: t("common.title"),
+            required: true,
+            maxLength: LIMITS.skillTitle
+          },
           description: {
-            label: "Description",
+            label: t("common.description"),
             required: true,
             maxLength: LIMITS.skillDescription
           }
@@ -229,7 +251,7 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
         return;
       }
 
-      controller.setBusy(true, isNew ? "Adding..." : "Saving...");
+      controller.setBusy(true, t(isNew ? "common.adding" : "common.saving"));
 
       const payload = {
         title: trimmed(title.value),
@@ -260,13 +282,12 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
           console.error(result.error);
         }
 
-        formError.textContent =
-          "Could not save this skill. Your session may not be authorized.";
+        formError.textContent = t("org.skillErrSave");
         return;
       }
 
       controller.close();
-      toast(isNew ? "Skill added." : "Changes saved successfully.");
+      toast(t(isNew ? "org.skillAdded" : "about.saved"));
       await api.reload();
     }
   }
@@ -275,10 +296,10 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
 
   const gallery = createOrderedList({
     table: "about_gallery",
-    title: "Organization Gallery",
-    addLabel: "+ Add Photo",
-    emptyTitle: "No gallery photos yet.",
-    emptyDescription: "Add your first organization photo.",
+    title: t("org.galleryTitle"),
+    addLabel: t("org.galleryAdd"),
+    emptyTitle: t("org.galleryEmpty"),
+    emptyDescription: t("org.galleryEmptyHelp"),
     selectColumns:
       "id, bucket_name, desktop_path, mobile_path, alt_text, caption, sort_order, is_active, created_at",
     describeRow: row => row.alt_text || "gallery photo",
@@ -291,20 +312,26 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
       if (url) {
         const img = el("img", "gallery-thumb-image");
         img.src = url;
-        img.alt = row.alt_text || "Gallery photo";
+        img.alt = row.alt_text || t("org.galleryPhoto");
         img.loading = "lazy";
         img.addEventListener("error", () => {
           clear(thumbWrap);
-          append(thumbWrap, el("span", "gallery-thumb-fallback", "Image unavailable"));
+          append(
+            thumbWrap,
+            el("span", "gallery-thumb-fallback", t("org.galleryUnavailable"))
+          );
         });
         append(thumbWrap, img);
       } else {
-        append(thumbWrap, el("span", "gallery-thumb-fallback", "No image"));
+        append(thumbWrap, el("span", "gallery-thumb-fallback", t("projMedia.noImage")));
       }
 
       const meta = el("div", "gallery-meta");
       const head = el("div", "ordered-row-head");
-      append(head, el("span", "ordered-title", row.alt_text || "Untitled photo"));
+      append(
+        head,
+        el("span", "ordered-title", row.alt_text || t("org.galleryUntitled"))
+      );
       append(
         head,
         el(
@@ -312,7 +339,7 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
           row.is_active === false
             ? "status-badge status-badge-disabled"
             : "status-badge status-badge-active",
-          row.is_active === false ? "Disabled" : "Active"
+          t(row.is_active === false ? "status.inactive" : "status.active")
         )
       );
 
@@ -327,13 +354,13 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
       return wrap;
     },
     removeConfirm: row => ({
-      title: "Remove this gallery photo?",
+      title: t("org.photoRemoveTitle"),
       lines: [
-        row.alt_text ? `"${row.alt_text}"` : "This photo",
-        "The photo and its stored image files will be permanently removed.",
-        "This cannot be undone."
+        row.alt_text ? `"${row.alt_text}"` : t("projMedia.thisImage"),
+        t("org.photoRemoveLine"),
+        t("confirm.cannotBeUndone")
       ],
-      confirmLabel: "Remove",
+      confirmLabel: t("common.remove"),
       variant: "danger"
     }),
     onAfterRemove: async row => {
@@ -343,7 +370,7 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
       ]);
 
       return result.failed.length > 0
-        ? "Photo removed. Its stored image files could not be deleted and may need manual cleanup."
+        ? t("org.photoCleanupWarning")
         : null;
     },
     onAdd: api => openGalleryEditor(null, api),
@@ -359,8 +386,8 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
     formError.setAttribute("role", "alert");
 
     const media = createMediaField({
-      title: isNew ? "Photo" : "Current Photo",
-      emptyText: isNew ? "Choose an image to add." : "No image configured.",
+      title: t(isNew ? "org.photoField" : "org.photoCurrent"),
+      emptyText: t(isNew ? "org.photoChoose" : "pmedia.empty"),
       current:
         existing && existing.desktop_path
           ? {
@@ -376,37 +403,41 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
 
     const alt = textField({
       id: "gallery-alt",
-      label: "Alt Text",
+      label: t("projMedia.altLabel"),
       required: true,
       maxLength: LIMITS.galleryAlt,
       value: existing ? existing.alt_text : "",
-      help: "Required. Describes the photo for screen readers."
+      help: t("org.photoAltHelp")
     });
 
     const caption = textField({
       id: "gallery-caption",
-      label: "Caption",
+      label: t("common.caption"),
       maxLength: LIMITS.galleryCaption,
       value: existing ? existing.caption : "",
-      help: "Optional."
+      help: t("org.photoCaptionHelp")
     });
 
     const active = checkboxField({
       id: "gallery-active",
-      label: "Active",
+      label: t("status.active"),
       checked: existing ? existing.is_active !== false : true,
-      help: "Disabled photos keep their files but are hidden from the public gallery."
+      help: t("org.photoActiveHelp")
     });
 
     append(form, formError, media.element, alt.node, caption.node, active.node);
 
     const controller = openModal({
-      title: isNew ? "Add Photo" : "Edit Photo",
+      title: t(isNew ? "org.photoAddTitle" : "org.photoEditTitle"),
       body: form,
       actions: [
-        { label: "Cancel", variant: "secondary", onClick: ctl => ctl.requestClose("cancel") },
         {
-          label: isNew ? "Add Photo" : "Save Changes",
+          label: t("common.cancel"),
+          variant: "secondary",
+          onClick: ctl => ctl.requestClose("cancel")
+        },
+        {
+          label: t(isNew ? "org.photoAddTitle" : "common.saveChanges"),
           variant: "primary",
           onClick: () => persist()
         }
@@ -418,10 +449,10 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
         }
 
         return await confirmDialog({
-          title: "Discard changes?",
-          lines: ["You have unsaved changes in this form."],
-          confirmLabel: "Discard",
-          cancelLabel: "Keep Editing",
+          title: t("discard.title"),
+          lines: [t("discard.line")],
+          confirmLabel: t("discard.confirm"),
+          cancelLabel: t("discard.cancel"),
           variant: "danger"
         });
       },
@@ -434,8 +465,12 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
       const ok = applyValidation(
         { alt, caption },
         {
-          alt: { label: "Alt Text", required: true, maxLength: LIMITS.galleryAlt },
-          caption: { label: "Caption", maxLength: LIMITS.galleryCaption }
+          alt: {
+            label: t("projMedia.altLabel"),
+            required: true,
+            maxLength: LIMITS.galleryAlt
+          },
+          caption: { label: t("common.caption"), maxLength: LIMITS.galleryCaption }
         }
       );
 
@@ -446,7 +481,7 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
       const files = media.getPendingFiles();
 
       if (isNew && !files) {
-        formError.textContent = "Choose an image before adding this photo.";
+        formError.textContent = t("org.photoErrChoose");
         return;
       }
 
@@ -456,7 +491,7 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
         is_active: active.value
       };
 
-      controller.setBusy(true, files ? "Uploading..." : "Saving...");
+      controller.setBusy(true, t(files ? "common.uploading" : "common.saving"));
 
       try {
         if (isNew) {
@@ -489,7 +524,7 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
 
           controller.setBusy(false);
           controller.close();
-          toast("Photo added.");
+          toast(t("org.photoAdded"));
           await api.reload();
           return;
         }
@@ -549,7 +584,7 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
         formError.textContent =
           error && error.name === "MediaStorageError"
             ? error.message
-            : "Could not save this photo. Any previous image is unchanged.";
+            : t("org.photoErrSave");
       }
     }
   }
@@ -600,7 +635,9 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
     saving = next;
     saveButton.disabled = next;
     previewButton.disabled = next;
-    saveButton.textContent = next ? label || "Saving..." : "Save Changes";
+    saveButton.textContent = next
+      ? label || t("common.saving")
+      : t("common.saveChanges");
   }
 
   async function save() {
@@ -609,18 +646,22 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
     }
 
     const valid = applyValidation(fields, {
-      heading: { label: "Heading", required: true, maxLength: LIMITS.heading },
-      highlight: { label: "Highlighted Text", maxLength: LIMITS.highlight },
-      paragraph1: { label: "Paragraph 1", required: true },
-      paragraph2: { label: "Paragraph 2" }
+      heading: {
+        label: t("about.fieldHeading"),
+        required: true,
+        maxLength: LIMITS.heading
+      },
+      highlight: { label: t("about.fieldHighlight"), maxLength: LIMITS.highlight },
+      paragraph1: { label: t("org.fieldParagraph1"), required: true },
+      paragraph2: { label: t("org.fieldParagraph2") }
     });
 
     if (!valid) {
-      toast("Please correct the highlighted fields.", "error");
+      toast(t("about.errFields"), "error");
       return false;
     }
 
-    setSaving(true, "Saving...");
+    setSaving(true, t("common.saving"));
 
     const { data, error } = await supabaseClient
       .from("about_organization")
@@ -640,7 +681,7 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
         console.error(error);
       }
 
-      toast("Could not save the Organization content. Your changes are still here.", "error");
+      toast(t("org.errSave"), "error");
       return false;
     }
 
@@ -663,15 +704,15 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
 
     append(
       body,
-      previewLine("Heading", fields.heading.value),
-      previewLine("Highlighted Text", fields.highlight.value),
-      previewLine("Paragraph 1", fields.paragraph1.value),
-      previewLine("Paragraph 2", fields.paragraph2.value)
+      previewLine(t("about.fieldHeading"), fields.heading.value),
+      previewLine(t("about.fieldHighlight"), fields.highlight.value),
+      previewLine(t("org.fieldParagraph1"), fields.paragraph1.value),
+      previewLine(t("org.fieldParagraph2"), fields.paragraph2.value)
     );
 
     const skillRows = skills.getRows();
     const skillBlock = el("div", "preview-line");
-    append(skillBlock, el("span", "preview-label", "Organization Skills"));
+    append(skillBlock, el("span", "preview-label", t("org.skillsTitle")));
 
     if (skillRows.length === 0) {
       append(skillBlock, el("p", "preview-value", "—"));
@@ -682,7 +723,7 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
         append(item, el("strong", null, row.title), el("span", null, row.description));
 
         if (row.is_active === false) {
-          append(item, el("span", "status-badge status-badge-disabled", "Disabled"));
+          append(item, el("span", "status-badge status-badge-disabled", t("status.inactive")));
         }
 
         append(list, item);
@@ -694,7 +735,7 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
 
     const galleryRows = gallery.getRows();
     const galleryBlock = el("div", "preview-line");
-    append(galleryBlock, el("span", "preview-label", "Organization Gallery"));
+    append(galleryBlock, el("span", "preview-label", t("org.galleryTitle")));
 
     if (galleryRows.length === 0) {
       append(galleryBlock, el("p", "preview-value", "—"));
@@ -708,17 +749,20 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
         if (url) {
           const img = el("img", "preview-photo-image");
           img.src = url;
-          img.alt = row.alt_text || "Gallery photo";
+          img.alt = row.alt_text || t("org.galleryPhoto");
           append(figure, img);
         } else {
-          append(figure, el("p", "media-field-empty", "No image"));
+          append(figure, el("p", "media-field-empty", t("projMedia.noImage")));
         }
 
         const caption = el("figcaption", "preview-photo-caption");
-        append(caption, el("span", "preview-photo-title", row.alt_text || "Untitled"));
+        append(
+          caption,
+          el("span", "preview-photo-title", row.alt_text || t("org.galleryUntitled"))
+        );
 
         if (row.is_active === false) {
-          append(caption, el("span", "status-badge status-badge-disabled", "Disabled"));
+          append(caption, el("span", "status-badge status-badge-disabled", t("status.inactive")));
         }
 
         append(figure, caption);
@@ -731,11 +775,12 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
     append(body, galleryBlock);
 
     openModal({
-      title: "Organization preview",
-      description:
-        "Read-only preview of the current form values, including unsaved changes. This is an Admin content preview, not the public Organization layout.",
+      title: t("org.previewTitle"),
+      description: t("org.previewDescription"),
       body,
-      actions: [{ label: "Close", variant: "secondary", onClick: ctl => ctl.close() }]
+      actions: [
+        { label: t("common.close"), variant: "secondary", onClick: ctl => ctl.close() }
+      ]
     });
   });
 

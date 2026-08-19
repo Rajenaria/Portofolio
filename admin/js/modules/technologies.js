@@ -31,22 +31,46 @@ import {
   append,
   clear,
   pageHeader,
-  emptyState
+  emptyState,
+  updatedAt
 } from "../core/dom.js";
 
 import { openModal, confirmDialog, closeAllModals } from "../core/modal.js";
 import { toast } from "../core/toast.js";
+import { t } from "../core/i18n.js";
 
+/*
+  Group keys are the contract with public_group's check constraint; the labels
+  beside them are the English fallback. Display text is resolved through
+  projTech.group* so the picker, the filter and the table all follow the
+  interface language.
+*/
 const PUBLIC_GROUPS = [
-  { value: "languages", label: "Languages" },
-  { value: "development_systems", label: "Development & Systems" },
-  { value: "tools_platforms", label: "Tools & Platforms" }
+  { value: "languages", label: "Languages", key: "projTech.groupLanguages" },
+  {
+    value: "development_systems",
+    label: "Development & Systems",
+    key: "projTech.groupDevelopment"
+  },
+  {
+    value: "tools_platforms",
+    label: "Tools & Platforms",
+    key: "projTech.groupTools"
+  }
 ];
 
-const GROUP_LABELS = PUBLIC_GROUPS.reduce((map, group) => {
-  map[group.value] = group.label;
-  return map;
-}, {});
+function groupLabel(value) {
+  const entry = PUBLIC_GROUPS.find(group => group.value === value);
+
+  return entry ? t(entry.key) : value;
+}
+
+function groupOptions() {
+  return PUBLIC_GROUPS.map(group => ({
+    value: group.value,
+    label: groupLabel(group.value)
+  }));
+}
 
 const NAME_MAX = 100;
 const SLUG_MAX = 120;
@@ -116,7 +140,7 @@ function collectionRank(iconId) {
 
 export const technologiesRoute = {
   name: "technologies",
-  title: "Technologies",
+  title: "Technologies",  // Fallback only: the shell titles routes from nav.*
   render
 };
 
@@ -165,12 +189,11 @@ async function render(container, { signal }) {
   append(
     container,
     pageHeader({
-      title: "Technologies",
-      subtitle:
-        "Manage technologies and project tags used across your portfolio.",
+      title: t("tech.title"),
+      subtitle: t("tech.subtitle"),
       actions: [
         {
-          label: "+ Add Technology",
+          label: t("tech.add"),
           variant: "primary",
           onClick: () => openEditor(null)
         }
@@ -209,7 +232,7 @@ async function render(container, { signal }) {
         supabaseClient
           .from("technologies")
           .select(
-            "id, name, slug, icon_key, public_group, show_in_public_stack, is_active, sort_order, created_at"
+            "id, name, slug, icon_key, public_group, show_in_public_stack, is_active, sort_order, created_at, updated_at"
           )
           .order("sort_order", { ascending: true })
           .order("created_at", { ascending: true }),
@@ -259,12 +282,12 @@ async function render(container, { signal }) {
     const node = el("div", "admin-toolbar");
 
     const searchField = el("div", "toolbar-field toolbar-field-search");
-    const searchLabel = el("label", "toolbar-label", "Search");
+    const searchLabel = el("label", "toolbar-label", t("common.search"));
     const searchInput = el("input", "admin-input");
 
     searchInput.type = "search";
     searchInput.id = "technology-search";
-    searchInput.placeholder = "Search technologies...";
+    searchInput.placeholder = t("tech.searchPlaceholder");
     searchInput.autocomplete = "off";
     searchLabel.htmlFor = searchInput.id;
 
@@ -278,11 +301,11 @@ async function render(container, { signal }) {
 
     const groupField = buildSelectField({
       id: "technology-group-filter",
-      label: "Public Group",
+      label: t("tech.groupFilter"),
       options: [
-        { value: "all", label: "All" },
-        ...PUBLIC_GROUPS,
-        { value: "project_only", label: "Project-only" }
+        { value: "all", label: t("common.all") },
+        ...groupOptions(),
+        { value: "project_only", label: t("tech.projectOnly") }
       ],
       onChange: value => {
         state.filters.group = value;
@@ -293,11 +316,11 @@ async function render(container, { signal }) {
 
     const statusField = buildSelectField({
       id: "technology-status-filter",
-      label: "Status",
+      label: t("common.status"),
       options: [
-        { value: "all", label: "All" },
-        { value: "active", label: "Active" },
-        { value: "disabled", label: "Disabled" }
+        { value: "all", label: t("common.all") },
+        { value: "active", label: t("status.active") },
+        { value: "disabled", label: t("tech.statusDisabled") }
       ],
       onChange: value => {
         state.filters.status = value;
@@ -388,7 +411,7 @@ async function render(container, { signal }) {
     clear(listSlot);
 
     if (state.status === "loading") {
-      append(listSlot, el("p", "loading-text", "Loading technologies..."));
+      append(listSlot, el("p", "loading-text", t("tech.loading")));
       return;
     }
 
@@ -401,9 +424,8 @@ async function render(container, { signal }) {
       append(
         listSlot,
         emptyState({
-          title: "No technologies yet.",
-          description:
-            "Add your first technology to start building the shared technology library."
+          title: t("tech.emptyTitle"),
+          description: t("tech.emptyHelp")
         })
       );
       return;
@@ -415,8 +437,8 @@ async function render(container, { signal }) {
       append(
         listSlot,
         emptyState({
-          title: "No technologies match your filters.",
-          description: "Try another search term, public group or status."
+          title: t("tech.emptyFilterTitle"),
+          description: t("tech.emptyFilterHelp")
         })
       );
       return;
@@ -427,9 +449,7 @@ async function render(container, { signal }) {
     const summary = el(
       "p",
       "table-summary",
-      rows.length === state.items.length
-        ? `${state.items.length} technologies`
-        : `${rows.length} of ${state.items.length} technologies`
+      t("tech.summary", { shown: rows.length, total: state.items.length })
     );
 
     append(listSlot, summary);
@@ -437,11 +457,7 @@ async function render(container, { signal }) {
     if (filtersActive()) {
       append(
         listSlot,
-        el(
-          "p",
-          "table-note",
-          "Move Up and Move Down are available when no search or filter is active, because ordering applies to the whole list."
-        )
+        el("p", "table-note", t("list.reorderNote"))
       );
     }
   }
@@ -452,18 +468,14 @@ async function render(container, { signal }) {
 
     append(
       panel,
-      el("p", "admin-alert-title", "Could not load technologies."),
-      el(
-        "p",
-        "admin-alert-text",
-        "Check your connection and try again. If the problem continues, sign out and sign in again."
-      )
+      el("p", "admin-alert-title", t("tech.loadError")),
+      el("p", "admin-alert-text", t("list.loadErrorHelp"))
     );
 
     const retry = el(
       "button",
       "admin-button admin-button-secondary",
-      "Try Again"
+      t("common.tryAgain")
     );
 
     retry.type = "button";
@@ -484,12 +496,12 @@ async function render(container, { signal }) {
     const headRow = el("tr");
 
     [
-      "Icon",
-      "Technology",
-      "Public Group",
-      "Public",
-      "Status",
-      "Usage"
+      t("common.icon"),
+      t("tech.colTechnology"),
+      t("common.group"),
+      t("common.visibility"),
+      t("common.status"),
+      t("common.updated")
     ].forEach(label => {
       const cell = el("th", null, label);
       cell.scope = "col";
@@ -498,7 +510,7 @@ async function render(container, { signal }) {
 
     const actionsHead = el("th");
     actionsHead.scope = "col";
-    append(actionsHead, el("span", "visually-hidden", "Actions"));
+    append(actionsHead, el("span", "visually-hidden", t("common.actions")));
     append(headRow, actionsHead);
 
     append(thead, headRow);
@@ -519,37 +531,65 @@ async function render(container, { signal }) {
   function buildRow(item) {
     const row = el("tr", item.is_active ? "" : "is-disabled-row");
 
-    // Icon: safe initials only. icon_key is never rendered as markup.
-    const iconCell = cell("Icon");
-    const badge = el("span", "tech-icon", initialsFor(item.name));
-    badge.setAttribute("aria-hidden", "true");
-    append(iconCell, badge);
+    /*
+      The stored icon, drawn the same way the picker draws it: an <img> at the
+      Iconify SVG endpoint, built from an id that already matched
+      ICONIFY_ID_PATTERN and then encoded. No SVG payload is parsed and there
+      is no innerHTML path, so icon_key still cannot become markup.
 
-    const nameCell = cell("Technology");
+      A legacy bare key (docker, figma) has no Iconify id to resolve, so it
+      falls back to the initials badge rather than a broken image.
+    */
+    const iconCell = cell(t("common.icon"));
+    iconCell.classList.add("cell-icon");
+    const iconUrl = item.icon_key ? iconPreviewUrl(item.icon_key) : null;
+
+    if (iconUrl) {
+      const image = el("img", "tech-icon-image");
+      image.src = iconUrl;
+      image.alt = "";
+      image.width = 24;
+      image.height = 24;
+      image.loading = "lazy";
+      image.draggable = false;
+      image.title = item.icon_key;
+      append(iconCell, image);
+    } else {
+      const badge = el("span", "tech-icon", initialsFor(item.name));
+      badge.setAttribute("aria-hidden", "true");
+      append(iconCell, badge);
+    }
+
+    const nameCell = cell(t("tech.colTechnology"));
+    nameCell.classList.add("cell-primary");
     append(nameCell, el("span", "tech-name", item.name));
 
     const meta = el("span", "tech-meta");
     append(meta, el("span", "tech-slug", item.slug));
 
-    if (item.icon_key) {
-      append(meta, el("span", "tech-icon-key", `icon: ${item.icon_key}`));
-    }
+    /* Usage lost its own column to Updated; it belongs with the name anyway,
+       where it reads as a property of the technology rather than a metric. */
+    const usageCount = state.usage.get(item.id) || 0;
+    append(
+      meta,
+      el("span", "tech-usage", t("tech.usageCount", { count: usageCount }))
+    );
 
     append(nameCell, meta);
 
-    const groupCell = cell("Public Group");
+    const groupCell = cell(t("common.group"));
     append(
       groupCell,
       el(
         "span",
         item.public_group ? "tech-group" : "tech-group tech-group-none",
-        item.public_group
-          ? GROUP_LABELS[item.public_group] || item.public_group
-          : "Project-only"
+        item.public_group ? groupLabel(item.public_group) : t("tech.projectOnly")
       )
     );
 
-    const publicCell = cell("Public");
+    /* Visibility answers "does this show up on the site", which is the
+       question the Yes/No flag was really being asked. */
+    const publicCell = cell(t("common.visibility"));
     append(
       publicCell,
       el(
@@ -557,11 +597,13 @@ async function render(container, { signal }) {
         item.show_in_public_stack
           ? "flag-badge flag-badge-yes"
           : "flag-badge flag-badge-no",
-        item.show_in_public_stack ? "Yes" : "No"
+        item.show_in_public_stack
+          ? t("tech.inPublicStack")
+          : t("tech.notInPublicStack")
       )
     );
 
-    const statusCell = cell("Status");
+    const statusCell = cell(t("common.status"));
     append(
       statusCell,
       el(
@@ -569,23 +611,14 @@ async function render(container, { signal }) {
         item.is_active
           ? "status-badge status-badge-active"
           : "status-badge status-badge-disabled",
-        item.is_active ? "Active" : "Disabled"
+        t(item.is_active ? "status.active" : "tech.statusDisabled")
       )
     );
 
-    const usageCount = state.usage.get(item.id) || 0;
-    const usageCell = cell("Usage");
-    append(usageCell, el("span", "usage-count", usageCount));
-    append(
-      usageCell,
-      el(
-        "span",
-        "visually-hidden",
-        usageCount === 1 ? " project" : " projects"
-      )
-    );
+    const timeCell = cell(t("common.updated"));
+    append(timeCell, updatedAt(item.updated_at || item.created_at));
 
-    const actionsCell = cell("Actions");
+    const actionsCell = cell(t("common.actions"));
     actionsCell.className = "cell-actions";
     append(actionsCell, buildActionsMenu(item));
 
@@ -596,7 +629,7 @@ async function render(container, { signal }) {
       groupCell,
       publicCell,
       statusCell,
-      usageCell,
+      timeCell,
       actionsCell
     );
 
@@ -620,7 +653,7 @@ async function render(container, { signal }) {
     trigger.type = "button";
     trigger.setAttribute("aria-haspopup", "true");
     trigger.setAttribute("aria-expanded", "false");
-    trigger.setAttribute("aria-label", `Actions for ${item.name}`);
+    trigger.setAttribute("aria-label", t("tech.actionsFor", { name: item.name }));
 
     trigger.addEventListener("click", () => {
       const isOpen = wrap.classList.contains("is-open");
@@ -645,23 +678,23 @@ async function render(container, { signal }) {
 
       const entries = [
         {
-          label: "Edit",
+          label: t("common.edit"),
           onSelect: () => openEditor(item)
         },
         {
-          label: "Move Up",
+          label: t("action.moveUp"),
           disabled: !canReorder || index <= 0,
-          hint: canReorder ? null : "Clear search and filters to reorder.",
+          hint: canReorder ? null : t("list.reorderHint"),
           onSelect: () => move(index, -1)
         },
         {
-          label: "Move Down",
+          label: t("action.moveDown"),
           disabled: !canReorder || index === -1 || index >= state.items.length - 1,
-          hint: canReorder ? null : "Clear search and filters to reorder.",
+          hint: canReorder ? null : t("list.reorderHint"),
           onSelect: () => move(index, 1)
         },
         {
-          label: item.is_active ? "Disable" : "Enable",
+          label: t(item.is_active ? "common.disable" : "common.enable"),
           onSelect: () => toggleActive(item)
         }
       ];
@@ -792,7 +825,7 @@ async function render(container, { signal }) {
         toast(
           error
             ? friendlyDbError(error)
-            : "Could not reorder technologies. Your session may not be authorized.",
+            : t("tech.errOrder"),
           "error"
         );
 
@@ -801,7 +834,7 @@ async function render(container, { signal }) {
       }
     }
 
-    toast("Order updated.");
+    toast(t("list.orderUpdated"));
     await load();
   }
 
@@ -813,16 +846,13 @@ async function render(container, { signal }) {
     const disabling = item.is_active;
 
     const confirmed = await confirmDialog({
-      title: disabling ? `Disable ${item.name}?` : `Enable ${item.name}?`,
+      title: t(disabling ? "tech.disableTitle" : "tech.enableTitle", {
+        name: item.name
+      }),
       lines: disabling
-        ? [
-            "This technology will no longer be available for new project selections.",
-            `Existing projects using ${item.name} will keep their current relationship.`
-          ]
-        : [
-            "This technology will become available for new project selections again."
-          ],
-      confirmLabel: disabling ? "Disable" : "Enable",
+        ? [t("tech.disableLine1"), t("tech.disableLine2", { name: item.name })]
+        : [t("tech.enableLine")],
+      confirmLabel: t(disabling ? "common.disable" : "common.enable"),
       variant: disabling ? "danger" : "primary"
     });
 
@@ -848,14 +878,14 @@ async function render(container, { signal }) {
       toast(
         error
           ? friendlyDbError(error)
-          : "Could not update this technology. Your session may not be authorized.",
+          : t("tech.errToggle"),
         "error"
       );
 
       return;
     }
 
-    toast(disabling ? "Technology disabled." : "Technology enabled.");
+    toast(t(disabling ? "tech.toastDisabled" : "tech.toastEnabled"));
     await load();
   }
 
@@ -875,7 +905,7 @@ async function render(container, { signal }) {
 
     const nameField = textField({
       id: "technology-name",
-      label: "Name",
+      label: t("techEditor.fieldName"),
       required: true,
       maxLength: NAME_MAX,
       value: existing ? existing.name : ""
@@ -883,55 +913,118 @@ async function render(container, { signal }) {
 
     const slugField = textField({
       id: "technology-slug",
-      label: "Slug",
+      label: t("techEditor.fieldSlug"),
       maxLength: SLUG_MAX,
       value: existing ? existing.slug : "",
-      help: isNew
-        ? "Auto-generated from the name. Lowercase letters, numbers and hyphens."
-        : "Changing the slug changes future public links. Lowercase letters, numbers and hyphens."
+      help: t(
+        isNew ? "techEditor.fieldSlugHelpNew" : "techEditor.fieldSlugHelpEdit"
+      )
     });
 
     const iconField = textField({
       id: "technology-icon-key",
-      label: "Icon (Iconify id)",
+      label: t("techEditor.fieldIcon"),
       maxLength: ICON_KEY_MAX,
       value: existing && existing.icon_key ? existing.icon_key : "",
-      help:
-        "Search below, or type an Iconify id such as simple-icons:react. Identifiers only — markup is not accepted."
+      help: t("techEditor.fieldIconHelp")
     });
 
     const iconPicker = createIconPicker(iconField);
 
     const publicField = checkboxField({
       id: "technology-public",
-      label: "Show in Public Tech Stack",
+      label: t("techEditor.fieldPublic"),
       checked: existing ? existing.show_in_public_stack : false
     });
 
     const groupField = selectField({
       id: "technology-public-group",
-      label: "Public Group",
+      label: t("techEditor.fieldGroup"),
       value: existing && existing.public_group ? existing.public_group : "",
-      placeholder: "Select a group",
-      options: PUBLIC_GROUPS,
-      help: "Required when the technology appears in the public Tech Stack."
+      placeholder: t("techEditor.fieldGroupPlaceholder"),
+      options: groupOptions(),
+      help: t("techEditor.fieldGroupHelp")
     });
 
     const activeField = checkboxField({
       id: "technology-active",
-      label: "Active",
+      label: t("techEditor.fieldActive"),
       checked: existing ? existing.is_active : true
     });
 
+    /*
+      Four groups instead of one flat column, matching the Certificates,
+      Experience and Projects editors. The modal is narrow, so the groups are
+      labelled runs rather than nested cards — a card inside a dialog would be
+      a frame inside a frame.
+    */
+    function group(titleKey, helpKey) {
+      const node = el("div", "modal-group");
+
+      append(node, el("h4", "form-subheading", t(titleKey)));
+
+      if (helpKey) {
+        append(node, el("p", "form-help", t(helpKey)));
+      }
+
+      return node;
+    }
+
+    const basicGroup = group("techEditor.basic", null);
+    append(basicGroup, nameField.node, slugField.node);
+
+    const iconGroup = group("techEditor.icon", null);
+    append(iconGroup, iconPicker.node);
+
+    const visibilityGroup = group(
+      "techEditor.visibility",
+      "techEditor.visibilityHelp"
+    );
     append(
-      form,
-      nameField.node,
-      slugField.node,
-      iconPicker.node,
+      visibilityGroup,
       publicField.node,
       groupField.node,
-      activeField.node
+      activeField.node,
+      el("p", "form-help", t("techEditor.fieldActiveHelp"))
     );
+
+    const previewGroup = group("techEditor.preview", "techEditor.previewHelp");
+    const previewSlot = el("div", "tech-preview");
+    append(previewGroup, previewSlot);
+
+    append(form, basicGroup, iconGroup, visibilityGroup, previewGroup);
+
+    /*
+      The chip as the public Tech Stack draws it: stored icon plus name. It
+      reads from the live form, so it answers "did I pick the right icon"
+      before anything is written.
+    */
+    function renderPreview() {
+      clear(previewSlot);
+
+      const iconValue = iconField.input.value.trim();
+      const url = iconValue ? iconPreviewUrl(iconValue) : null;
+      const chip = el("span", "tech-preview-chip");
+
+      if (url) {
+        const image = el("img", "tech-preview-icon");
+        image.src = url;
+        image.alt = "";
+        image.width = 22;
+        image.height = 22;
+        image.draggable = false;
+        append(chip, image);
+      }
+
+      const label = nameField.input.value.trim();
+      append(chip, el("span", "tech-preview-name", label || t("common.name")));
+      append(previewSlot, chip);
+    }
+
+    renderPreview();
+    nameField.input.addEventListener("input", renderPreview);
+    iconField.input.addEventListener("input", renderPreview);
+    iconField.input.addEventListener("change", renderPreview);
 
     // Hidden submit keeps Enter-to-save working without a real form action
     // (the CSP sets form-action 'none'; submission is always prevented).
@@ -985,16 +1078,16 @@ async function render(container, { signal }) {
     }
 
     const controller = openModal({
-      title: isNew ? "Add Technology" : "Edit Technology",
+      title: t(isNew ? "techEditor.addTitle" : "techEditor.editTitle"),
       body: form,
       actions: [
         {
-          label: "Cancel",
+          label: t("common.cancel"),
           variant: "secondary",
           onClick: ctl => ctl.requestClose("cancel")
         },
         {
-          label: isNew ? "Add Technology" : "Save Changes",
+          label: t(isNew ? "techEditor.addTitle" : "common.saveChanges"),
           variant: "primary",
           onClick: () => submit()
         }
@@ -1005,12 +1098,10 @@ async function render(container, { signal }) {
         }
 
         return await confirmDialog({
-          title: "Discard changes?",
-          lines: [
-            "You have unsaved changes. Your changes will be lost if you leave this form."
-          ],
-          confirmLabel: "Discard",
-          cancelLabel: "Keep Editing",
+          title: t("discard.title"),
+          lines: [t("discard.line"), t("unsaved.lost")],
+          confirmLabel: t("discard.confirm"),
+          cancelLabel: t("discard.cancel"),
           variant: "danger"
         });
       }
@@ -1054,7 +1145,7 @@ async function render(container, { signal }) {
         is_active: values.isActive
       };
 
-      controller.setBusy(true, isNew ? "Adding..." : "Saving...");
+      controller.setBusy(true, t(isNew ? "common.adding" : "common.saving"));
 
       let result;
 
@@ -1088,13 +1179,12 @@ async function render(container, { signal }) {
 
       // An UPDATE filtered out by RLS returns 200 with zero rows.
       if (!result.data || result.data.length === 0) {
-        formError.textContent =
-          "Could not save this technology. Your session may not be authorized.";
+        formError.textContent = t("techEditor.errSaveAuth");
         return;
       }
 
       controller.close();
-      toast(isNew ? "Technology added." : "Changes saved successfully.");
+      toast(t(isNew ? "techEditor.added" : "techEditor.saved"));
       await load();
     }
 
@@ -1123,7 +1213,7 @@ async function render(container, { signal }) {
         groupField.setError(errors.group);
       }
 
-      formError.textContent = "Please correct the highlighted fields.";
+      formError.textContent = t("techEditor.errFields");
 
       const firstInvalid = [nameField, slugField, iconField, groupField].find(
         field => field.errorNode.textContent !== ""
@@ -1139,9 +1229,9 @@ async function render(container, { signal }) {
     const errors = {};
 
     if (values.name === "") {
-      errors.name = "Technology name is required.";
+      errors.name = t("techEditor.errNameRequired");
     } else if (values.name.length > NAME_MAX) {
-      errors.name = `Use ${NAME_MAX} characters or fewer.`;
+      errors.name = t("techEditor.errTooLong", { max: NAME_MAX });
     } else {
       const duplicateName = state.items.find(
         item =>
@@ -1150,18 +1240,16 @@ async function render(container, { signal }) {
       );
 
       if (duplicateName) {
-        errors.name = `A technology named "${duplicateName.name}" already exists.`;
+        errors.name = t("techEditor.errNameTaken", { name: duplicateName.name });
       }
     }
 
     if (values.slug === "") {
-      errors.slug =
-        "Slug is required. Use lowercase letters, numbers and hyphens.";
+      errors.slug = t("techEditor.errSlugRequired");
     } else if (values.slug.length > SLUG_MAX) {
-      errors.slug = `Use ${SLUG_MAX} characters or fewer.`;
+      errors.slug = t("techEditor.errTooLong", { max: SLUG_MAX });
     } else if (!SLUG_PATTERN.test(values.slug)) {
-      errors.slug =
-        "Use lowercase letters, numbers and single hyphens, for example: node-js.";
+      errors.slug = t("techEditor.errSlugFormat");
     } else {
       const duplicateSlug = state.items.find(
         item =>
@@ -1170,22 +1258,20 @@ async function render(container, { signal }) {
       );
 
       if (duplicateSlug) {
-        errors.slug = "This slug is already used by another technology.";
+        errors.slug = t("techEditor.errSlugTaken");
       }
     }
 
     if (values.iconKey !== "") {
       if (values.iconKey.length > ICON_KEY_MAX) {
-        errors.iconKey = `Use ${ICON_KEY_MAX} characters or fewer.`;
+        errors.iconKey = t("techEditor.errTooLong", { max: ICON_KEY_MAX });
       } else if (!isValidIconKey(values.iconKey)) {
-        errors.iconKey =
-          "Pick an icon from the search, or type an Iconify id such as simple-icons:react.";
+        errors.iconKey = t("techEditor.errIconFormat");
       }
     }
 
     if (values.isPublic && values.group === "") {
-      errors.group =
-        "Select a public group to show this technology in the public Tech Stack.";
+      errors.group = t("techEditor.errGroupRequired");
     }
 
     return errors;
@@ -1234,7 +1320,7 @@ function createIconPicker(iconField) {
 
   /* ---- label + combobox input ---- */
 
-  const label = el("label", "form-label", "Icon");
+  const label = el("label", "form-label", t("techIcon.label"));
   label.htmlFor = "technology-icon-search";
   append(node, label);
 
@@ -1243,7 +1329,7 @@ function createIconPicker(iconField) {
   const search = el("input", "admin-input icon-combobox-input");
   search.type = "text";
   search.id = "technology-icon-search";
-  search.placeholder = "Search icon… e.g. LinkedIn, React, Next.js";
+  search.placeholder = t("techIcon.searchPlaceholder");
   search.autocomplete = "off";
   search.spellcheck = false;
   search.setAttribute("role", "combobox");
@@ -1268,18 +1354,13 @@ function createIconPicker(iconField) {
 
   append(
     node,
-    el(
-      "p",
-      "form-help",
-      "Brand icons are listed first. Hover an icon to see its name " +
-        "and identifier. Only the identifier is stored."
-    )
+    el("p", "form-help", t("techIcon.help"))
   );
 
   /* ---- selected icon ---- */
 
   const selected = el("div", "icon-selected");
-  const selectedLabel = el("p", "icon-selected-label", "Selected icon");
+  const selectedLabel = el("p", "icon-selected-label", t("techIcon.selected"));
   const selectedRow = el("div", "icon-selected-row");
 
   const selectedImg = el("img", "icon-selected-img");
@@ -1288,7 +1369,7 @@ function createIconPicker(iconField) {
 
   const selectedId = el("span", "icon-selected-id");
 
-  const clearButton = el("button", "icon-selected-clear", "Clear");
+  const clearButton = el("button", "icon-selected-clear", t("common.clear"));
   clearButton.type = "button";
 
   append(selectedRow, selectedImg, selectedId, clearButton);
@@ -1298,7 +1379,7 @@ function createIconPicker(iconField) {
   /* ---- advanced: the manual identifier field ---- */
 
   const advanced = el("details", "icon-advanced");
-  const summary = el("summary", "icon-advanced-summary", "Advanced");
+  const summary = el("summary", "icon-advanced-summary", t("techIcon.advanced"));
   append(advanced, summary, iconField.node);
   append(node, advanced);
 
@@ -1358,8 +1439,18 @@ function createIconPicker(iconField) {
     iconField.input.value = "";
     iconField.setError("");
     renderSelected();
+    notifyIconChange();
     search.focus();
   });
+
+  /*
+    The picker writes the identifier straight into the field, which fires no
+    event of its own. Anything else listening to the field — the editor's live
+    preview — would otherwise never learn that the icon changed.
+  */
+  function notifyIconChange() {
+    iconField.input.dispatchEvent(new Event("input", { bubbles: true }));
+  }
 
   iconField.input.addEventListener("input", renderSelected);
 
@@ -1399,6 +1490,7 @@ function createIconPicker(iconField) {
     iconField.input.value = iconId;
     iconField.setError("");
     renderSelected();
+    notifyIconChange();
     closePanel();
 
     search.value = "";
@@ -1595,7 +1687,7 @@ function createIconPicker(iconField) {
     openPanel();
     clear(list);
     options = [];
-    status.textContent = "Searching…";
+    status.textContent = t("techIcon.searching");
 
     try {
       /*
@@ -1644,19 +1736,17 @@ function createIconPicker(iconField) {
       merged.sort((a, b) => collectionRank(a) - collectionRank(b));
 
       if (merged.length === 0) {
-        status.textContent = 'No icons found for "' + query + '".';
+        status.textContent = t("techIcon.noResults", { query });
         return;
       }
 
-      status.textContent =
-        merged.length + " icon" + (merged.length === 1 ? "" : "s") + " found";
+      status.textContent = t("techIcon.resultCount", { count: merged.length });
 
       showResults(merged);
     } catch (error) {
       console.error(error);
 
-      status.textContent =
-        "Icon search is unavailable. Use Advanced to type an id.";
+      status.textContent = t("techIcon.unavailable");
     }
   }
 
@@ -1928,7 +2018,7 @@ function initialsFor(name) {
 */
 function friendlyDbError(error) {
   if (!error) {
-    return "Could not save this technology. Please try again.";
+    return t("techEditor.errSaveRetry");
   }
 
   const haystack = `${error.code || ""} ${error.message || ""} ${
@@ -1937,30 +2027,30 @@ function friendlyDbError(error) {
 
   if (error.code === "23505" || haystack.includes("duplicate key")) {
     if (haystack.includes("name_lower")) {
-      return "A technology with this name already exists.";
+      return t("techEditor.errNameExists");
     }
 
     if (haystack.includes("slug")) {
-      return "A technology with this slug already exists.";
+      return t("techEditor.errSlugExists");
     }
 
-    return "This technology already exists.";
+    return t("techEditor.errExists");
   }
 
   if (error.code === "23514" || haystack.includes("check constraint")) {
     if (haystack.includes("public_group_required")) {
-      return "Select a public group before showing this technology in the public Tech Stack.";
+      return t("techEditor.errGroupRequired");
     }
 
     if (haystack.includes("slug_check")) {
-      return "Slug format is not valid. Use lowercase letters, numbers and hyphens.";
+      return t("techEditor.errSlugFormat");
     }
 
     if (haystack.includes("public_group_check")) {
-      return "That public group is not one of the three supported groups.";
+      return t("techEditor.errGroupInvalid");
     }
 
-    return "Some values are not valid. Please review the form.";
+    return t("techEditor.errValues");
   }
 
   if (
@@ -1968,8 +2058,8 @@ function friendlyDbError(error) {
     error.code === "PGRST301" ||
     haystack.includes("row-level security")
   ) {
-    return "Your session is not authorized for this change. Sign in again and retry.";
+    return t("list.sessionError");
   }
 
-  return "Could not save this technology. Please try again.";
+  return t("techEditor.errSaveRetry");
 }

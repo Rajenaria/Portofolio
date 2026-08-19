@@ -1,6 +1,20 @@
 ﻿/*
   Project editor (Phase 8A core, Phase 8B media).
 
+  The form is grouped the way the owner thinks about a project:
+
+      BASIC INFORMATION   title, slug, category, short description, featured
+      PROJECT DETAILS     detail headings, role, type, date, intro, links
+      ABOUT PARAGRAPHS    the ordered body text of the detail page
+      MEDIA               cover image and alt text
+      DOCUMENTATION       the ordered gallery
+      TECHNOLOGIES        the chip selector
+      VISIBILITY          status and the record's own timeline
+
+  The paragraph, gallery and technology editors stay their own components, so
+  they follow their group rather than nesting inside it — one frame each, never
+  a panel inside a panel.
+
   Full-page editor inside the Admin shell. It writes only columns that exist in
   public.projects, plus the staged paragraph list, technology relationships,
   the cover columns and the project_media rows.
@@ -29,6 +43,7 @@
 import { supabaseClient } from "../../core/supabase.js";
 import { el, append, clear, statusBadge, updatedAt } from "../../core/dom.js";
 import { toast } from "../../core/toast.js";
+import { t } from "../../core/i18n.js";
 
 import {
   textField,
@@ -98,11 +113,11 @@ export function validateUrl(value, label) {
   try {
     parsed = new URL(text);
   } catch (error) {
-    return `${label} must be a full URL starting with https://`;
+    return t("projEditor.errUrlHttps", { label });
   }
 
   if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
-    return `${label} must use http:// or https://`;
+    return t("projEditor.errUrlScheme", { label });
   }
 
   return "";
@@ -133,7 +148,7 @@ export function createProjectEditor({
 
   /* ---------------- header ---------------- */
 
-  const back = el("button", "link-button", "← Back to Projects");
+  const back = el("button", "link-button", t("projEditor.back"));
   back.type = "button";
   back.addEventListener("click", () => onBack());
 
@@ -143,7 +158,7 @@ export function createProjectEditor({
   const heading = el(
     "h2",
     "editor-title",
-    isNew ? "New Project" : record.title || "Untitled project"
+    isNew ? t("projEditor.newTitle") : record.title || t("proj.untitled")
   );
 
   append(headingBlock, heading);
@@ -154,17 +169,25 @@ export function createProjectEditor({
 
   const actions = el("div", "editor-actions");
 
-  const previewButton = el("button", "admin-button admin-button-secondary", "Preview");
+  const previewButton = el(
+    "button",
+    "admin-button admin-button-secondary",
+    t("common.preview")
+  );
   previewButton.type = "button";
 
   const saveButton = el(
     "button",
     "admin-button admin-button-secondary",
-    isNew ? "Save Draft" : "Save Changes"
+    t(isNew ? "common.saveDraft" : "common.saveChanges")
   );
   saveButton.type = "button";
 
-  const publishButton = el("button", "admin-button admin-button-primary", "Publish");
+  const publishButton = el(
+    "button",
+    "admin-button admin-button-primary",
+    t("common.publish")
+  );
   publishButton.type = "button";
 
   append(actions, previewButton, saveButton, publishButton);
@@ -176,100 +199,100 @@ export function createProjectEditor({
   const fields = {
     title: textField({
       id: "project-title",
-      label: "Project Title",
+      label: t("projEditor.fieldTitle"),
       required: true,
       maxLength: LIMITS.title,
       value: record ? record.title : ""
     }),
     slug: textField({
       id: "project-slug",
-      label: "Slug",
+      label: t("projEditor.fieldSlug"),
       required: true,
       maxLength: LIMITS.slug,
       value: record ? record.slug : "",
-      help: "Lowercase letters, numbers and single hyphens. Used by the future public link project.html?slug=…"
+      help: t("projEditor.fieldSlugHelp")
     }),
     cardCategory: textField({
       id: "project-card-category",
-      label: "Category",
+      label: t("projEditor.fieldCategory"),
       maxLength: LIMITS.cardCategory,
       value: record ? record.card_category : "",
-      help: "Shown on the Portfolio card, for example: UI / UX, Web Development. Required before publishing."
+      help: t("projEditor.fieldCategoryHelp")
     }),
     shortDescription: textareaField({
       id: "project-short-description",
-      label: "Short Description",
+      label: t("projEditor.fieldShort"),
       maxLength: LIMITS.shortDescription,
       value: record ? record.short_description : "",
       rows: 3,
-      help: "Plain text shown on the Portfolio card. Required before publishing."
+      help: t("projEditor.fieldShortHelp")
     }),
     detailTitleMain: textField({
       id: "project-detail-title-main",
-      label: "Detail Title",
+      label: t("projEditor.fieldDetailTitle"),
       maxLength: LIMITS.detailTitleMain,
       value: record ? record.detail_title_main : ""
     }),
     detailTitleHighlight: textField({
       id: "project-detail-title-highlight",
-      label: "Highlighted Title",
+      label: t("projEditor.fieldDetailHighlight"),
       maxLength: LIMITS.detailTitleHighlight,
       value: record ? record.detail_title_highlight : ""
     }),
     detailIntro: textareaField({
       id: "project-detail-intro",
-      label: "Introduction",
+      label: t("projEditor.fieldIntro"),
       value: record ? record.detail_intro : "",
       rows: 4,
-      help: "Plain text only. No HTML or formatting markup. Required before publishing."
+      help: t("projEditor.fieldIntroHelp")
     }),
     role: textField({
       id: "project-role",
-      label: "Role",
+      label: t("common.role"),
       maxLength: LIMITS.role,
       value: record ? record.role : "",
-      help: "Required before publishing."
+      help: t("projEditor.fieldRoleHelp")
     }),
     projectType: textField({
       id: "project-type",
-      label: "Project Type",
+      label: t("projEditor.fieldType"),
       maxLength: LIMITS.projectType,
       value: record ? record.project_type : "",
-      help: "Required before publishing."
+      help: t("projEditor.fieldRoleHelp")
     }),
     aboutHeading: textField({
       id: "project-about-heading",
-      label: "About Heading",
+      label: t("projEditor.fieldAbout"),
       maxLength: LIMITS.aboutHeading,
       value: record ? record.about_heading : "",
-      help: "Required before publishing."
+      help: t("projEditor.fieldRoleHelp")
     }),
     githubUrl: textField({
       id: "project-github-url",
-      label: "Repository URL",
+      label: t("projEditor.fieldRepo"),
       value: record ? record.github_url : "",
-      help: "Optional. Must start with https:// or http://"
+      help: t("projEditor.fieldUrlHelp")
     }),
     demoUrl: textField({
       id: "project-demo-url",
-      label: "Live Demo URL",
+      label: t("projEditor.fieldDemo"),
       value: record ? record.demo_url : "",
-      help: "Optional. Must start with https:// or http://"
+      help: t("projEditor.fieldUrlHelp")
     }),
     coverAlt: textField({
       id: "project-cover-alt",
-      label: "Cover Alt Text",
+      label: t("projEditor.fieldCoverAlt"),
       maxLength: LIMITS.coverAlt,
       value: record ? record.cover_alt : "",
-      help: "Describes the cover for screen readers. Leave blank if the image is decorative."
+      help: t("projEditor.fieldCoverAltHelp")
     })
   };
 
   /* ---------------- cover ---------------- */
 
   const coverField = createProjectMediaField({
-    title: "Cover Image",
-    emptyText: "No cover image configured.",
+    title: t("projEditor.cover"),
+    emptyText: t("projEditor.coverEmpty"),
     current:
       record && record.cover_desktop_path
         ? {
@@ -281,15 +304,24 @@ export function createProjectEditor({
     onChange: markDirty
   });
 
-  const coverSection = el("section", "admin-subsection");
-  append(coverSection, el("h3", "subsection-title", "Cover Image"));
+  /* One shape for every group, matching the Certificates and Experience
+     editors so all three forms read as the same product. */
+  function group(titleKey, helpKey) {
+    const node = el("section", "admin-subsection");
+
+    append(node, el("h3", "subsection-title", t(titleKey)));
+
+    if (helpKey) {
+      append(node, el("p", "form-help", t(helpKey)));
+    }
+
+    return node;
+  }
+
+  const coverSection = group("projEditor.media", "projEditor.mediaHelp");
   append(
     coverSection,
-    el(
-      "p",
-      "form-help",
-      "Shown on the public Portfolio card and at the top of the Project detail page."
-    ),
+    el("p", "form-help", t("projEditor.coverHelp")),
     coverField.element,
     fields.coverAlt.node
   );
@@ -303,32 +335,30 @@ export function createProjectEditor({
 
   // project_date is a real `date` column, so a native date input maps to it 1:1.
   const dateField = el("div", "form-field");
-  const dateLabel = el("label", "form-label", "Project Date");
+  const dateLabel = el("label", "form-label", t("projEditor.fieldDate"));
   const dateInput = el("input", "admin-input");
   dateInput.type = "date";
   dateInput.id = "project-date";
   dateLabel.htmlFor = dateInput.id;
   dateInput.value = record && record.project_date ? record.project_date : "";
-  const dateHelp = el("p", "form-help", "Stored as a date; the public page derives the year from it.");
+  const dateHelp = el("p", "form-help", t("projEditor.fieldDateHelp"));
   dateHelp.id = "project-date-help";
   dateInput.setAttribute("aria-describedby", dateHelp.id);
   append(dateField, dateLabel, dateInput, dateHelp);
 
   const featured = checkboxField({
     id: "project-featured",
-    label: "Featured Project",
+    label: t("projEditor.featured"),
     checked: record ? record.featured === true : false,
-    help: "Metadata only. It does not change the public card size, colour or layout in V1."
+    help: t("projEditor.featuredHelp")
   });
 
-  const cardSection = el("section", "admin-subsection");
-  append(cardSection, el("h3", "subsection-title", "Card Info"));
+  const cardSection = group("projEditor.basic", "projEditor.basicHelp");
   const cardGrid = el("div", "form-grid");
   append(cardGrid, fields.title.node, fields.slug.node, fields.cardCategory.node);
-  append(cardSection, cardGrid, fields.shortDescription.node);
+  append(cardSection, cardGrid, fields.shortDescription.node, featured.node);
 
-  const detailSection = el("section", "admin-subsection");
-  append(detailSection, el("h3", "subsection-title", "Detail Header"));
+  const detailSection = group("projEditor.details", "projEditor.detailsHelp");
   const detailGrid = el("div", "form-grid");
   append(
     detailGrid,
@@ -352,28 +382,30 @@ export function createProjectEditor({
     onChange: markDirty
   });
 
-  const linksSection = el("section", "admin-subsection");
-  append(linksSection, el("h3", "subsection-title", "Links"));
+  /* Repository and demo links belong to the detail page, so they close the
+     PROJECT DETAILS group rather than forming a section of their own. */
   const linksGrid = el("div", "form-grid");
   append(linksGrid, fields.githubUrl.node, fields.demoUrl.node);
-  append(linksSection, linksGrid);
+  append(detailSection, el("h4", "form-subheading", t("projEditor.links")), linksGrid);
 
-  const settingsSection = el("section", "admin-subsection");
-  append(settingsSection, el("h3", "subsection-title", "Settings"));
-  append(settingsSection, featured.node);
+  const settingsSection = group("projEditor.visibility", "projEditor.visibilityHelp");
 
   const settingsList = el("dl", "settings-list");
   append(settingsSection, settingsList);
 
+  /*
+    Basic -> details -> the body text that belongs to them -> media -> the
+    gallery that belongs to it -> technologies -> visibility. Each component
+    follows the group it extends.
+  */
   append(
     root,
     cardSection,
-    coverSection,
     detailSection,
     paragraphsEditor.element,
-    technologySelector.element,
+    coverSection,
     documentationManager.element,
-    linksSection,
+    technologySelector.element,
     settingsSection
   );
 
@@ -393,25 +425,32 @@ export function createProjectEditor({
       append(settingsList, wrap);
     }
 
-    row("Status", statusBadge(state.status));
+    row(t("common.status"), statusBadge(state.status));
     row(
-      "Order",
+      t("common.order"),
       el(
         "span",
         null,
         state.sortOrder === null || state.sortOrder === undefined
-          ? "Assigned on first save"
+          ? t("common.assignedOnFirstSave")
           : String(state.sortOrder)
       )
     );
-    row("Created", state.createdAt ? updatedAt(state.createdAt) : el("span", null, "—"));
     row(
-      "Last updated",
-      state.updatedAtValue ? updatedAt(state.updatedAtValue) : el("span", null, "—")
+      t("common.created"),
+      state.createdAt ? updatedAt(state.createdAt) : el("span", null, t("common.none"))
     );
     row(
-      "Published",
-      state.publishedAt ? updatedAt(state.publishedAt) : el("span", null, "Not published yet")
+      t("common.lastUpdated"),
+      state.updatedAtValue
+        ? updatedAt(state.updatedAtValue)
+        : el("span", null, t("common.none"))
+    );
+    row(
+      t("common.publishedOn"),
+      state.publishedAt
+        ? updatedAt(state.publishedAt)
+        : el("span", null, t("common.notPublishedYet"))
     );
   }
 
@@ -448,7 +487,7 @@ export function createProjectEditor({
       const note = el(
         "p",
         "form-help slug-lock-note",
-        "Locked: this project has been published, so its public link must stay stable."
+        t("projEditor.fieldSlugLocked")
       );
       append(fields.slug.node, note);
     }
@@ -526,25 +565,35 @@ export function createProjectEditor({
 
   function validate({ forPublish }) {
     const rules = {
-      title: { label: "Project Title", required: true, maxLength: LIMITS.title },
-      slug: { label: "Slug", required: true, maxLength: LIMITS.slug },
-      cardCategory: { label: "Category", maxLength: LIMITS.cardCategory },
+      title: {
+        label: t("projEditor.fieldTitle"),
+        required: true,
+        maxLength: LIMITS.title
+      },
+      slug: { label: t("projEditor.fieldSlug"), required: true, maxLength: LIMITS.slug },
+      cardCategory: {
+        label: t("projEditor.fieldCategory"),
+        maxLength: LIMITS.cardCategory
+      },
       shortDescription: {
-        label: "Short Description",
+        label: t("projEditor.fieldShort"),
         maxLength: LIMITS.shortDescription
       },
       detailTitleMain: {
-        label: "Detail Title",
+        label: t("projEditor.fieldDetailTitle"),
         maxLength: LIMITS.detailTitleMain
       },
       detailTitleHighlight: {
-        label: "Highlighted Title",
+        label: t("projEditor.fieldDetailHighlight"),
         maxLength: LIMITS.detailTitleHighlight
       },
-      role: { label: "Role", maxLength: LIMITS.role },
-      projectType: { label: "Project Type", maxLength: LIMITS.projectType },
-      aboutHeading: { label: "About Heading", maxLength: LIMITS.aboutHeading },
-      coverAlt: { label: "Cover Alt Text", maxLength: LIMITS.coverAlt }
+      role: { label: t("common.role"), maxLength: LIMITS.role },
+      projectType: { label: t("projEditor.fieldType"), maxLength: LIMITS.projectType },
+      aboutHeading: {
+        label: t("projEditor.fieldAbout"),
+        maxLength: LIMITS.aboutHeading
+      },
+      coverAlt: { label: t("projEditor.fieldCoverAlt"), maxLength: LIMITS.coverAlt }
     };
 
     if (forPublish) {
@@ -555,7 +604,7 @@ export function createProjectEditor({
       */
       rules.cardCategory.required = true;
       rules.shortDescription.required = true;
-      rules.detailIntro = { label: "Introduction", required: true };
+      rules.detailIntro = { label: t("projEditor.fieldIntro"), required: true };
       rules.role.required = true;
       rules.projectType.required = true;
       rules.aboutHeading.required = true;
@@ -568,17 +617,18 @@ export function createProjectEditor({
       const slug = trimmed(fields.slug.value).toLowerCase();
 
       if (!SLUG_PATTERN.test(slug)) {
-        fields.slug.setError(
-          "Use lowercase letters, numbers and single hyphens, for example: football-club."
-        );
+        fields.slug.setError(t("projEditor.fieldSlugFormat"));
         fields.slug.focus();
         ok = false;
       }
     }
 
     if (ok) {
-      const githubError = validateUrl(fields.githubUrl.value, "Repository URL");
-      const demoError = validateUrl(fields.demoUrl.value, "Live Demo URL");
+      const githubError = validateUrl(
+        fields.githubUrl.value,
+        t("projEditor.fieldRepo")
+      );
+      const demoError = validateUrl(fields.demoUrl.value, t("projEditor.fieldDemo"));
 
       fields.githubUrl.setError(githubError);
       fields.demoUrl.setError(demoError);
@@ -593,13 +643,13 @@ export function createProjectEditor({
     }
 
     if (ok && forPublish && !dateInput.value) {
-      toast("Add a project date before publishing.", "error");
+      toast(t("projEditor.errNeedDate"), "error");
       dateInput.focus();
       ok = false;
     }
 
     if (ok && forPublish && paragraphsEditor.count() === 0) {
-      toast("Add at least one About paragraph before publishing.", "error");
+      toast(t("projEditor.errNeedParagraph"), "error");
       ok = false;
     }
 
@@ -609,12 +659,12 @@ export function createProjectEditor({
       column is nullable and a decorative cover legitimately has empty alt.
     */
     if (ok && forPublish && !coverField.hasPending() && !coverField.getStored()) {
-      toast("Add a cover image before publishing this project.", "error");
+      toast(t("projEditor.errNeedCover"), "error");
       ok = false;
     }
 
     if (!ok) {
-      toast("Please correct the highlighted fields.", "error");
+      toast(t("projEditor.errFields"), "error");
     }
 
     return ok;
@@ -659,18 +709,19 @@ export function createProjectEditor({
     back.disabled = next;
     publishButton.disabled = next || state.status === "published";
 
-    saveButton.textContent = label || (state.id ? "Save Changes" : "Save Draft");
+    saveButton.textContent =
+      label || t(state.id ? "common.saveChanges" : "common.saveDraft");
   }
 
   function syncPublishButton() {
     if (state.status === "published") {
-      publishButton.textContent = "Published";
+      publishButton.textContent = t("status.published");
       publishButton.disabled = true;
-      publishButton.title = "This project is already published.";
+      publishButton.title = t("projEditor.alreadyPublished");
       return;
     }
 
-    publishButton.textContent = "Publish";
+    publishButton.textContent = t("common.publish");
     publishButton.disabled = false;
     publishButton.removeAttribute("title");
   }
@@ -1229,7 +1280,7 @@ export function createProjectEditor({
       return false;
     }
 
-    setBusy(true, forPublish ? "Publishing..." : "Saving...");
+    setBusy(true, t(forPublish ? "common.publishing" : "common.saving"));
 
     const payload = currentValues();
 
@@ -1290,7 +1341,7 @@ export function createProjectEditor({
       console.error(error);
       setBusy(false);
       toast(
-        "Project saved, but its paragraphs could not be updated. Please retry.",
+        t("projEditor.errParagraphs"),
         "error"
       );
       resetBaselineFormOnly();
@@ -1303,7 +1354,7 @@ export function createProjectEditor({
       console.error(error);
       setBusy(false);
       toast(
-        "Project saved, but its technologies could not be updated. Please retry.",
+        t("projEditor.errTechnologies"),
         "error"
       );
       resetBaselineFormOnly();
@@ -1313,7 +1364,7 @@ export function createProjectEditor({
     let mediaWarnings = [];
 
     try {
-      setBusy(true, "Uploading...");
+      setBusy(true, t("common.uploading"));
       mediaWarnings = await persistMedia(state.id);
     } catch (error) {
       console.error(error);
@@ -1321,7 +1372,7 @@ export function createProjectEditor({
       toast(
         error && error.name === "MediaStorageError"
           ? error.message
-          : "Project saved, but its images could not be updated. Any previous image is unchanged.",
+          : t("projEditor.errMedia"),
         "error"
       );
       resetBaselineFormOnly();
@@ -1329,13 +1380,16 @@ export function createProjectEditor({
     }
 
     setBusy(false);
-    heading.textContent = trimmed(fields.title.value) || "Untitled project";
+    heading.textContent = trimmed(fields.title.value) || t("proj.untitled");
     refreshStatusUi();
     resetBaseline();
 
     if (mediaWarnings.length > 0) {
       // The database is correct; only leftover files remain.
-      toast(`Saved. Cleanup warning: ${mediaWarnings.join("; ")}.`, "error");
+      toast(
+        t("projEditor.savedWarn", { warnings: mediaWarnings.join("; ") }),
+        "error"
+      );
     } else if (!forPublish) {
       toast(firstSaveMessage());
     }
@@ -1370,10 +1424,10 @@ export function createProjectEditor({
   function firstSaveMessage() {
     if (!firstSaveDone) {
       firstSaveDone = true;
-      return "Draft saved.";
+      return t("projEditor.draftSaved");
     }
 
-    return "Changes saved successfully.";
+    return t("projEditor.saved");
   }
 
   async function publish() {
@@ -1387,7 +1441,7 @@ export function createProjectEditor({
       return;
     }
 
-    setBusy(true, "Publishing...");
+    setBusy(true, t("common.publishing"));
 
     /*
       Media first: the Project must never become public while any of its images
@@ -1404,7 +1458,7 @@ export function createProjectEditor({
       toast(
         error && error.name === "MediaStorageError"
           ? error.message
-          : "Could not publish the project images. The project is still a draft and its images are unchanged.",
+          : t("projEditor.errPublishMedia"),
         "error"
       );
       return;
@@ -1431,7 +1485,7 @@ export function createProjectEditor({
         console.error(error);
       }
 
-      toast("Could not publish this project. It is still saved as a draft.", "error");
+      toast(t("projEditor.errPublish"), "error");
       return;
     }
 
@@ -1444,8 +1498,8 @@ export function createProjectEditor({
 
     toast(
       promotionWarnings.length > 0
-        ? `Project published. Cleanup warning: ${promotionWarnings.join("; ")}.`
-        : "Project published.",
+        ? t("projEditor.publishedWarn", { warnings: promotionWarnings.join("; ") })
+        : t("projEditor.published"),
       promotionWarnings.length > 0 ? "error" : "success"
     );
 
@@ -1459,7 +1513,9 @@ export function createProjectEditor({
     append(statusSlot, statusBadge(state.status));
     syncPublishButton();
     renderSettings();
-    saveButton.textContent = state.id ? "Save Changes" : "Save Draft";
+    saveButton.textContent = t(
+      state.id ? "common.saveChanges" : "common.saveDraft"
+    );
   }
 
   function friendlyError(error) {
@@ -1467,22 +1523,22 @@ export function createProjectEditor({
       error.details}`.toLowerCase();
 
     if (haystack.includes("projects_slug_key") || haystack.includes("duplicate key")) {
-      return "Another project already uses this slug. Choose a different one.";
+      return t("projEditor.errSlugTaken");
     }
 
     if (haystack.includes("projects_slug_check")) {
-      return "Slug format is not valid. Use lowercase letters, numbers and hyphens.";
+      return t("projEditor.errSlugFormat");
     }
 
     if (haystack.includes("projects_status_check")) {
-      return "That status is not allowed.";
+      return t("list.statusNotAllowed");
     }
 
     if (haystack.includes("row-level security") || haystack.includes("42501")) {
-      return "Your session is not authorized for this change. Sign in again and retry.";
+      return t("list.sessionError");
     }
 
-    return "Could not save this project. Your changes are still here.";
+    return t("projEditor.errSave");
   }
 
   saveButton.addEventListener("click", () => save());

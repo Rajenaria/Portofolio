@@ -1,7 +1,21 @@
 import { supabaseClient } from "./supabase.js";
 import { OWNER_USER_ID } from "./config.js";
+import {
+  setPersistenceMode,
+  clearStoredSession,
+  PERSIST_LOCAL,
+  PERSIST_SESSION
+} from "./auth-storage.js";
 
-export async function signIn(email, password) {
+/*
+  `remember` only decides where the session is kept afterwards. It is
+  applied BEFORE the request so the first token write already lands in the
+  chosen store, and it grants no privilege of its own: MFA and the
+  owner+aal2 policies are unchanged either way.
+*/
+export async function signIn(email, password, remember) {
+  setPersistenceMode(remember ? PERSIST_LOCAL : PERSIST_SESSION);
+
   return await supabaseClient.auth.signInWithPassword({
     email,
     password
@@ -9,7 +23,13 @@ export async function signIn(email, password) {
 }
 
 export async function signOut() {
-  return await supabaseClient.auth.signOut();
+  const result = await supabaseClient.auth.signOut();
+
+  /* Belt and braces: clear both stores so a "remember me" copy can never
+     outlive a deliberate sign out. */
+  clearStoredSession();
+
+  return result;
 }
 
 export async function getVerifiedUser() {

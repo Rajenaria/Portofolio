@@ -16,6 +16,7 @@
 */
 
 import { el, append } from "./dom.js";
+import { t } from "./i18n.js";
 
 function fieldShell({ id, label, required, help }) {
   const node = el("div", "form-field");
@@ -215,11 +216,15 @@ export function validateText(value, { label, required, maxLength }) {
   const text = String(value === null || value === undefined ? "" : value).trim();
 
   if (required && text === "") {
-    return `${label} is required.`;
+    return t("validate.required", { label });
   }
 
   if (maxLength && text.length > maxLength) {
-    return `${label} must be ${maxLength} characters or fewer (currently ${text.length}).`;
+    return t("validate.tooLong", {
+      label,
+      max: maxLength,
+      length: text.length
+    });
   }
 
   return "";

@@ -18,6 +18,9 @@
   "Show on public site" and "Hide from public site" — while still writing the
   same status column every other module uses. Hiding never deletes anything.
 
+  All visible strings come from core/i18n.js; nothing in this file decides
+  wording per language.
+
   THE MINIMUM-PUBLISHED RULE
   --------------------------
   The public carousel needs at least three cards. The database enforces that
@@ -47,6 +50,7 @@ import {
 import { confirmDialog, openModal } from "../../core/modal.js";
 import { toast } from "../../core/toast.js";
 import { textField, trimmed } from "../../core/form.js";
+import { t } from "../../core/i18n.js";
 
 import {
   buildCategoryIcon,
@@ -61,8 +65,15 @@ const SELECT_COLUMNS =
 
 const MINIMUM_PUBLISHED = 3;
 
-const MINIMUM_HINT =
-  "At least 3 certificates must remain visible on the public site.";
+/* Resolved at call time, never cached: the language can change while the list
+   is on screen and the hint has to follow it. */
+function minimumHint() {
+  return t("certificates.minimumHint", { min: MINIMUM_PUBLISHED });
+}
+
+function rowTitle(row) {
+  return row.title || t("certificates.thisOne");
+}
 
 export function createCertificateList({ onEdit, onChanged }) {
   const root = el("div", "certificate-list-view");
@@ -109,11 +120,11 @@ export function createCertificateList({ onEdit, onChanged }) {
   const toolbar = el("div", "admin-toolbar");
 
   const searchField = el("div", "toolbar-field toolbar-field-search");
-  const searchLabel = el("label", "toolbar-label", "Search");
+  const searchLabel = el("label", "toolbar-label", t("common.search"));
   const searchInput = el("input", "admin-input");
   searchInput.type = "search";
   searchInput.id = "certificate-search";
-  searchInput.placeholder = "Search certificates...";
+  searchInput.placeholder = t("certificates.searchPlaceholder");
   searchInput.autocomplete = "off";
   searchLabel.htmlFor = searchInput.id;
 
@@ -126,17 +137,17 @@ export function createCertificateList({ onEdit, onChanged }) {
   append(searchField, searchLabel, searchInput);
 
   const statusField = el("div", "toolbar-field");
-  const statusLabel = el("label", "toolbar-label", "Status");
+  const statusLabel = el("label", "toolbar-label", t("common.status"));
   const statusSelect = el("select", "admin-select");
   statusSelect.id = "certificate-status-filter";
   statusLabel.htmlFor = statusSelect.id;
 
   [
-    { value: "all", label: "All" },
-    { value: "draft", label: "Draft" },
-    { value: "published", label: "Published" },
-    { value: "archived", label: "Archived" },
-    { value: "trash", label: "Trash" }
+    { value: "all", label: t("common.all") },
+    { value: "draft", label: t("status.draft") },
+    { value: "published", label: t("status.published") },
+    { value: "archived", label: t("status.archived") },
+    { value: "trash", label: t("certificates.trash") }
   ].forEach(option => {
     const node = el("option", null, option.label);
     node.value = option.value;
@@ -152,17 +163,17 @@ export function createCertificateList({ onEdit, onChanged }) {
   append(statusField, statusLabel, statusSelect);
 
   const categoryField = el("div", "toolbar-field");
-  const categoryLabelNode = el("label", "toolbar-label", "Category");
+  const categoryLabelNode = el("label", "toolbar-label", t("common.category"));
   const categorySelect = el("select", "admin-select");
   categorySelect.id = "certificate-category-filter";
   categoryLabelNode.htmlFor = categorySelect.id;
 
-  const allOption = el("option", null, "All");
+  const allOption = el("option", null, t("common.all"));
   allOption.value = "all";
   append(categorySelect, allOption);
 
   CERTIFICATE_CATEGORIES.forEach(entry => {
-    const node = el("option", null, entry.label);
+    const node = el("option", null, categoryLabel(entry.key));
     node.value = entry.key;
     append(categorySelect, node);
   });
@@ -285,20 +296,31 @@ export function createCertificateList({ onEdit, onChanged }) {
 
     const count = publishedCount();
     const latched = minimumIsLatched();
+    const atMinimum = latched && count === MINIMUM_PUBLISHED;
 
     const panel = el(
       "div",
-      latched && count === MINIMUM_PUBLISHED
+      atMinimum
         ? "admin-alert admin-alert-warning cert-minimum"
         : "admin-alert cert-minimum"
     );
 
+    /*
+      The headline states the situation and the rule in one breath, because
+      "3 of 3" on its own does not tell the owner what happens next.
+    */
     append(
       panel,
+      el("p", "cert-minimum-count", String(count)),
       el(
         "p",
         "admin-alert-title",
-        `Published certificates: ${count} · minimum for the public carousel: ${MINIMUM_PUBLISHED}`
+        t(
+          count === 1
+            ? "certificates.visibleCountOne"
+            : "certificates.visibleCount",
+          { count, min: MINIMUM_PUBLISHED }
+        )
       )
     );
 
@@ -308,25 +330,18 @@ export function createCertificateList({ onEdit, onChanged }) {
         el(
           "p",
           "admin-alert-text",
-          `Certificate CMS setup — publish at least ${MINIMUM_PUBLISHED} certificates before the public carousel can use CMS data. Until then you can freely publish and unpublish.`
+          t("certificates.setupHint", { min: MINIMUM_PUBLISHED })
         )
       );
-    } else if (count === MINIMUM_PUBLISHED) {
-      append(
-        panel,
-        el(
-          "p",
-          "admin-alert-text",
-          `You are at the minimum. Hide, Archive and Trash are unavailable for published certificates until you publish another one. ${MINIMUM_HINT}`
-        )
-      );
+    } else if (atMinimum) {
+      append(panel, el("p", "admin-alert-text", t("certificates.atMinimum")));
     } else {
       append(
         panel,
         el(
           "p",
           "admin-alert-text",
-          `You can take ${count - MINIMUM_PUBLISHED} more off the public site before reaching the minimum.`
+          t("certificates.headroom", { count: count - MINIMUM_PUBLISHED })
         )
       );
     }
@@ -342,7 +357,7 @@ export function createCertificateList({ onEdit, onChanged }) {
     clear(listSlot);
 
     if (state.status === "loading") {
-      append(listSlot, el("p", "loading-text", "Loading certificates..."));
+      append(listSlot, el("p", "loading-text", t("certificates.loading")));
       return;
     }
 
@@ -357,9 +372,8 @@ export function createCertificateList({ onEdit, onChanged }) {
       append(
         listSlot,
         emptyState({
-          title: "Trash is empty.",
-          description:
-            "Certificates you move to Trash appear here and can be restored."
+          title: t("certificates.emptyTrashTitle"),
+          description: t("certificates.emptyTrashHelp")
         })
       );
       return;
@@ -369,9 +383,8 @@ export function createCertificateList({ onEdit, onChanged }) {
       append(
         listSlot,
         emptyState({
-          title: "No certificates yet.",
-          description:
-            "Add your first certificate to start building the public carousel."
+          title: t("certificates.emptyTitle"),
+          description: t("certificates.emptyHelp")
         })
       );
       return;
@@ -381,8 +394,8 @@ export function createCertificateList({ onEdit, onChanged }) {
       append(
         listSlot,
         emptyState({
-          title: "No certificates match your filters.",
-          description: "Try another search term, status or category."
+          title: t("certificates.emptyFilterTitle"),
+          description: t("certificates.emptyFilterHelp")
         })
       );
       return;
@@ -396,19 +409,18 @@ export function createCertificateList({ onEdit, onChanged }) {
         "p",
         "table-summary",
         isTrashView()
-          ? `${rows.length} in Trash`
-          : `${rows.length} of ${activeRows().length} certificates`
+          ? t("certificates.summaryTrash", { count: rows.length })
+          : t("certificates.summary", {
+              shown: rows.length,
+              total: activeRows().length
+            })
       )
     );
 
     if (!isTrashView() && filtersActive()) {
       append(
         listSlot,
-        el(
-          "p",
-          "table-note",
-          "Move Up and Move Down are available when no search or filter is active, because ordering applies to the whole list."
-        )
+        el("p", "table-note", t("certificates.reorderNote"))
       );
     }
   }
@@ -419,11 +431,15 @@ export function createCertificateList({ onEdit, onChanged }) {
 
     append(
       panel,
-      el("p", "admin-alert-title", "Could not load certificates."),
-      el("p", "admin-alert-text", "Check your connection and try again.")
+      el("p", "admin-alert-title", t("certificates.loadError")),
+      el("p", "admin-alert-text", t("certificates.loadErrorHelp"))
     );
 
-    const retry = el("button", "admin-button admin-button-secondary", "Try Again");
+    const retry = el(
+      "button",
+      "admin-button admin-button-secondary",
+      t("common.tryAgain")
+    );
     retry.type = "button";
     retry.addEventListener("click", load);
     append(panel, retry);
@@ -438,9 +454,12 @@ export function createCertificateList({ onEdit, onChanged }) {
     const thead = el("thead");
     const headRow = el("tr");
 
-    const columns = isTrashView()
-      ? ["Certificate", "Category", "Status", "Deleted"]
-      : ["Certificate", "Category", "Status", "Updated"];
+    const columns = [
+      t("certificates.colCertificate"),
+      t("common.category"),
+      t("common.status"),
+      isTrashView() ? t("common.deleted") : t("common.updated")
+    ];
 
     columns.forEach(label => {
       const cellNode = el("th", null, label);
@@ -450,7 +469,7 @@ export function createCertificateList({ onEdit, onChanged }) {
 
     const actionsHead = el("th");
     actionsHead.scope = "col";
-    append(actionsHead, el("span", "visually-hidden", "Actions"));
+    append(actionsHead, el("span", "visually-hidden", t("common.actions")));
     append(headRow, actionsHead);
 
     append(thead, headRow);
@@ -478,8 +497,12 @@ export function createCertificateList({ onEdit, onChanged }) {
       item.classList.add("is-muted-row");
     }
 
-    const titleCell = cell("Certificate");
-    append(titleCell, el("span", "row-title", row.title || "Untitled certificate"));
+    const titleCell = cell(t("certificates.colCertificate"));
+    titleCell.classList.add("cell-primary");
+    append(
+      titleCell,
+      el("span", "row-title", row.title || t("certificates.untitled"))
+    );
 
     const subtitleParts = [row.publisher, row.period].filter(Boolean);
 
@@ -487,7 +510,7 @@ export function createCertificateList({ onEdit, onChanged }) {
       append(titleCell, el("span", "row-subtle", subtitleParts.join(" · ")));
     }
 
-    const categoryCell = cell("Category");
+    const categoryCell = cell(t("common.category"));
     const categoryWrap = el("div", "cert-category-cell");
     append(
       categoryWrap,
@@ -496,13 +519,16 @@ export function createCertificateList({ onEdit, onChanged }) {
     );
     append(categoryCell, categoryWrap);
 
-    const statusCell = cell("Status");
+    const statusCell = cell(t("common.status"));
     append(statusCell, statusBadge(row.status));
 
-    const timeCell = cell(isTrashView() ? "Deleted" : "Updated");
+    const timeCell = cell(isTrashView() ? t("common.deleted") : t("common.updated"));
     append(timeCell, updatedAt(isTrashView() ? row.deleted_at : row.updated_at));
 
-    const actionsCell = el("td", "row-actions-cell");
+    /* cell-actions is the shared class the other three lists use: it sets the
+       column width here and pins the menu top-right once the table collapses
+       into cards below 900px. */
+    const actionsCell = el("td", "cell-actions");
     append(actionsCell, buildActionsMenu(row));
 
     append(item, titleCell, categoryCell, statusCell, timeCell, actionsCell);
@@ -517,7 +543,10 @@ export function createCertificateList({ onEdit, onChanged }) {
     trigger.type = "button";
     trigger.setAttribute("aria-haspopup", "true");
     trigger.setAttribute("aria-expanded", "false");
-    trigger.setAttribute("aria-label", `Actions for ${row.title || "certificate"}`);
+    trigger.setAttribute(
+      "aria-label",
+      t("certificates.actionsFor", { title: rowTitle(row) })
+    );
 
     trigger.addEventListener("click", () => {
       const isOpen = wrap.classList.contains("is-open");
@@ -615,57 +644,60 @@ export function createCertificateList({ onEdit, onChanged }) {
     const documentHref = documentUrl(row.document_bucket, row.document_path);
 
     const entries = [
-      { label: "Edit", onSelect: () => onEdit(row.id) },
-      { label: "Preview", onSelect: () => previewRow(row) },
+      { label: t("common.edit"), onSelect: () => onEdit(row.id) },
+      { label: t("common.preview"), onSelect: () => previewRow(row) },
       {
-        label: "View Certificate",
+        label: t("certificates.viewDocument"),
         disabled: !documentHref,
-        hint: documentHref ? null : "No document uploaded yet.",
+        hint: documentHref ? null : t("certificates.noDocument"),
         /* New tab, never an iframe: the site CSP sets frame-src 'none' and
            object-src 'none', and an embedded viewer would mean relaxing both. */
         onSelect: () => window.open(documentHref, "_blank", "noopener,noreferrer")
       },
       {
-        label: "Move Up",
+        label: t("action.moveUp"),
         disabled: !canReorder || orderedIndex <= 0,
-        hint: canReorder ? null : "Clear search and filters to reorder.",
+        hint: canReorder ? null : t("certificates.reorderHint"),
         onSelect: () => move(orderedIndex, -1)
       },
       {
-        label: "Move Down",
+        label: t("action.moveDown"),
         disabled: !canReorder || orderedIndex === -1 || orderedIndex >= ordered.length - 1,
-        hint: canReorder ? null : "Clear search and filters to reorder.",
+        hint: canReorder ? null : t("certificates.reorderHint"),
         onSelect: () => move(orderedIndex, 1)
       }
     ];
 
     if (row.status === "published") {
       entries.push({
-        label: "Hide from public site",
+        label: t("action.hide"),
         disabled: blocked,
-        hint: blocked ? MINIMUM_HINT : null,
+        hint: blocked ? minimumHint() : null,
         onSelect: () => hide(row)
       });
     } else if (row.status === "draft") {
-      entries.push({ label: "Show on public site", onSelect: () => show(row) });
+      entries.push({ label: t("action.show"), onSelect: () => show(row) });
     }
 
     if (row.status === "archived") {
-      entries.push({ label: "Restore to Draft", onSelect: () => restoreToDraft(row) });
+      entries.push({
+        label: t("action.restoreDraft"),
+        onSelect: () => restoreToDraft(row)
+      });
     } else {
       entries.push({
-        label: "Archive",
+        label: t("action.archive"),
         disabled: blocked,
-        hint: blocked ? MINIMUM_HINT : null,
+        hint: blocked ? minimumHint() : null,
         onSelect: () => archive(row)
       });
     }
 
     entries.push({
-      label: "Move to Trash",
+      label: t("action.moveToTrash"),
       danger: true,
       disabled: blocked,
-      hint: blocked ? MINIMUM_HINT : null,
+      hint: blocked ? minimumHint() : null,
       onSelect: () => moveToTrash(row)
     });
 
@@ -674,10 +706,10 @@ export function createCertificateList({ onEdit, onChanged }) {
 
   function trashEntries(row) {
     return [
-      { label: "Preview", onSelect: () => previewRow(row) },
-      { label: "Restore", onSelect: () => restoreFromTrash(row) },
+      { label: t("common.preview"), onSelect: () => previewRow(row) },
+      { label: t("action.restore"), onSelect: () => restoreFromTrash(row) },
       {
-        label: "Delete Permanently",
+        label: t("action.deletePermanently"),
         danger: true,
         onSelect: () => permanentlyDelete(row)
       }
@@ -712,7 +744,7 @@ export function createCertificateList({ onEdit, onChanged }) {
   */
   function failureMessage(error, fallback) {
     if (error && error.code === "23514" && /at least 3/i.test(error.message || "")) {
-      return MINIMUM_HINT;
+      return minimumHint();
     }
 
     return fallback;
@@ -760,19 +792,16 @@ export function createCertificateList({ onEdit, onChanged }) {
     await applyPatch(
       row,
       patch,
-      "Certificate is now visible on the public site.",
-      "Could not show this certificate."
+      t("certificates.toastShown"),
+      t("certificates.errShow")
     );
   }
 
   async function hide(row) {
     const confirmed = await confirmDialog({
-      title: `Hide "${row.title || "this certificate"}"?`,
-      lines: [
-        "This certificate returns to Draft and will no longer appear on the public site.",
-        "Nothing is deleted — its content and position are kept, and you can show it again at any time."
-      ],
-      confirmLabel: "Hide from public site",
+      title: t("certificates.hideTitle", { title: rowTitle(row) }),
+      lines: [t("certificates.hideLine1"), t("certificates.hideLine2")],
+      confirmLabel: t("action.hide"),
       variant: "danger"
     });
 
@@ -783,19 +812,16 @@ export function createCertificateList({ onEdit, onChanged }) {
     await applyPatch(
       row,
       { status: "draft", archived_at: null },
-      "Certificate hidden from the public site.",
-      "Could not hide this certificate."
+      t("certificates.toastHidden"),
+      t("certificates.errHide")
     );
   }
 
   async function archive(row) {
     const confirmed = await confirmDialog({
-      title: `Archive "${row.title || "this certificate"}"?`,
-      lines: [
-        "Archived certificates do not appear on the public site.",
-        "The record is kept and can be restored to Draft later."
-      ],
-      confirmLabel: "Archive",
+      title: t("certificates.archiveTitle", { title: rowTitle(row) }),
+      lines: [t("certificates.archiveLine1"), t("certificates.archiveLine2")],
+      confirmLabel: t("action.archive"),
       variant: "danger"
     });
 
@@ -806,8 +832,8 @@ export function createCertificateList({ onEdit, onChanged }) {
     await applyPatch(
       row,
       { status: "archived", archived_at: new Date().toISOString() },
-      "Certificate archived.",
-      "Could not archive this certificate."
+      t("certificates.toastArchived"),
+      t("certificates.errArchive")
     );
   }
 
@@ -815,19 +841,16 @@ export function createCertificateList({ onEdit, onChanged }) {
     await applyPatch(
       row,
       { status: "draft", archived_at: null },
-      "Certificate restored to draft.",
-      "Could not restore this certificate."
+      t("certificates.toastRestoredDraft"),
+      t("certificates.errRestore")
     );
   }
 
   async function moveToTrash(row) {
     const confirmed = await confirmDialog({
-      title: `Move "${row.title || "this certificate"}" to Trash?`,
-      lines: [
-        "The certificate is removed from the public site and from the main list.",
-        "You can restore it from Trash, or delete it permanently from there."
-      ],
-      confirmLabel: "Move to Trash",
+      title: t("certificates.trashTitle", { title: rowTitle(row) }),
+      lines: [t("certificates.trashLine1"), t("certificates.trashLine2")],
+      confirmLabel: t("action.moveToTrash"),
       variant: "danger"
     });
 
@@ -838,8 +861,8 @@ export function createCertificateList({ onEdit, onChanged }) {
     await applyPatch(
       row,
       { deleted_at: new Date().toISOString() },
-      "Certificate moved to Trash.",
-      "Could not move this certificate to Trash."
+      t("certificates.toastTrashed"),
+      t("certificates.errTrash")
     );
   }
 
@@ -848,8 +871,8 @@ export function createCertificateList({ onEdit, onChanged }) {
     await applyPatch(
       row,
       { deleted_at: null, status: "draft", archived_at: null },
-      "Certificate restored as a draft.",
-      "Could not restore this certificate."
+      t("certificates.toastRestored"),
+      t("certificates.errRestore")
     );
   }
 
@@ -875,10 +898,7 @@ export function createCertificateList({ onEdit, onChanged }) {
         console.error(error);
       }
 
-      toast(
-        failureMessage(error, "Could not delete this certificate."),
-        "error"
-      );
+      toast(failureMessage(error, t("certificates.errDelete")), "error");
       await load();
       return;
     }
@@ -895,16 +915,13 @@ export function createCertificateList({ onEdit, onChanged }) {
       const removed = await removeDocument(row.document_bucket, row.document_path);
 
       if (removed.failed.length > 0) {
-        toast(
-          "Certificate deleted. Its document file could not be removed and may need manual cleanup.",
-          "error"
-        );
+        toast(t("certificates.docCleanupWarning"), "error");
         await load();
         return;
       }
     }
 
-    toast("Certificate deleted permanently.");
+    toast(t("certificates.toastDeleted"));
     await load();
   }
 
@@ -916,17 +933,13 @@ export function createCertificateList({ onEdit, onChanged }) {
 
       append(
         body,
-        el("p", "confirm-line", row.title || "This certificate"),
-        el(
-          "p",
-          "confirm-line",
-          "This permanently removes the certificate. This action cannot be undone."
-        )
+        el("p", "confirm-line", rowTitle(row)),
+        el("p", "confirm-line", t("certificates.deleteLine"))
       );
 
       const field = textField({
         id: "certificate-delete-confirm",
-        label: "Type DELETE to confirm",
+        label: t("certificates.deleteConfirmLabel"),
         value: "",
         maxLength: 10
       });
@@ -934,12 +947,12 @@ export function createCertificateList({ onEdit, onChanged }) {
       append(body, field.node);
 
       openModal({
-        title: "Delete permanently?",
+        title: t("certificates.deleteTitle"),
         body,
         size: "small",
         actions: [
           {
-            label: "Cancel",
+            label: t("common.cancel"),
             variant: "secondary",
             onClick: ctl => {
               settle(false);
@@ -947,11 +960,11 @@ export function createCertificateList({ onEdit, onChanged }) {
             }
           },
           {
-            label: "Delete Permanently",
+            label: t("action.deletePermanently"),
             variant: "danger",
             onClick: ctl => {
               if (trimmed(field.value) !== "DELETE") {
-                field.setError("Type DELETE exactly to confirm.");
+                field.setError(t("certificates.deleteConfirmError"));
                 field.focus();
                 return;
               }
@@ -1023,14 +1036,14 @@ export function createCertificateList({ onEdit, onChanged }) {
         }
 
         setBusy(false);
-        toast("Could not change the order. Please try again.", "error");
+        toast(t("certificates.errOrder"), "error");
         await load();
         return;
       }
     }
 
     setBusy(false);
-    toast("Order updated.");
+    toast(t("certificates.toastOrder"));
     await load();
   }
 

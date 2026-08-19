@@ -19,6 +19,7 @@
 import { el, append, clear } from "../../core/dom.js";
 import { openModal, confirmDialog } from "../../core/modal.js";
 import { textareaField, trimmed } from "../../core/form.js";
+import { t } from "../../core/i18n.js";
 
 let localIdCounter = 0;
 
@@ -26,9 +27,13 @@ export function createParagraphsEditor({ initialParagraphs = [], onChange }) {
   const root = el("section", "admin-subsection");
 
   const header = el("div", "subsection-header");
-  append(header, el("h3", "subsection-title", "About The Project"));
+  append(header, el("h3", "subsection-title", t("projPara.title")));
 
-  const addButton = el("button", "admin-button admin-button-secondary", "+ Add Paragraph");
+  const addButton = el(
+    "button",
+    "admin-button admin-button-secondary",
+    t("projPara.add")
+  );
   addButton.type = "button";
   addButton.addEventListener("click", () => openEditor(null));
   append(header, addButton);
@@ -38,11 +43,7 @@ export function createParagraphsEditor({ initialParagraphs = [], onChange }) {
   append(
     root,
     header,
-    el(
-      "p",
-      "form-help",
-      "Ordered plain-text paragraphs rendered by the future public Project detail page. The number of paragraphs is not limited."
-    ),
+    el("p", "form-help", t("projPara.help")),
     listSlot
   );
 
@@ -65,11 +66,7 @@ export function createParagraphsEditor({ initialParagraphs = [], onChange }) {
     if (paragraphs.length === 0) {
       append(
         listSlot,
-        el(
-          "p",
-          "form-help",
-          "No paragraphs yet. At least one paragraph is required before publishing."
-        )
+        el("p", "form-help", t("projPara.empty"))
       );
       return;
     }
@@ -88,11 +85,16 @@ export function createParagraphsEditor({ initialParagraphs = [], onChange }) {
 
       const actions = el("div", "ordered-actions");
 
-      const up = actionButton("Move up", `Move paragraph ${position} up`, () =>
-        move(index, -1)
+      const up = actionButton(
+        t("action.moveUp"),
+        t("projPara.moveUpOf", { position }),
+        () => move(index, -1)
       );
-      const down = actionButton("Move down", `Move paragraph ${position} down`, () =>
-        move(index, 1)
+
+      const down = actionButton(
+        t("action.moveDown"),
+        t("projPara.moveDownOf", { position }),
+        () => move(index, 1)
       );
 
       if (index === 0) {
@@ -107,11 +109,15 @@ export function createParagraphsEditor({ initialParagraphs = [], onChange }) {
         actions,
         up,
         down,
-        actionButton("Edit", `Edit paragraph ${position}`, () => openEditor(paragraph))
+        actionButton(t("common.edit"), t("projPara.editOf", { position }), () =>
+          openEditor(paragraph)
+        )
       );
 
-      const remove = actionButton("Remove", `Remove paragraph ${position}`, () =>
-        removeParagraph(paragraph, position)
+      const remove = actionButton(
+        t("common.remove"),
+        t("projPara.removeOf", { position }),
+        () => removeParagraph(paragraph, position)
       );
       remove.classList.add("is-danger");
       append(actions, remove);
@@ -155,9 +161,9 @@ export function createParagraphsEditor({ initialParagraphs = [], onChange }) {
 
   async function removeParagraph(paragraph, position) {
     const confirmed = await confirmDialog({
-      title: `Remove paragraph ${position}?`,
-      lines: ["The paragraph is removed from this project when you save."],
-      confirmLabel: "Remove",
+      title: t("projPara.removeTitle", { position }),
+      lines: [t("projPara.removeLine")],
+      confirmLabel: t("common.remove"),
       variant: "danger"
     });
 
@@ -181,11 +187,11 @@ export function createParagraphsEditor({ initialParagraphs = [], onChange }) {
 
     const content = textareaField({
       id: "project-paragraph-content",
-      label: "Paragraph",
+      label: t("projPara.field"),
       required: true,
       value: existing ? existing.content : "",
       rows: 7,
-      help: "Plain text only. No HTML or formatting markup."
+      help: t("projPara.fieldHelp")
     });
 
     append(form, content.node);
@@ -193,16 +199,16 @@ export function createParagraphsEditor({ initialParagraphs = [], onChange }) {
     const initialValue = content.value;
 
     const controller = openModal({
-      title: isNew ? "Add Paragraph" : "Edit Paragraph",
+      title: t(isNew ? "projPara.addTitle" : "projPara.editTitle"),
       body: form,
       actions: [
         {
-          label: "Cancel",
+          label: t("common.cancel"),
           variant: "secondary",
           onClick: ctl => ctl.requestClose("cancel")
         },
         {
-          label: isNew ? "Add Paragraph" : "Save Paragraph",
+          label: t(isNew ? "projPara.addTitle" : "projPara.save"),
           variant: "primary",
           onClick: () => apply()
         }
@@ -213,10 +219,10 @@ export function createParagraphsEditor({ initialParagraphs = [], onChange }) {
         }
 
         return await confirmDialog({
-          title: "Discard changes?",
-          lines: ["You have unsaved changes in this form."],
-          confirmLabel: "Discard",
-          cancelLabel: "Keep Editing",
+          title: t("discard.title"),
+          lines: [t("discard.line")],
+          confirmLabel: t("discard.confirm"),
+          cancelLabel: t("discard.cancel"),
           variant: "danger"
         });
       }
@@ -233,7 +239,7 @@ export function createParagraphsEditor({ initialParagraphs = [], onChange }) {
       const value = trimmed(content.value);
 
       if (value === "") {
-        content.setError("Paragraph text is required.");
+        content.setError(t("projPara.errRequired"));
         content.focus();
         return;
       }

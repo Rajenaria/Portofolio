@@ -26,11 +26,16 @@ import {
 } from "../../core/document-processor.js";
 import { documentUrl, documentDownloadUrl } from "../../core/document-storage.js";
 import { formatBytes } from "../../core/image-processor.js";
+import { t } from "../../core/i18n.js";
 
 const TYPE_LABELS = {
-  pdf: "PDF document",
-  webp: "Image (converted to WebP)"
+  pdf: "certDoc.typePdf",
+  webp: "certDoc.typeWebp"
 };
+
+function typeLabel(type) {
+  return TYPE_LABELS[type] ? t(TYPE_LABELS[type]) : t("certDoc.document");
+}
 
 export function createDocumentField({ current, onChange }) {
   const root = el("div", "document-field");
@@ -43,21 +48,37 @@ export function createDocumentField({ current, onChange }) {
   input.id = "certificate-document-input";
   input.accept = ".pdf,application/pdf,.jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp";
 
-  const chooseButton = el("button", "admin-button admin-button-secondary", "Upload document");
+  const chooseButton = el(
+    "button",
+    "admin-button admin-button-secondary",
+    t("certDoc.upload")
+  );
   chooseButton.type = "button";
 
-  const viewLink = el("a", "admin-button admin-button-secondary", "View Certificate");
+  const viewLink = el(
+    "a",
+    "admin-button admin-button-secondary",
+    t("certDoc.view")
+  );
   viewLink.target = "_blank";
   viewLink.rel = "noopener noreferrer";
 
-  const downloadLink = el("a", "admin-button admin-button-ghost", "Download");
+  const downloadLink = el("a", "admin-button admin-button-ghost", t("certDoc.download"));
   downloadLink.target = "_blank";
   downloadLink.rel = "noopener noreferrer";
 
-  const removeButton = el("button", "admin-button admin-button-ghost", "Remove document");
+  const removeButton = el(
+    "button",
+    "admin-button admin-button-ghost",
+    t("certDoc.remove")
+  );
   removeButton.type = "button";
 
-  const discardButton = el("button", "admin-button admin-button-ghost", "Discard pending file");
+  const discardButton = el(
+    "button",
+    "admin-button admin-button-ghost",
+    t("certDoc.discard")
+  );
   discardButton.type = "button";
 
   append(actions, chooseButton, viewLink, downloadLink, removeButton, discardButton);
@@ -88,7 +109,8 @@ export function createDocumentField({ current, onChange }) {
     downloadLink.hidden = viewLink.hidden;
     removeButton.hidden = !showStored;
     discardButton.hidden = !pending && !removing;
-    chooseButton.textContent = stored && !removing ? "Replace document" : "Upload document";
+    chooseButton.textContent =
+      stored && !removing ? t("certDoc.replace") : t("certDoc.upload");
 
     if (url) {
       viewLink.href = url;
@@ -100,33 +122,44 @@ export function createDocumentField({ current, onChange }) {
 
     if (pending) {
       const line = el("p", "document-field-line");
-      append(line, el("span", "status-badge status-badge-pending", "Pending upload"));
+      append(
+        line,
+        el("span", "status-badge status-badge-pending", t("certDoc.pending"))
+      );
       append(statusSlot, line);
 
       append(
         statusSlot,
-        el("p", "document-field-detail", `${TYPE_LABELS[pending.type]} · ${formatBytes(pending.storedSize)}`),
-        el("p", "document-field-detail", `From: ${pending.originalName}`),
-        el("p", "form-help", "The file is uploaded when you save this certificate.")
+        el(
+          "p",
+          "document-field-detail",
+          `${typeLabel(pending.type)} · ${formatBytes(pending.storedSize)}`
+        ),
+        el(
+          "p",
+          "document-field-detail",
+          t("certDoc.from", { name: pending.originalName })
+        ),
+        el("p", "form-help", t("certDoc.pendingHelp"))
       );
       return;
     }
 
     if (removing) {
       const line = el("p", "document-field-line");
-      append(line, el("span", "status-badge status-badge-inactive", "Will be removed"));
-      append(statusSlot, line);
       append(
-        statusSlot,
-        el("p", "form-help", "The stored document is detached and deleted when you save.")
+        line,
+        el("span", "status-badge status-badge-inactive", t("certDoc.willRemove"))
       );
+      append(statusSlot, line);
+      append(statusSlot, el("p", "form-help", t("certDoc.removeHelp")));
       return;
     }
 
     if (stored) {
       append(
         statusSlot,
-        el("p", "document-field-detail", TYPE_LABELS[stored.type] || "Document"),
+        el("p", "document-field-detail", typeLabel(stored.type)),
         el("p", "document-field-detail", stored.path)
       );
       return;
@@ -134,7 +167,11 @@ export function createDocumentField({ current, onChange }) {
 
     append(
       statusSlot,
-      el("p", "form-help", `No document uploaded. PDF, JPG, PNG or WebP, up to ${formatBytes(MAX_DOCUMENT_BYTES)}. Images are converted to WebP; PDFs are stored as they are.`)
+      el(
+        "p",
+        "form-help",
+        t("certDoc.empty", { size: formatBytes(MAX_DOCUMENT_BYTES) })
+      )
     );
   }
 
@@ -162,9 +199,7 @@ export function createDocumentField({ current, onChange }) {
       }
 
       toast(
-        error && error.message
-          ? error.message
-          : "This file could not be used as a certificate document.",
+        error && error.message ? error.message : t("certDoc.errGeneric"),
         "error"
       );
     } finally {

@@ -34,6 +34,12 @@ import {
 import { openModal, confirmDialog } from "../../core/modal.js";
 import { toast } from "../../core/toast.js";
 import { textField, trimmed } from "../../core/form.js";
+import { t } from "../../core/i18n.js";
+
+/* Resolved at call time so a language switch mid-list relabels everything. */
+function rowTitle(row) {
+  return row.title || t("exp.thisOne");
+}
 import { openExperiencePreview } from "./preview.js";
 
 const SELECT_COLUMNS =
@@ -85,11 +91,11 @@ export function createExperienceList({ onEdit, onCreate, onChanged }) {
   const toolbar = el("div", "admin-toolbar");
 
   const searchField = el("div", "toolbar-field toolbar-field-search");
-  const searchLabel = el("label", "toolbar-label", "Search");
+  const searchLabel = el("label", "toolbar-label", t("common.search"));
   const searchInput = el("input", "admin-input");
   searchInput.type = "search";
   searchInput.id = "experience-search";
-  searchInput.placeholder = "Search experiences...";
+  searchInput.placeholder = t("exp.searchPlaceholder");
   searchInput.autocomplete = "off";
   searchLabel.htmlFor = searchInput.id;
 
@@ -102,17 +108,17 @@ export function createExperienceList({ onEdit, onCreate, onChanged }) {
   append(searchField, searchLabel, searchInput);
 
   const statusField = el("div", "toolbar-field");
-  const statusLabel = el("label", "toolbar-label", "Status");
+  const statusLabel = el("label", "toolbar-label", t("common.status"));
   const statusSelect = el("select", "admin-select");
   statusSelect.id = "experience-status-filter";
   statusLabel.htmlFor = statusSelect.id;
 
   [
-    { value: "all", label: "All" },
-    { value: "draft", label: "Draft" },
-    { value: "published", label: "Published" },
-    { value: "archived", label: "Archived" },
-    { value: "trash", label: "Trash" }
+    { value: "all", label: t("common.all") },
+    { value: "draft", label: t("status.draft") },
+    { value: "published", label: t("status.published") },
+    { value: "archived", label: t("status.archived") },
+    { value: "trash", label: t("exp.trash") }
   ].forEach(option => {
     const node = el("option", null, option.label);
     node.value = option.value;
@@ -214,7 +220,7 @@ export function createExperienceList({ onEdit, onCreate, onChanged }) {
     clear(listSlot);
 
     if (state.status === "loading") {
-      append(listSlot, el("p", "loading-text", "Loading experiences..."));
+      append(listSlot, el("p", "loading-text", t("exp.loading")));
       return;
     }
 
@@ -229,8 +235,8 @@ export function createExperienceList({ onEdit, onCreate, onChanged }) {
       append(
         listSlot,
         emptyState({
-          title: "Trash is empty.",
-          description: "Experiences you move to Trash appear here and can be restored."
+          title: t("exp.emptyTrashTitle"),
+          description: t("exp.emptyTrashHelp")
         })
       );
       return;
@@ -240,9 +246,8 @@ export function createExperienceList({ onEdit, onCreate, onChanged }) {
       append(
         listSlot,
         emptyState({
-          title: "No experiences yet.",
-          description:
-            "Add your first experience to start building your professional timeline."
+          title: t("exp.emptyTitle"),
+          description: t("exp.emptyHelp")
         })
       );
       return;
@@ -252,8 +257,8 @@ export function createExperienceList({ onEdit, onCreate, onChanged }) {
       append(
         listSlot,
         emptyState({
-          title: "No experiences match your filters.",
-          description: "Try another search term or status."
+          title: t("exp.emptyFilterTitle"),
+          description: t("list.filtersEmptyHelp")
         })
       );
       return;
@@ -266,20 +271,16 @@ export function createExperienceList({ onEdit, onCreate, onChanged }) {
       el(
         "p",
         "table-summary",
-        rows.length === activeRows().length && !isTrashView()
-          ? `${rows.length} experiences`
-          : `${rows.length} of ${isTrashView() ? rows.length : activeRows().length} experiences`
+        isTrashView()
+          ? t("exp.summaryTrash", { count: rows.length })
+          : t("exp.summary", { shown: rows.length, total: activeRows().length })
       )
     );
 
     if (!isTrashView() && filtersActive()) {
       append(
         listSlot,
-        el(
-          "p",
-          "table-note",
-          "Move Up and Move Down are available when no search or filter is active, because ordering applies to the whole list."
-        )
+        el("p", "table-note", t("list.reorderNote"))
       );
     }
   }
@@ -290,11 +291,15 @@ export function createExperienceList({ onEdit, onCreate, onChanged }) {
 
     append(
       panel,
-      el("p", "admin-alert-title", "Could not load experiences."),
-      el("p", "admin-alert-text", "Check your connection and try again.")
+      el("p", "admin-alert-title", t("exp.loadError")),
+      el("p", "admin-alert-text", t("list.loadErrorHelp"))
     );
 
-    const retry = el("button", "admin-button admin-button-secondary", "Try Again");
+    const retry = el(
+      "button",
+      "admin-button admin-button-secondary",
+      t("common.tryAgain")
+    );
     retry.type = "button";
     retry.addEventListener("click", load);
     append(panel, retry);
@@ -310,8 +315,20 @@ export function createExperienceList({ onEdit, onCreate, onChanged }) {
     const headRow = el("tr");
 
     const columns = isTrashView()
-      ? ["Experience", "Type", "Status", "Deleted"]
-      : ["Experience", "Type", "Role", "Location", "Status", "Updated"];
+      ? [
+          t("exp.colExperience"),
+          t("common.type"),
+          t("common.status"),
+          t("common.deleted")
+        ]
+      : [
+          t("exp.colExperience"),
+          t("common.type"),
+          t("common.role"),
+          t("common.location"),
+          t("common.status"),
+          t("common.updated")
+        ];
 
     columns.forEach(label => {
       const cell = el("th", null, label);
@@ -321,7 +338,7 @@ export function createExperienceList({ onEdit, onCreate, onChanged }) {
 
     const actionsHead = el("th");
     actionsHead.scope = "col";
-    append(actionsHead, el("span", "visually-hidden", "Actions"));
+    append(actionsHead, el("span", "visually-hidden", t("common.actions")));
     append(headRow, actionsHead);
 
     append(thead, headRow);
@@ -349,8 +366,9 @@ export function createExperienceList({ onEdit, onCreate, onChanged }) {
       item.classList.add("is-muted-row");
     }
 
-    const titleCell = cell("Experience");
-    append(titleCell, el("span", "row-title", row.title || "Untitled experience"));
+    const titleCell = cell(t("exp.colExperience"));
+    titleCell.classList.add("cell-primary");
+    append(titleCell, el("span", "row-title", row.title || t("exp.untitled")));
 
     if (row.description) {
       append(
@@ -361,34 +379,34 @@ export function createExperienceList({ onEdit, onCreate, onChanged }) {
 
     append(item, titleCell);
 
-    const typeCell = cell("Type");
+    const typeCell = cell(t("common.type"));
     append(
       typeCell,
       row.type
         ? el("span", "type-badge", row.type)
-        : el("span", "row-subtle", "—")
+        : el("span", "row-subtle", t("common.none"))
     );
     append(item, typeCell);
 
     if (!isTrashView()) {
-      const roleCell = cell("Role");
-      append(roleCell, el("span", null, row.role || "—"));
+      const roleCell = cell(t("common.role"));
+      append(roleCell, el("span", null, row.role || t("common.none")));
       append(item, roleCell);
 
-      const locationCell = cell("Location");
-      append(locationCell, el("span", null, row.location || "—"));
+      const locationCell = cell(t("common.location"));
+      append(locationCell, el("span", null, row.location || t("common.none")));
       append(item, locationCell);
     }
 
-    const statusCell = cell("Status");
+    const statusCell = cell(t("common.status"));
     append(statusCell, statusBadge(row.status));
     append(item, statusCell);
 
-    const timeCell = cell(isTrashView() ? "Deleted" : "Updated");
+    const timeCell = cell(isTrashView() ? t("common.deleted") : t("common.updated"));
     append(timeCell, updatedAt(isTrashView() ? row.deleted_at : row.updated_at));
     append(item, timeCell);
 
-    const actionsCell = cell("Actions");
+    const actionsCell = cell(t("common.actions"));
     actionsCell.className = "cell-actions";
     append(actionsCell, buildActionsMenu(row, index, visible));
     append(item, actionsCell);
@@ -410,7 +428,10 @@ export function createExperienceList({ onEdit, onCreate, onChanged }) {
     trigger.type = "button";
     trigger.setAttribute("aria-haspopup", "true");
     trigger.setAttribute("aria-expanded", "false");
-    trigger.setAttribute("aria-label", `Actions for ${row.title || "experience"}`);
+    trigger.setAttribute(
+      "aria-label",
+      t("exp.actionsFor", { title: rowTitle(row) })
+    );
 
     trigger.addEventListener("click", () => {
       const isOpen = wrap.classList.contains("is-open");
@@ -508,38 +529,41 @@ export function createExperienceList({ onEdit, onCreate, onChanged }) {
     const orderedCount = activeRows().length;
 
     const entries = [
-      { label: "Edit", onSelect: () => onEdit(row.id) },
-      { label: "Preview", onSelect: () => previewRow(row) },
+      { label: t("common.edit"), onSelect: () => onEdit(row.id) },
+      { label: t("common.preview"), onSelect: () => previewRow(row) },
       {
-        label: "Move Up",
+        label: t("action.moveUp"),
         disabled: !canReorder || orderedIndex <= 0,
-        hint: canReorder ? null : "Clear search and filters to reorder.",
+        hint: canReorder ? null : t("list.reorderHint"),
         onSelect: () => move(orderedIndex, -1)
       },
       {
-        label: "Move Down",
+        label: t("action.moveDown"),
         disabled: !canReorder || orderedIndex === -1 || orderedIndex >= orderedCount - 1,
-        hint: canReorder ? null : "Clear search and filters to reorder.",
+        hint: canReorder ? null : t("list.reorderHint"),
         onSelect: () => move(orderedIndex, 1)
       }
     ];
 
     if (row.status === "draft") {
-      entries.push({ label: "Publish", onSelect: () => publish(row) });
-      entries.push({ label: "Archive", onSelect: () => archive(row) });
+      entries.push({ label: t("action.show"), onSelect: () => publish(row) });
+      entries.push({ label: t("action.archive"), onSelect: () => archive(row) });
     }
 
     if (row.status === "published") {
-      entries.push({ label: "Unpublish", onSelect: () => unpublish(row) });
-      entries.push({ label: "Archive", onSelect: () => archive(row) });
+      entries.push({ label: t("action.hide"), onSelect: () => unpublish(row) });
+      entries.push({ label: t("action.archive"), onSelect: () => archive(row) });
     }
 
     if (row.status === "archived") {
-      entries.push({ label: "Restore to Draft", onSelect: () => restoreToDraft(row) });
+      entries.push({
+        label: t("action.restoreDraft"),
+        onSelect: () => restoreToDraft(row)
+      });
     }
 
     entries.push({
-      label: "Move to Trash",
+      label: t("action.moveToTrash"),
       danger: true,
       onSelect: () => moveToTrash(row)
     });
@@ -549,10 +573,10 @@ export function createExperienceList({ onEdit, onCreate, onChanged }) {
 
   function trashEntries(row) {
     return [
-      { label: "Preview", onSelect: () => previewRow(row) },
-      { label: "Restore", onSelect: () => restoreFromTrash(row) },
+      { label: t("common.preview"), onSelect: () => previewRow(row) },
+      { label: t("action.restore"), onSelect: () => restoreFromTrash(row) },
       {
-        label: "Delete Permanently",
+        label: t("action.deletePermanently"),
         danger: true,
         onSelect: () => permanentlyDelete(row)
       }
@@ -611,10 +635,7 @@ export function createExperienceList({ onEdit, onCreate, onChanged }) {
 
   async function publish(row) {
     if (!row.description || trimmed(row.description) === "") {
-      toast(
-        "Add a description before publishing this experience. Open Edit to add one.",
-        "error"
-      );
+      toast(t("exp.needDescription"), "error");
       return;
     }
 
@@ -627,19 +648,19 @@ export function createExperienceList({ onEdit, onCreate, onChanged }) {
     await applyPatch(
       row,
       patch,
-      "Experience published.",
-      "Could not publish this experience."
+      t("exp.toastPublished"),
+      t("exp.errPublish")
     );
   }
 
   async function unpublish(row) {
     const confirmed = await confirmDialog({
-      title: `Unpublish "${row.title || "this experience"}"?`,
+      title: t("exp.hideTitle", { title: rowTitle(row) }),
       lines: [
-        "This experience will return to Draft and will no longer appear in the public portfolio after public migration.",
-        "Its content, tags and order are kept, and it can be published again later."
+        t("exp.hideLine1"),
+        t("exp.hideLine2")
       ],
-      confirmLabel: "Unpublish",
+      confirmLabel: t("action.hide"),
       variant: "danger"
     });
 
@@ -657,19 +678,16 @@ export function createExperienceList({ onEdit, onCreate, onChanged }) {
     await applyPatch(
       row,
       { status: "draft", archived_at: null },
-      "Experience unpublished and moved back to draft.",
-      "Could not unpublish this experience."
+      t("exp.toastHidden"),
+      t("exp.errHide")
     );
   }
 
   async function archive(row) {
     const confirmed = await confirmDialog({
-      title: `Archive "${row.title || "this experience"}"?`,
-      lines: [
-        "Archived experiences will no longer appear in the public portfolio after public migration.",
-        "The record and its tags are kept and can be restored later."
-      ],
-      confirmLabel: "Archive",
+      title: t("exp.archiveTitle", { title: rowTitle(row) }),
+      lines: [t("exp.archiveLine1"), t("exp.archiveLine2")],
+      confirmLabel: t("action.archive"),
       variant: "danger"
     });
 
@@ -680,8 +698,8 @@ export function createExperienceList({ onEdit, onCreate, onChanged }) {
     await applyPatch(
       row,
       { status: "archived", archived_at: new Date().toISOString() },
-      "Experience archived.",
-      "Could not archive this experience."
+      t("exp.toastArchived"),
+      t("exp.errArchive")
     );
   }
 
@@ -689,19 +707,16 @@ export function createExperienceList({ onEdit, onCreate, onChanged }) {
     await applyPatch(
       row,
       { status: "draft", archived_at: null },
-      "Experience restored to draft.",
-      "Could not restore this experience."
+      t("exp.toastRestoredDraft"),
+      t("exp.errRestore")
     );
   }
 
   async function moveToTrash(row) {
     const confirmed = await confirmDialog({
-      title: `Move "${row.title || "this experience"}" to Trash?`,
-      lines: [
-        "The experience is hidden from the normal list and from the public portfolio.",
-        "You can restore it later from the Trash view."
-      ],
-      confirmLabel: "Move to Trash",
+      title: t("exp.trashTitle", { title: rowTitle(row) }),
+      lines: [t("exp.trashLine1"), t("exp.trashLine2")],
+      confirmLabel: t("action.moveToTrash"),
       variant: "danger"
     });
 
@@ -712,8 +727,8 @@ export function createExperienceList({ onEdit, onCreate, onChanged }) {
     await applyPatch(
       row,
       { deleted_at: new Date().toISOString() },
-      "Experience moved to Trash.",
-      "Could not move this experience to Trash."
+      t("exp.toastTrashed"),
+      t("exp.errTrash")
     );
   }
 
@@ -726,8 +741,8 @@ export function createExperienceList({ onEdit, onCreate, onChanged }) {
     await applyPatch(
       row,
       { deleted_at: null, status: "draft", archived_at: null },
-      "Experience restored as a draft.",
-      "Could not restore this experience."
+      t("exp.toastRestored"),
+      t("exp.errRestore")
     );
   }
 
@@ -754,11 +769,11 @@ export function createExperienceList({ onEdit, onCreate, onChanged }) {
         console.error(error);
       }
 
-      toast("Could not permanently delete this experience.", "error");
+      toast(t("exp.errDelete"), "error");
       return;
     }
 
-    toast("Experience permanently deleted.");
+    toast(t("exp.toastDeleted"));
     await load();
   }
 
@@ -770,17 +785,14 @@ export function createExperienceList({ onEdit, onCreate, onChanged }) {
 
       append(
         body,
-        el("p", "confirm-line", row.title || "This experience"),
-        el(
-          "p",
-          "confirm-line",
-          "This permanently removes the experience and all of its tags. This action cannot be undone."
-        )
+        el("p", "confirm-line", rowTitle(row)),
+        el("p", "confirm-line", t("exp.deleteLine")),
+        el("p", "confirm-line", t("confirm.cannotBeUndone"))
       );
 
       const field = textField({
         id: "experience-delete-confirm",
-        label: "Type DELETE to confirm",
+        label: t("confirm.typeDelete"),
         value: "",
         maxLength: 10
       });
@@ -788,12 +800,12 @@ export function createExperienceList({ onEdit, onCreate, onChanged }) {
       append(body, field.node);
 
       const controller = openModal({
-        title: "Delete permanently?",
+        title: t("confirm.deleteTitle"),
         body,
         size: "small",
         actions: [
           {
-            label: "Cancel",
+            label: t("common.cancel"),
             variant: "secondary",
             onClick: ctl => {
               settle(false);
@@ -801,11 +813,11 @@ export function createExperienceList({ onEdit, onCreate, onChanged }) {
             }
           },
           {
-            label: "Delete Permanently",
+            label: t("action.deletePermanently"),
             variant: "danger",
             onClick: ctl => {
               if (trimmed(field.value) !== "DELETE") {
-                field.setError('Type DELETE exactly to confirm.');
+                field.setError(t("confirm.typeDeleteError"));
                 field.focus();
                 return;
               }
@@ -875,14 +887,14 @@ export function createExperienceList({ onEdit, onCreate, onChanged }) {
         }
 
         setBusy(false);
-        toast("Could not change the order. Please try again.", "error");
+        toast(t("list.orderError"), "error");
         await load();
         return;
       }
     }
 
     setBusy(false);
-    toast("Order updated.");
+    toast(t("list.orderUpdated"));
     await load();
   }
 

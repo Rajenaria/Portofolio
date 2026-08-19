@@ -45,6 +45,13 @@ import {
   profileRoute
 } from "./js/modules/profile/index.js";
 
+import {
+  t,
+  applyStaticTranslations,
+  createLanguageSwitch,
+  onLanguageChange
+} from "./js/core/i18n.js";
+
 
 const screens = {
   loading:
@@ -240,7 +247,7 @@ document
             "mfa-enroll-error"
           )
           .textContent =
-            "Invalid verification code.";
+            t("mfa.invalidCode");
 
         return;
       }
@@ -296,7 +303,7 @@ document
         document
           .getElementById("mfa-error")
           .textContent =
-            "Invalid authentication code.";
+            t("mfa.invalidCode");
 
         return;
       }
@@ -312,39 +319,89 @@ document
 
       event.preventDefault();
 
+      const submit = document.getElementById("login-submit");
+      const errorNode = document.getElementById("login-error");
+
       const email =
-        document
-          .getElementById("email")
-          .value
-          .trim();
+        document.getElementById("email").value.trim();
 
       const password =
-        document
-          .getElementById("password")
-          .value;
+        document.getElementById("password").value;
 
-      const {
-        error
-      } = await signIn(
-        email,
-        password
-      );
+      /*
+        Only decides where the session is kept afterwards. MFA still runs,
+        and the owner + aal2 policies are untouched either way.
+      */
+      const remember =
+        document.getElementById("remember-me").checked;
+
+      errorNode.textContent = "";
+      submit.disabled = true;
+      submit.textContent = t("auth.signingIn");
+
+      const { error } = await signIn(email, password, remember);
+
+      submit.disabled = false;
+      submit.textContent = t("auth.signIn");
 
       if (error) {
-
-        document
-          .getElementById(
-            "login-error"
-          )
-          .textContent =
-            "Invalid email or password.";
-
+        errorNode.textContent = t("auth.invalidCredentials");
         return;
       }
 
       await routeSession();
     }
   );
+
+  /* Password visibility. The control reports its own state, so a screen
+     reader hears "show"/"hide" rather than an unlabelled icon. */
+  (function () {
+
+    const toggle = document.getElementById("password-toggle");
+    const field = document.getElementById("password");
+
+    toggle.addEventListener("click", () => {
+      const shown = field.type === "text";
+
+      field.type = shown ? "password" : "text";
+      toggle.setAttribute("aria-pressed", shown ? "false" : "true");
+      toggle.dataset.i18nAriaLabel = shown ? "auth.showPassword" : "auth.hidePassword";
+      toggle.setAttribute("aria-label", t(toggle.dataset.i18nAriaLabel));
+      field.focus();
+    });
+
+  }());
+
+  /* Language can be changed before signing in, and again inside the Admin. */
+  document
+    .getElementById("login-language")
+    .appendChild(createLanguageSwitch());
+
+  document
+    .getElementById("mfa-signout")
+    .addEventListener("click", async () => {
+      await signOut();
+      showScreen("login");
+    });
+
+  applyStaticTranslations();
+
+  /*
+    A language change re-renders the current route so every string the
+    modules produced is regenerated. Nothing is translated in place.
+  */
+  onLanguageChange(() => {
+    applyStaticTranslations();
+
+    if (adminShell) {
+      adminShell.applyLanguage();
+    }
+
+    if (adminRouter) {
+      adminRouter.reload();
+    }
+  });
+
   document
   .getElementById("logout-button")
   .addEventListener(

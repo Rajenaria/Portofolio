@@ -30,6 +30,7 @@ import {
 import { replaceMedia, MEDIA_BUCKET } from "../../core/media-storage.js";
 import { createMediaField } from "./media-field.js";
 import { createOrderedList } from "./ordered-list.js";
+import { t } from "../../core/i18n.js";
 
 const LIMITS = {
   heading: 160,
@@ -44,12 +45,24 @@ export function createAboutTab({ profile, onDirtyChange }) {
 
   /* ---------------- photo ---------------- */
 
-  const photoSection = el("section", "admin-subsection");
-  append(photoSection, el("h3", "subsection-title", "About Photo"));
+  /* One shape for every group, matching the editors in the other modules. */
+  function group(titleKey, helpKey) {
+    const node = el("section", "admin-subsection");
+
+    append(node, el("h3", "subsection-title", t(titleKey)));
+
+    if (helpKey) {
+      append(node, el("p", "form-help", t(helpKey)));
+    }
+
+    return node;
+  }
+
+  const photoSection = group("about.photoTitle", "about.photoHelp");
 
   const media = createMediaField({
-    title: "About Photo",
-    emptyText: "No image configured.",
+    title: t("about.photoTitle"),
+    emptyText: t("pmedia.empty"),
     current: profile.about_photo_desktop_path
       ? {
           bucket: profile.about_photo_bucket || MEDIA_BUCKET,
@@ -62,10 +75,10 @@ export function createAboutTab({ profile, onDirtyChange }) {
 
   const photoAlt = textField({
     id: "about-photo-alt",
-    label: "Photo Alt Text",
+    label: t("about.fieldPhotoAlt"),
     maxLength: LIMITS.photoAlt,
     value: profile.about_photo_alt,
-    help: "Describes the About photo for screen readers."
+    help: t("about.fieldPhotoAltHelp")
   });
 
   append(photoSection, media.element, photoAlt.node);
@@ -75,21 +88,21 @@ export function createAboutTab({ profile, onDirtyChange }) {
   const fields = {
     heading: textField({
       id: "about-heading",
-      label: "Heading",
+      label: t("about.fieldHeading"),
       required: true,
       maxLength: LIMITS.heading,
       value: profile.about_heading_main
     }),
     highlight: textField({
       id: "about-highlight",
-      label: "Highlighted Text",
+      label: t("about.fieldHighlight"),
       maxLength: LIMITS.highlight,
       value: profile.about_heading_highlight,
-      help: "Optional emphasised part of the heading."
+      help: t("about.fieldHighlightHelp")
     }),
     lead: textareaField({
       id: "about-lead",
-      label: "Lead Paragraph",
+      label: t("about.fieldLead"),
       required: true,
       maxLength: LIMITS.lead,
       value: profile.about_lead,
@@ -97,17 +110,16 @@ export function createAboutTab({ profile, onDirtyChange }) {
     }),
     description: textareaField({
       id: "about-description",
-      label: "Description",
+      label: t("about.fieldDescription"),
       required: true,
       value: profile.about_description,
       rows: 7,
-      help: "Plain text only. No HTML or formatting markup."
+      help: t("about.fieldDescriptionHelp")
     }),
     photoAlt
   };
 
-  const textSection = el("section", "admin-subsection");
-  append(textSection, el("h3", "subsection-title", "About Content"));
+  const textSection = group("about.contentTitle", "about.contentHelp");
 
   const grid = el("div", "form-grid");
   append(grid, fields.heading.node, fields.highlight.node);
@@ -115,10 +127,18 @@ export function createAboutTab({ profile, onDirtyChange }) {
 
   const actions = el("div", "form-actions");
 
-  const previewButton = el("button", "admin-button admin-button-secondary", "Preview");
+  const previewButton = el(
+    "button",
+    "admin-button admin-button-secondary",
+    t("common.preview")
+  );
   previewButton.type = "button";
 
-  const saveButton = el("button", "admin-button admin-button-primary", "Save Changes");
+  const saveButton = el(
+    "button",
+    "admin-button admin-button-primary",
+    t("common.saveChanges")
+  );
   saveButton.type = "button";
 
   append(actions, previewButton, saveButton);
@@ -127,10 +147,10 @@ export function createAboutTab({ profile, onDirtyChange }) {
 
   const interests = createOrderedList({
     table: "about_interests",
-    title: "Area of Interest",
-    addLabel: "+ Add Interest",
-    emptyTitle: "No interests yet.",
-    emptyDescription: "Add your first Area of Interest.",
+    title: t("interest.title"),
+    addLabel: t("interest.add"),
+    emptyTitle: t("interest.empty"),
+    emptyDescription: t("interest.emptyHelp"),
     selectColumns: "id, label, sort_order, is_active, created_at",
     describeRow: row => row.label,
     renderRow: row => {
@@ -138,18 +158,18 @@ export function createAboutTab({ profile, onDirtyChange }) {
       append(wrap, el("span", "ordered-title", row.label));
 
       if (row.is_active === false) {
-        append(wrap, el("span", "status-badge status-badge-disabled", "Disabled"));
+        append(
+          wrap,
+          el("span", "status-badge status-badge-disabled", t("status.inactive"))
+        );
       }
 
       return wrap;
     },
     removeConfirm: row => ({
-      title: `Remove "${row.label}"?`,
-      lines: [
-        "This Area of Interest will be permanently removed from your About section.",
-        "This cannot be undone."
-      ],
-      confirmLabel: "Remove",
+      title: t("interest.removeTitle", { label: row.label }),
+      lines: [t("interest.removeLine"), t("confirm.cannotBeUndone")],
+      confirmLabel: t("common.remove"),
       variant: "danger"
     }),
     onAdd: api => openInterestEditor(null, api),
@@ -168,18 +188,18 @@ export function createAboutTab({ profile, onDirtyChange }) {
 
     const label = textField({
       id: "interest-label",
-      label: "Label",
+      label: t("common.label"),
       required: true,
       maxLength: LIMITS.interestLabel,
       value: existing ? existing.label : "",
-      help: "Plain text, for example: Embedded Systems."
+      help: t("interest.fieldLabelHelp")
     });
 
     const active = checkboxField({
       id: "interest-active",
-      label: "Active",
+      label: t("status.active"),
       checked: existing ? existing.is_active !== false : true,
-      help: "Inactive interests stay stored but are hidden from the public site."
+      help: t("interest.activeHelp")
     });
 
     append(form, formError, label.node, active.node);
@@ -192,12 +212,16 @@ export function createAboutTab({ profile, onDirtyChange }) {
     const initialSnapshot = JSON.stringify([label.value, active.value]);
 
     const controller = openModal({
-      title: isNew ? "Add Interest" : "Edit Interest",
+      title: t(isNew ? "interest.addTitle" : "interest.editTitle"),
       body: form,
       actions: [
-        { label: "Cancel", variant: "secondary", onClick: ctl => ctl.requestClose("cancel") },
         {
-          label: isNew ? "Add Interest" : "Save Changes",
+          label: t("common.cancel"),
+          variant: "secondary",
+          onClick: ctl => ctl.requestClose("cancel")
+        },
+        {
+          label: t(isNew ? "interest.addTitle" : "common.saveChanges"),
           variant: "primary",
           onClick: () => persist()
         }
@@ -208,10 +232,10 @@ export function createAboutTab({ profile, onDirtyChange }) {
         }
 
         return await confirmDialog({
-          title: "Discard changes?",
-          lines: ["You have unsaved changes in this form."],
-          confirmLabel: "Discard",
-          cancelLabel: "Keep Editing",
+          title: t("discard.title"),
+          lines: [t("discard.line")],
+          confirmLabel: t("discard.confirm"),
+          cancelLabel: t("discard.cancel"),
           variant: "danger"
         });
       }
@@ -229,18 +253,18 @@ export function createAboutTab({ profile, onDirtyChange }) {
       const value = trimmed(label.value);
 
       if (value === "") {
-        label.setError("Label is required.");
+        label.setError(t("interest.errRequired"));
         label.focus();
         return;
       }
 
       if (value.length > LIMITS.interestLabel) {
-        label.setError(`Label must be ${LIMITS.interestLabel} characters or fewer.`);
+        label.setError(t("interest.errTooLong", { max: LIMITS.interestLabel }));
         label.focus();
         return;
       }
 
-      controller.setBusy(true, isNew ? "Adding..." : "Saving...");
+      controller.setBusy(true, t(isNew ? "common.adding" : "common.saving"));
 
       const payload = { label: value, is_active: active.value };
 
@@ -264,13 +288,12 @@ export function createAboutTab({ profile, onDirtyChange }) {
           console.error(result.error);
         }
 
-        formError.textContent =
-          "Could not save this interest. Your session may not be authorized.";
+        formError.textContent = t("interest.errSave");
         return;
       }
 
       controller.close();
-      toast(isNew ? "Interest added." : "Changes saved successfully.");
+      toast(t(isNew ? "interest.added" : "about.saved"));
       await api.reload();
     }
   }
@@ -319,7 +342,9 @@ export function createAboutTab({ profile, onDirtyChange }) {
     saving = next;
     saveButton.disabled = next;
     previewButton.disabled = next;
-    saveButton.textContent = next ? label || "Saving..." : "Save Changes";
+    saveButton.textContent = next
+      ? label || t("common.saving")
+      : t("common.saveChanges");
   }
 
   async function save() {
@@ -328,19 +353,23 @@ export function createAboutTab({ profile, onDirtyChange }) {
     }
 
     const valid = applyValidation(fields, {
-      heading: { label: "Heading", required: true, maxLength: LIMITS.heading },
-      highlight: { label: "Highlighted Text", maxLength: LIMITS.highlight },
-      lead: { label: "Lead Paragraph", required: true, maxLength: LIMITS.lead },
-      description: { label: "Description", required: true },
-      photoAlt: { label: "Photo Alt Text", maxLength: LIMITS.photoAlt }
+      heading: {
+        label: t("about.fieldHeading"),
+        required: true,
+        maxLength: LIMITS.heading
+      },
+      highlight: { label: t("about.fieldHighlight"), maxLength: LIMITS.highlight },
+      lead: { label: t("about.fieldLead"), required: true, maxLength: LIMITS.lead },
+      description: { label: t("about.fieldDescription"), required: true },
+      photoAlt: { label: t("about.fieldPhotoAlt"), maxLength: LIMITS.photoAlt }
     });
 
     if (!valid) {
-      toast("Please correct the highlighted fields.", "error");
+      toast(t("about.errFields"), "error");
       return false;
     }
 
-    setSaving(true, "Saving...");
+    setSaving(true, t("common.saving"));
 
     const textPayload = {
       about_heading_main: trimmedOrNull(fields.heading.value),
@@ -366,15 +395,15 @@ export function createAboutTab({ profile, onDirtyChange }) {
           console.error(error);
         }
 
-        toast("Could not save the About content. Your changes are still here.", "error");
+        toast(t("about.errSave"), "error");
         return false;
       }
 
-      toast("Changes saved successfully.");
+      toast(t("about.saved"));
       return true;
     }
 
-    setSaving(true, "Uploading...");
+    setSaving(true, t("common.uploading"));
 
     try {
       const result = await replaceMedia({
@@ -407,7 +436,10 @@ export function createAboutTab({ profile, onDirtyChange }) {
       });
 
       setSaving(false);
-      toast(result.cleanupWarning || "Changes saved successfully.", result.cleanupWarning ? "error" : "success");
+      toast(
+        result.cleanupWarning || t("about.saved"),
+        result.cleanupWarning ? "error" : "success"
+      );
       return true;
     } catch (error) {
       console.error(error);
@@ -415,7 +447,7 @@ export function createAboutTab({ profile, onDirtyChange }) {
       toast(
         error && error.name === "MediaStorageError"
           ? error.message
-          : "Could not replace the About photo. The previous image is unchanged.",
+          : t("about.errPhoto"),
         "error"
       );
       return false;
@@ -441,37 +473,40 @@ export function createAboutTab({ profile, onDirtyChange }) {
       const figure = el("figure", "preview-photo");
       const img = el("img", "preview-photo-image");
       img.src = url;
-      img.alt = trimmed(fields.photoAlt.value) || "About photo";
+      img.alt = trimmed(fields.photoAlt.value) || t("about.photoAlt");
       append(figure, img);
 
       const caption = el("figcaption", "preview-photo-caption");
-      append(caption, el("span", "preview-photo-title", "About Photo"));
+      append(caption, el("span", "preview-photo-title", t("about.photoTitle")));
 
       if (media.hasPending()) {
-        append(caption, el("span", "status-badge status-badge-pending", "Pending"));
+        append(
+          caption,
+          el("span", "status-badge status-badge-pending", t("projPreview.pending"))
+        );
       }
 
       append(figure, caption);
       append(body, figure);
     } else {
-      append(body, el("p", "media-field-empty", "No About photo configured."));
+      append(body, el("p", "media-field-empty", t("about.photoEmpty")));
     }
 
     append(
       body,
-      previewLine("Heading", fields.heading.value),
-      previewLine("Highlighted Text", fields.highlight.value),
-      previewLine("Lead Paragraph", fields.lead.value),
-      previewLine("Description", fields.description.value),
-      previewLine("Photo Alt Text", fields.photoAlt.value)
+      previewLine(t("about.fieldHeading"), fields.heading.value),
+      previewLine(t("about.fieldHighlight"), fields.highlight.value),
+      previewLine(t("about.fieldLead"), fields.lead.value),
+      previewLine(t("about.fieldDescription"), fields.description.value),
+      previewLine(t("about.fieldPhotoAlt"), fields.photoAlt.value)
     );
 
     const rows = interests.getRows();
     const listBlock = el("div", "preview-line");
-    append(listBlock, el("span", "preview-label", "Area of Interest"));
+    append(listBlock, el("span", "preview-label", t("interest.title")));
 
     if (rows.length === 0) {
-      append(listBlock, el("p", "preview-value", "—"));
+      append(listBlock, el("p", "preview-value", t("common.none")));
     } else {
       const list = el("ul", "preview-list");
       rows.forEach(row => {
@@ -479,7 +514,10 @@ export function createAboutTab({ profile, onDirtyChange }) {
         append(item, el("span", null, row.label));
 
         if (row.is_active === false) {
-          append(item, el("span", "status-badge status-badge-disabled", "Disabled"));
+          append(
+            item,
+            el("span", "status-badge status-badge-disabled", t("status.inactive"))
+          );
         }
 
         append(list, item);
@@ -490,11 +528,12 @@ export function createAboutTab({ profile, onDirtyChange }) {
     append(body, listBlock);
 
     openModal({
-      title: "About preview",
-      description:
-        "Read-only preview of the current form values, including unsaved changes. This is an Admin content preview, not the public About layout.",
+      title: t("about.previewTitle"),
+      description: t("about.previewDescription"),
       body,
-      actions: [{ label: "Close", variant: "secondary", onClick: ctl => ctl.close() }]
+      actions: [
+        { label: t("common.close"), variant: "secondary", onClick: ctl => ctl.close() }
+      ]
     });
   });
 

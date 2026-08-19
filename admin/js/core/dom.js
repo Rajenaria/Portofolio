@@ -7,6 +7,14 @@
   See docs/Security/ADMIN-CMS-SECURITY.md section 42.
 */
 
+import { t, getLanguage } from "./i18n.js";
+
+/* Dates follow the interface language, not the browser locale, so a single
+   language switch changes every visible string on the page. */
+function dateLocale() {
+  return getLanguage() === "id" ? "id-ID" : "en-GB";
+}
+
 export function el(tag, className, text) {
   const node = document.createElement(tag);
 
@@ -100,18 +108,12 @@ export function section(title) {
 export function statusBadge(status) {
   const key = String(status || "").toLowerCase();
 
-  const labels = {
-    published: "Published",
-    draft: "Draft",
-    archived: "Archived",
-    active: "Active",
-    inactive: "Inactive"
-  };
+  const known = ["published", "draft", "archived", "active", "inactive"];
 
   const badge = el(
     "span",
     `status-badge status-badge-${key}`,
-    labels[key] || "Unknown"
+    known.includes(key) ? t(`status.${key}`) : t("status.unknown")
   );
 
   return badge;
@@ -128,12 +130,12 @@ export function updatedAt(isoString) {
   const date = new Date(isoString);
 
   if (!isoString || Number.isNaN(date.getTime())) {
-    node.textContent = "Unknown";
+    node.textContent = t("date.unknown");
     return node;
   }
 
   node.dateTime = date.toISOString();
-  node.title = date.toLocaleString("en-GB");
+  node.title = date.toLocaleString(dateLocale());
   node.textContent = formatRelativeDate(date);
 
   return node;
@@ -142,13 +144,13 @@ export function updatedAt(isoString) {
 function formatRelativeDate(date) {
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
-  const time = date.toLocaleTimeString("en-GB", {
+  const time = date.toLocaleTimeString(dateLocale(), {
     hour: "2-digit",
     minute: "2-digit"
   });
 
   if (diffMs < 60 * 1000) {
-    return "Just now";
+    return t("date.justNow");
   }
 
   const startOfToday = new Date(
@@ -160,20 +162,20 @@ function formatRelativeDate(date) {
   const oneDay = 24 * 60 * 60 * 1000;
 
   if (date.getTime() >= startOfToday) {
-    return `Today, ${time}`;
+    return t("date.today", { time });
   }
 
   if (date.getTime() >= startOfToday - oneDay) {
-    return `Yesterday, ${time}`;
+    return t("date.yesterday", { time });
   }
 
   const dayDiff = Math.floor((startOfToday - date.getTime()) / oneDay) + 1;
 
   if (dayDiff < 7) {
-    return `${dayDiff} days ago`;
+    return t("date.daysAgo", { count: dayDiff });
   }
 
-  return date.toLocaleDateString("en-GB", {
+  return date.toLocaleDateString(dateLocale(), {
     day: "numeric",
     month: "short",
     year: "numeric"

@@ -16,6 +16,7 @@
 
 import { el, append, clear } from "../../core/dom.js";
 import { openModal } from "../../core/modal.js";
+import { t } from "../../core/i18n.js";
 import { buildCategoryIcon, categoryLabel } from "./categories.js";
 
 const ACCENT = "#2997ff";
@@ -44,7 +45,7 @@ function buildFront(data) {
   append(
     text,
     line("cert-preview-year", data.period),
-    el("h4", "cert-preview-title", data.title || "Untitled certificate"),
+    el("h4", "cert-preview-title", data.title || t("certificates.untitled")),
     line("cert-preview-publisher", data.publisher)
   );
 
@@ -63,7 +64,7 @@ function buildBack(data) {
 
   append(
     inner,
-    el("h4", "cert-preview-back-title", data.title || "Untitled certificate"),
+    el("h4", "cert-preview-back-title", data.title || t("certificates.untitled")),
     line("cert-preview-back-subtitle", data.issuerLine)
   );
 
@@ -107,20 +108,24 @@ export function buildCertificatePreview(data) {
   const frontColumn = el("div", "cert-preview-column");
   append(
     frontColumn,
-    el("p", "cert-preview-caption", "Front"),
+    el("p", "cert-preview-caption", t("certPreview.front")),
     buildFront(data)
   );
 
   const backColumn = el("div", "cert-preview-column");
   append(
     backColumn,
-    el("p", "cert-preview-caption", "Back"),
+    el("p", "cert-preview-caption", t("certPreview.back")),
     buildBack(data)
   );
 
   append(wrap, frontColumn, backColumn);
 
-  const meta = el("p", "form-help", `Category: ${categoryLabel(data.category)}`);
+  const meta = el(
+    "p",
+    "form-help",
+    t("certPreview.category", { name: categoryLabel(data.category) })
+  );
   append(wrap, meta);
 
   return wrap;
@@ -131,11 +136,16 @@ export function openCertificatePreview(data) {
   append(body, buildCertificatePreview(data));
 
   openModal({
-    title: "Certificate preview",
-    description:
-      "Both faces of the card as they will appear on the public site, including unsaved changes. The public section shows these inside the rotating carousel.",
+    title: t("certPreview.title"),
+    description: t("certPreview.description"),
     body,
-    actions: [{ label: "Close", variant: "secondary", onClick: ctl => ctl.close() }]
+    actions: [
+      {
+        label: t("common.close"),
+        variant: "secondary",
+        onClick: ctl => ctl.close()
+      }
+    ]
   });
 }
 

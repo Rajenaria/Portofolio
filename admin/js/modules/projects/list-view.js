@@ -34,6 +34,12 @@ import {
 import { confirmDialog, openModal } from "../../core/modal.js";
 import { toast } from "../../core/toast.js";
 import { textField, trimmed } from "../../core/form.js";
+import { t } from "../../core/i18n.js";
+
+/* Resolved at call time so a language switch mid-list relabels everything. */
+function rowTitle(row) {
+  return row.title || t("proj.thisOne");
+}
 import { removeObjects, resolveMediaUrl } from "../../core/media-storage.js";
 import { openProjectPreview } from "./preview.js";
 
@@ -90,11 +96,11 @@ export function createProjectList({ onEdit, onChanged }) {
   const toolbar = el("div", "admin-toolbar");
 
   const searchFieldWrap = el("div", "toolbar-field toolbar-field-search");
-  const searchLabel = el("label", "toolbar-label", "Search");
+  const searchLabel = el("label", "toolbar-label", t("common.search"));
   const searchInput = el("input", "admin-input");
   searchInput.type = "search";
   searchInput.id = "project-search";
-  searchInput.placeholder = "Search projects...";
+  searchInput.placeholder = t("proj.searchPlaceholder");
   searchInput.autocomplete = "off";
   searchLabel.htmlFor = searchInput.id;
 
@@ -107,17 +113,17 @@ export function createProjectList({ onEdit, onChanged }) {
   append(searchFieldWrap, searchLabel, searchInput);
 
   const statusFieldWrap = el("div", "toolbar-field");
-  const statusLabel = el("label", "toolbar-label", "Status");
+  const statusLabel = el("label", "toolbar-label", t("common.status"));
   const statusSelect = el("select", "admin-select");
   statusSelect.id = "project-status-filter";
   statusLabel.htmlFor = statusSelect.id;
 
   [
-    { value: "all", label: "All" },
-    { value: "draft", label: "Draft" },
-    { value: "published", label: "Published" },
-    { value: "archived", label: "Archived" },
-    { value: "trash", label: "Trash" }
+    { value: "all", label: t("common.all") },
+    { value: "draft", label: t("status.draft") },
+    { value: "published", label: t("status.published") },
+    { value: "archived", label: t("status.archived") },
+    { value: "trash", label: t("proj.trash") }
   ].forEach(option => {
     const node = el("option", null, option.label);
     node.value = option.value;
@@ -246,7 +252,7 @@ export function createProjectList({ onEdit, onChanged }) {
     clear(listSlot);
 
     if (state.status === "loading") {
-      append(listSlot, el("p", "loading-text", "Loading projects..."));
+      append(listSlot, el("p", "loading-text", t("proj.loading")));
       return;
     }
 
@@ -261,8 +267,8 @@ export function createProjectList({ onEdit, onChanged }) {
       append(
         listSlot,
         emptyState({
-          title: "Trash is empty.",
-          description: "Projects you move to Trash appear here and can be restored."
+          title: t("proj.emptyTrashTitle"),
+          description: t("proj.emptyTrashHelp")
         })
       );
       return;
@@ -272,8 +278,8 @@ export function createProjectList({ onEdit, onChanged }) {
       append(
         listSlot,
         emptyState({
-          title: "No projects yet.",
-          description: "Add your first project to start building your portfolio."
+          title: t("proj.emptyTitle"),
+          description: t("proj.emptyHelp")
         })
       );
       return;
@@ -283,8 +289,8 @@ export function createProjectList({ onEdit, onChanged }) {
       append(
         listSlot,
         emptyState({
-          title: "No projects match your filters.",
-          description: "Try another search term or status."
+          title: t("proj.emptyFilterTitle"),
+          description: t("list.filtersEmptyHelp")
         })
       );
       return;
@@ -298,21 +304,15 @@ export function createProjectList({ onEdit, onChanged }) {
         "p",
         "table-summary",
         isTrashView()
-          ? `${rows.length} in Trash`
-          : rows.length === activeRows().length
-          ? `${rows.length} projects`
-          : `${rows.length} of ${activeRows().length} projects`
+          ? t("proj.summaryTrash", { count: rows.length })
+          : t("proj.summary", { shown: rows.length, total: activeRows().length })
       )
     );
 
     if (isTrashView()) {
       append(
         listSlot,
-        el(
-          "p",
-          "table-note",
-          "Permanent deletion removes the project, its paragraphs, technology links, documentation records and every stored image file. It cannot be undone."
-        )
+        el("p", "table-note", t("proj.trashNote"))
       );
       return;
     }
@@ -320,11 +320,7 @@ export function createProjectList({ onEdit, onChanged }) {
     if (filtersActive()) {
       append(
         listSlot,
-        el(
-          "p",
-          "table-note",
-          "Move Up and Move Down are available when no search or filter is active, because ordering applies to the whole list."
-        )
+        el("p", "table-note", t("list.reorderNote"))
       );
     }
   }
@@ -335,11 +331,15 @@ export function createProjectList({ onEdit, onChanged }) {
 
     append(
       panel,
-      el("p", "admin-alert-title", "Could not load projects."),
-      el("p", "admin-alert-text", "Check your connection and try again.")
+      el("p", "admin-alert-title", t("proj.loadError")),
+      el("p", "admin-alert-text", t("list.loadErrorHelp"))
     );
 
-    const retry = el("button", "admin-button admin-button-secondary", "Try Again");
+    const retry = el(
+      "button",
+      "admin-button admin-button-secondary",
+      t("common.tryAgain")
+    );
     retry.type = "button";
     retry.addEventListener("click", load);
     append(panel, retry);
@@ -355,8 +355,19 @@ export function createProjectList({ onEdit, onChanged }) {
     const headRow = el("tr");
 
     const columns = isTrashView()
-      ? ["Project", "Category", "Status", "Deleted"]
-      : ["Project", "Category", "Status", "Featured", "Updated"];
+      ? [
+          t("proj.colProject"),
+          t("common.category"),
+          t("common.status"),
+          t("common.deleted")
+        ]
+      : [
+          t("proj.colProject"),
+          t("common.category"),
+          t("common.status"),
+          t("proj.colFeatured"),
+          t("common.updated")
+        ];
 
     columns.forEach(label => {
       const cell = el("th", null, label);
@@ -366,7 +377,7 @@ export function createProjectList({ onEdit, onChanged }) {
 
     const actionsHead = el("th");
     actionsHead.scope = "col";
-    append(actionsHead, el("span", "visually-hidden", "Actions"));
+    append(actionsHead, el("span", "visually-hidden", t("common.actions")));
     append(headRow, actionsHead);
 
     append(thead, headRow);
@@ -394,42 +405,43 @@ export function createProjectList({ onEdit, onChanged }) {
       item.classList.add("is-muted-row");
     }
 
-    const titleCell = cell("Project");
-    append(titleCell, el("span", "row-title", row.title || "Untitled project"));
+    const titleCell = cell(t("proj.colProject"));
+    titleCell.classList.add("cell-primary");
+    append(titleCell, el("span", "row-title", row.title || t("proj.untitled")));
     append(titleCell, el("span", "row-subtle", row.slug));
     append(item, titleCell);
 
-    const categoryCell = cell("Category");
+    const categoryCell = cell(t("common.category"));
     append(
       categoryCell,
       row.card_category
         ? el("span", "type-badge", row.card_category)
-        : el("span", "row-subtle", "—")
+        : el("span", "row-subtle", t("common.none"))
     );
     append(item, categoryCell);
 
-    const statusCell = cell("Status");
+    const statusCell = cell(t("common.status"));
     append(statusCell, statusBadge(row.status));
     append(item, statusCell);
 
     if (!isTrashView()) {
-      const featuredCell = cell("Featured");
+      const featuredCell = cell(t("proj.colFeatured"));
       append(
         featuredCell,
         el(
           "span",
           row.featured ? "flag-badge flag-badge-yes" : "flag-badge flag-badge-no",
-          row.featured ? "Yes" : "No"
+          t(row.featured ? "common.yes" : "common.no")
         )
       );
       append(item, featuredCell);
     }
 
-    const timeCell = cell(isTrashView() ? "Deleted" : "Updated");
+    const timeCell = cell(isTrashView() ? t("common.deleted") : t("common.updated"));
     append(timeCell, updatedAt(isTrashView() ? row.deleted_at : row.updated_at));
     append(item, timeCell);
 
-    const actionsCell = cell("Actions");
+    const actionsCell = cell(t("common.actions"));
     actionsCell.className = "cell-actions";
     append(actionsCell, buildActionsMenu(row));
     append(item, actionsCell);
@@ -446,7 +458,10 @@ export function createProjectList({ onEdit, onChanged }) {
     trigger.type = "button";
     trigger.setAttribute("aria-haspopup", "true");
     trigger.setAttribute("aria-expanded", "false");
-    trigger.setAttribute("aria-label", `Actions for ${row.title || "project"}`);
+    trigger.setAttribute(
+      "aria-label",
+      t("proj.actionsFor", { title: rowTitle(row) })
+    );
 
     trigger.addEventListener("click", () => {
       const isOpen = wrap.classList.contains("is-open");
@@ -541,38 +556,41 @@ export function createProjectList({ onEdit, onChanged }) {
     const index = ordered.findIndex(entry => entry.id === row.id);
 
     const entries = [
-      { label: "Edit", onSelect: () => onEdit(row.id) },
-      { label: "Preview", onSelect: () => previewRow(row) },
+      { label: t("common.edit"), onSelect: () => onEdit(row.id) },
+      { label: t("common.preview"), onSelect: () => previewRow(row) },
       {
-        label: "Move Up",
+        label: t("action.moveUp"),
         disabled: !canReorder || index <= 0,
-        hint: canReorder ? null : "Clear search and filters to reorder.",
+        hint: canReorder ? null : t("list.reorderHint"),
         onSelect: () => move(index, -1)
       },
       {
-        label: "Move Down",
+        label: t("action.moveDown"),
         disabled: !canReorder || index === -1 || index >= ordered.length - 1,
-        hint: canReorder ? null : "Clear search and filters to reorder.",
+        hint: canReorder ? null : t("list.reorderHint"),
         onSelect: () => move(index, 1)
       }
     ];
 
     if (row.status === "draft") {
-      entries.push({ label: "Publish", onSelect: () => publish(row) });
-      entries.push({ label: "Archive", onSelect: () => archive(row) });
+      entries.push({ label: t("action.show"), onSelect: () => publish(row) });
+      entries.push({ label: t("action.archive"), onSelect: () => archive(row) });
     }
 
     if (row.status === "published") {
-      entries.push({ label: "Unpublish", onSelect: () => unpublish(row) });
-      entries.push({ label: "Archive", onSelect: () => archive(row) });
+      entries.push({ label: t("action.hide"), onSelect: () => unpublish(row) });
+      entries.push({ label: t("action.archive"), onSelect: () => archive(row) });
     }
 
     if (row.status === "archived") {
-      entries.push({ label: "Restore to Draft", onSelect: () => restoreToDraft(row) });
+      entries.push({
+        label: t("action.restoreDraft"),
+        onSelect: () => restoreToDraft(row)
+      });
     }
 
     entries.push({
-      label: "Move to Trash",
+      label: t("action.moveToTrash"),
       danger: true,
       onSelect: () => moveToTrash(row)
     });
@@ -582,10 +600,10 @@ export function createProjectList({ onEdit, onChanged }) {
 
   function trashEntries(row) {
     return [
-      { label: "Preview", onSelect: () => previewRow(row) },
-      { label: "Restore", onSelect: () => restoreFromTrash(row) },
+      { label: t("common.preview"), onSelect: () => previewRow(row) },
+      { label: t("action.restore"), onSelect: () => restoreFromTrash(row) },
       {
-        label: "Delete Permanently",
+        label: t("action.deletePermanently"),
         danger: true,
         onSelect: () => permanentlyDelete(row)
       }
@@ -668,16 +686,18 @@ export function createProjectList({ onEdit, onChanged }) {
   function publishBlockers(row) {
     const missing = [];
 
-    if (!row.card_category) missing.push("category");
-    if (!row.short_description) missing.push("short description");
-    if (!row.detail_intro) missing.push("introduction");
-    if (!row.role) missing.push("role");
-    if (!row.project_date) missing.push("project date");
-    if (!row.project_type) missing.push("project type");
-    if (!row.about_heading) missing.push("about heading");
+    /* Field names come from the same keys the editor labels them with, so the
+       two screens never call the same field by two different names. */
+    if (!row.card_category) missing.push(t("projEditor.fieldCategory"));
+    if (!row.short_description) missing.push(t("projEditor.fieldShort"));
+    if (!row.detail_intro) missing.push(t("projEditor.fieldIntro"));
+    if (!row.role) missing.push(t("common.role"));
+    if (!row.project_date) missing.push(t("projEditor.fieldDate"));
+    if (!row.project_type) missing.push(t("projEditor.fieldType"));
+    if (!row.about_heading) missing.push(t("projEditor.fieldAbout"));
 
     if ((state.paragraphsByProject.get(row.id) || []).length === 0) {
-      missing.push("at least one About paragraph");
+      missing.push(t("proj.missingParagraph"));
     }
 
     return missing;
@@ -687,10 +707,7 @@ export function createProjectList({ onEdit, onChanged }) {
     const missing = publishBlockers(row);
 
     if (missing.length > 0) {
-      toast(
-        `Cannot publish yet. Open Edit and complete: ${missing.join(", ")}.`,
-        "error"
-      );
+      toast(t("proj.incomplete", { missing: missing.join(", ") }), "error");
       return;
     }
 
@@ -700,17 +717,14 @@ export function createProjectList({ onEdit, onChanged }) {
       patch.published_at = new Date().toISOString();
     }
 
-    await applyPatch(row, patch, "Project published.", "Could not publish this project.");
+    await applyPatch(row, patch, t("proj.toastPublished"), t("proj.errPublish"));
   }
 
   async function unpublish(row) {
     const confirmed = await confirmDialog({
-      title: `Unpublish "${row.title || "this project"}"?`,
-      lines: [
-        "This project will return to Draft and will no longer appear in the public portfolio after public migration.",
-        "Its content, paragraphs, technologies and order are kept, and it can be published again later."
-      ],
-      confirmLabel: "Unpublish",
+      title: t("proj.hideTitle", { title: rowTitle(row) }),
+      lines: [t("proj.hideLine1"), t("proj.hideLine2")],
+      confirmLabel: t("action.hide"),
       variant: "danger"
     });
 
@@ -723,19 +737,16 @@ export function createProjectList({ onEdit, onChanged }) {
     await applyPatch(
       row,
       { status: "draft", archived_at: null },
-      "Project unpublished and moved back to draft.",
-      "Could not unpublish this project."
+      t("proj.toastHidden"),
+      t("proj.errHide")
     );
   }
 
   async function archive(row) {
     const confirmed = await confirmDialog({
-      title: `Archive "${row.title || "this project"}"?`,
-      lines: [
-        "Archived projects will no longer appear in the public portfolio after public migration.",
-        "The record, paragraphs and technology relationships are kept and can be restored later."
-      ],
-      confirmLabel: "Archive",
+      title: t("proj.archiveTitle", { title: rowTitle(row) }),
+      lines: [t("proj.archiveLine1"), t("proj.archiveLine2")],
+      confirmLabel: t("action.archive"),
       variant: "danger"
     });
 
@@ -746,8 +757,8 @@ export function createProjectList({ onEdit, onChanged }) {
     await applyPatch(
       row,
       { status: "archived", archived_at: new Date().toISOString() },
-      "Project archived.",
-      "Could not archive this project."
+      t("proj.toastArchived"),
+      t("proj.errArchive")
     );
   }
 
@@ -755,19 +766,16 @@ export function createProjectList({ onEdit, onChanged }) {
     await applyPatch(
       row,
       { status: "draft", archived_at: null },
-      "Project restored to draft.",
-      "Could not restore this project."
+      t("proj.toastRestoredDraft"),
+      t("proj.errRestore")
     );
   }
 
   async function moveToTrash(row) {
     const confirmed = await confirmDialog({
-      title: `Move "${row.title || "this project"}" to Trash?`,
-      lines: [
-        "The project is hidden from the normal list and from the public portfolio.",
-        "Its paragraphs, technologies and media references are kept. You can restore it later."
-      ],
-      confirmLabel: "Move to Trash",
+      title: t("proj.trashTitle", { title: rowTitle(row) }),
+      lines: [t("proj.trashLine1"), t("proj.trashLine2")],
+      confirmLabel: t("action.moveToTrash"),
       variant: "danger"
     });
 
@@ -778,8 +786,8 @@ export function createProjectList({ onEdit, onChanged }) {
     await applyPatch(
       row,
       { deleted_at: new Date().toISOString() },
-      "Project moved to Trash.",
-      "Could not move this project to Trash."
+      t("proj.toastTrashed"),
+      t("proj.errTrash")
     );
   }
 
@@ -788,8 +796,8 @@ export function createProjectList({ onEdit, onChanged }) {
     await applyPatch(
       row,
       { deleted_at: null, status: "draft", archived_at: null },
-      "Project restored as a draft.",
-      "Could not restore this project."
+      t("proj.toastRestored"),
+      t("proj.errRestore")
     );
   }
 
@@ -813,7 +821,7 @@ export function createProjectList({ onEdit, onChanged }) {
 
     if (mediaRows.error) {
       console.error(mediaRows.error);
-      toast("Could not read this project's media. Nothing was deleted.", "error");
+      toast(t("proj.errReadMedia"), "error");
       return;
     }
 
@@ -860,7 +868,7 @@ export function createProjectList({ onEdit, onChanged }) {
       }
 
       setBusy(false);
-      toast("Could not permanently delete this project.", "error");
+      toast(t("proj.errDelete"), "error");
       return;
     }
 
@@ -878,8 +886,8 @@ export function createProjectList({ onEdit, onChanged }) {
 
     toast(
       orphans.length > 0
-        ? `Project permanently deleted. These files could not be removed and may need manual cleanup: ${orphans.join(", ")}`
-        : "Project permanently deleted.",
+        ? t("proj.toastDeletedOrphans", { files: orphans.join(", ") })
+        : t("proj.toastDeleted"),
       orphans.length > 0 ? "error" : "success"
     );
 
@@ -894,35 +902,36 @@ export function createProjectList({ onEdit, onChanged }) {
 
       append(
         body,
-        el("p", "confirm-line", row.title || "This project"),
-        el(
-          "p",
-          "confirm-line",
-          "This permanently removes the project, its paragraphs, its technology relationships, its documentation records and every stored image file."
-        )
+        el("p", "confirm-line", rowTitle(row)),
+        el("p", "confirm-line", t("proj.deleteLine"))
       );
 
       const summary = [];
 
       if (row.cover_desktop_path) {
-        summary.push("1 cover image");
+        summary.push(t("proj.fileCover"));
       }
 
       if (documentationCount > 0) {
-        summary.push(
-          `${documentationCount} documentation image${documentationCount === 1 ? "" : "s"}`
-        );
+        summary.push(t("proj.fileDocs", { count: documentationCount }));
       }
 
       if (summary.length > 0) {
-        append(body, el("p", "confirm-line", `Files to delete: ${summary.join(" and ")}.`));
+        append(
+          body,
+          el(
+            "p",
+            "confirm-line",
+            t("proj.filesToDelete", { summary: summary.join(" + ") })
+          )
+        );
       }
 
-      append(body, el("p", "confirm-line", "This action cannot be undone."));
+      append(body, el("p", "confirm-line", t("confirm.cannotBeUndone")));
 
       const field = textField({
         id: "project-delete-confirm",
-        label: "Type DELETE to confirm",
+        label: t("confirm.typeDelete"),
         value: "",
         maxLength: 10
       });
@@ -930,12 +939,12 @@ export function createProjectList({ onEdit, onChanged }) {
       append(body, field.node);
 
       const controller = openModal({
-        title: "Delete permanently?",
+        title: t("confirm.deleteTitle"),
         body,
         size: "small",
         actions: [
           {
-            label: "Cancel",
+            label: t("common.cancel"),
             variant: "secondary",
             onClick: ctl => {
               settle(false);
@@ -943,11 +952,11 @@ export function createProjectList({ onEdit, onChanged }) {
             }
           },
           {
-            label: "Delete Permanently",
+            label: t("action.deletePermanently"),
             variant: "danger",
             onClick: ctl => {
               if (trimmed(field.value) !== "DELETE") {
-                field.setError("Type DELETE exactly to confirm.");
+                field.setError(t("confirm.typeDeleteError"));
                 field.focus();
                 return;
               }
@@ -1017,14 +1026,14 @@ export function createProjectList({ onEdit, onChanged }) {
         }
 
         setBusy(false);
-        toast("Could not change the order. Please try again.", "error");
+        toast(t("list.orderError"), "error");
         await load();
         return;
       }
     }
 
     setBusy(false);
-    toast("Order updated.");
+    toast(t("list.orderUpdated"));
     await load();
   }
 
