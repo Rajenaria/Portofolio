@@ -68,12 +68,24 @@
   box-sizing: border-box;
 }
 
+/*
+  `clip`, not `hidden`.
+
+  Both stop horizontal scrolling, but `overflow-x: hidden` forces the other
+  axis to compute as `auto`, which turns <body> into a scroll container. The
+  page still scrolls on the viewport, so everything sticky inside <body> —
+  the sidebar, the mobile topbar, the editor header — was sticking to a box
+  that scrolls away with the page, and never actually pinned.
+
+  `clip` establishes no scroll container, so overflow-y stays `visible` and
+  position: sticky resolves against the viewport as intended.
+*/
 html,
 body {
   margin: 0;
   padding: 0;
   max-width: 100%;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 body {
@@ -92,7 +104,14 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Scroll lock while the mobile navigation drawer is open. */
+/*
+  Scroll lock while the mobile navigation drawer is open.
+
+  The page scrolls on the viewport, not on <body>, so locking <body> alone
+  never held it. The root element is the one that has to stop scrolling; the
+  body rule stays so the lock still applies if the two ever swap roles.
+*/
+html:has(body.has-drawer-open),
 body.has-drawer-open {
   overflow: hidden;
 }
@@ -694,6 +713,38 @@ svg {
   font-variant-numeric: tabular-nums;
 }
 
+/*
+  Each card ends with the way into its module, so the overview is a starting
+  point rather than a read-only report.
+*/
+.kpi-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.kpi-link {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--admin-border-soft);
+  color: var(--admin-text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.kpi-link::after {
+  content: " \2192";
+}
+
+.kpi-link:hover,
+.kpi-link:focus-visible {
+  color: var(--admin-text-primary);
+}
+
+.kpi-card .kpi-breakdown {
+  margin-bottom: auto;
+}
+
 /* --------------------------------------------------------------------------
    12. BADGES
    -------------------------------------------------------------------------- */
@@ -737,6 +788,24 @@ svg {
   color: var(--admin-text-secondary);
   font-weight: 500;
 }
+
+/*
+  The recent list mixes three content types. They are told apart by their
+  label first; the marker is a quiet second signal, never the only one.
+*/
+.type-badge::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.55;
+}
+
+.type-badge-project { color: var(--admin-text-primary); }
+.type-badge-experience { color: var(--admin-text-secondary); }
+.type-badge-certificate { color: var(--admin-text-secondary); }
 
 /* --------------------------------------------------------------------------
    13. RECENT CONTENT
@@ -940,6 +1009,18 @@ svg {
   overflow-wrap: anywhere;
 }
 
+/*
+  The stored icon itself, drawn the same way the picker draws it: no card, no
+  tile, no background — the glyph and its own colours, at one size across the
+  list, the picker and the preview.
+*/
+.tech-icon-image {
+  display: block;
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
 .tech-meta {
   display: flex;
   flex-wrap: wrap;
@@ -953,6 +1034,11 @@ svg {
 .tech-icon-key {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   overflow-wrap: anywhere;
+}
+
+/* Prose, not an identifier, so it keeps the interface face. */
+.tech-usage {
+  white-space: nowrap;
 }
 
 .tech-group-none {
@@ -1379,6 +1465,33 @@ body.has-modal-open {
   border-radius: var(--radius-md);
 }
 
+/*
+  Names the slot by its role rather than its number, so "primary, always
+  visible" is stated once at the top of the card instead of being inferred
+  from a disabled checkbox further down.
+*/
+.hero-slot-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.hero-slot-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/*
+  The slot already names itself above. The media field keeps its own title for
+  the Replace dialog, but printing it a second time inside the card would say
+  "Primary photo" and "Hero photo 01" one line apart.
+*/
+.hero-slot .media-field-header {
+  display: none;
+}
+
 .hero-slot-status:empty {
   display: none;
 }
@@ -1734,12 +1847,29 @@ body.has-modal-open {
   gap: 20px;
 }
 
+/*
+  The Project and Experience editors run several thousand pixels long, so the
+  header carrying Preview / Save / Publish follows the form down the page.
+
+  The offset clears the mobile topbar, which is itself sticky at top: 0 and
+  57px tall; from 1024px up that topbar is display:none and the offset drops
+  to 0. z-index sits below the topbar (20) and the drawer (50) so neither is
+  ever covered, and the background is opaque because form content passes
+  underneath.
+*/
 .editor-header {
+  position: sticky;
+  top: 57px;
+  z-index: 15;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  padding: 12px 0;
+  margin-bottom: 4px;
+  background: var(--admin-bg);
+  border-bottom: 1px solid var(--admin-border-soft);
 }
 
 .editor-heading {
@@ -1760,6 +1890,21 @@ body.has-modal-open {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+/*
+  A labelled run of fields inside a group — used where one section covers two
+  distinct things (project details, then its links) and a second card would be
+  more chrome than the content deserves.
+*/
+.form-subheading {
+  margin-top: 18px;
+  margin-bottom: 10px;
+  color: var(--admin-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
 }
 
 .settings-list {
@@ -2377,9 +2522,19 @@ body.has-modal-open {
   }
 }
 
+/*
+  Four summary cards. Two-up on a tablet, four-up once the row can hold them
+  without the value and its breakdown crowding each other.
+*/
 @media (min-width: 768px) {
   .kpi-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1180px) {
+  .kpi-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
@@ -2432,21 +2587,35 @@ body.has-modal-open {
     text-transform: uppercase;
   }
 
-  .admin-table td[data-label="Icon"] {
+  /*
+    Class-based, not data-label based. These selectors used to key on the
+    English label text, which stopped matching the moment the column headers
+    were translated.
+  */
+  .admin-table td.cell-icon {
     justify-content: flex-start;
     margin-top: 0;
   }
 
-  .admin-table td[data-label="Icon"]::before,
-  .admin-table td[data-label="Technology"]::before,
+  .admin-table td.cell-icon::before,
   .admin-table td.cell-actions::before {
     content: none;
   }
 
-  .admin-table td[data-label="Technology"] {
+  /*
+    The row's headline cell. Class-based rather than data-label based, because
+    the label is translated and a selector on its English text would silently
+    stop matching in Indonesian. It reads as a card heading: no eyebrow, and
+    room on the right so the actions menu never lands on the subtitle.
+  */
+  .admin-table td.cell-primary {
     display: block;
-    margin-top: 10px;
+    margin-top: 0;
     padding-right: 44px;
+  }
+
+  .admin-table td.cell-primary::before {
+    content: none;
   }
 
   .admin-table td.cell-actions {
@@ -2460,6 +2629,39 @@ body.has-modal-open {
   .admin-toolbar {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  /*
+    flex-basis follows the main axis, so the 220px that makes the search field
+    grow WIDE in a row makes it 220px TALL once the toolbar stacks. Reset it
+    with the direction change rather than leaving a 220px hole above Status.
+  */
+  .toolbar-field-search {
+    flex: 0 0 auto;
+  }
+
+  /*
+    Row actions in the paragraph, tag and gallery editors are a comfortable
+    12px chip on a mouse and a 30px-tall target on a finger. Below the table
+    breakpoint they get a real hit area.
+  */
+  .ordered-action {
+    min-height: 40px;
+    padding: 5px 14px;
+  }
+
+  /*
+    The action cluster is flex: 0 0 auto, so at narrow widths it claims its
+    full max-content width and the text beside it is squeezed to a single
+    character per line. Letting the row wrap gives the content the width and
+    drops the actions onto their own line.
+  */
+  .ordered-row {
+    flex-wrap: wrap;
+  }
+
+  .ordered-actions {
+    flex: 1 1 100%;
   }
 
   .admin-select {
@@ -2512,6 +2714,11 @@ body.has-modal-open {
   /* Persistent sidebar: no hamburger, no backdrop, no mobile topbar. */
   .admin-topbar {
     display: none;
+  }
+
+  /* With the topbar gone there is nothing above the editor header to clear. */
+  .editor-header {
+    top: 0;
   }
 
   .admin-backdrop {
@@ -2588,6 +2795,51 @@ body.has-modal-open {
   auto-fill drops a column on its own as the panel narrows, so the
   same rule serves desktop and mobile without a breakpoint.
 */
+
+/*
+  A labelled run of fields inside the technology dialog. The modal is narrow,
+  so groups are separated by a rule rather than nested cards — a card inside a
+  dialog would be a frame inside a frame.
+*/
+.modal-group + .modal-group {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--admin-border-soft);
+}
+
+.modal-group .form-subheading {
+  margin-top: 0;
+}
+
+/* The chip as the public Tech Stack draws it: icon, name, nothing else. */
+.tech-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tech-preview-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--admin-surface-subtle);
+  border: 1px solid var(--admin-border-soft);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.tech-preview-icon {
+  display: block;
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.tech-preview-name {
+  overflow-wrap: anywhere;
+}
 
 .icon-combobox-list {
   display: grid;
@@ -2782,8 +3034,75 @@ body.has-modal-open {
    13g-c. CERTIFICATES — LIST, CATEGORY CELL, CARD PREVIEW
    -------------------------------------------------------------------------- */
 
+/*
+  The minimum-published banner.
+
+  The count is set as its own large figure and the rule is spelled out in a
+  full sentence beside it, because "3 / 3" alone does not tell the owner that
+  hiding one more is about to be refused.
+*/
 .cert-minimum {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    "count title"
+    "count text";
+  align-items: center;
+  column-gap: 16px;
   margin-bottom: 20px;
+}
+
+.cert-minimum-count {
+  grid-area: count;
+  align-self: center;
+  min-width: 52px;
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.cert-minimum .admin-alert-title {
+  grid-area: title;
+}
+
+.cert-minimum .admin-alert-text {
+  grid-area: text;
+}
+
+@media (max-width: 599px) {
+  .cert-minimum {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "count"
+      "title"
+      "text";
+    justify-items: start;
+    row-gap: 4px;
+  }
+
+  .cert-minimum-count {
+    min-width: 0;
+    text-align: left;
+  }
+}
+
+/*
+  Visibility group in the editor: status is shown, never edited. Changing it
+  happens in the list, where the minimum rule can be explained in context.
+*/
+.cert-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.cert-status-label {
+  color: var(--admin-text-secondary);
+  font-size: 13px;
 }
 
 .cert-category-cell {
@@ -2988,4 +3307,280 @@ a.admin-button {
   border-style: solid;
   border-color: rgba(41, 151, 255, 0.5);
   color: #2997ff;
+}
+
+/* --------------------------------------------------------------------------
+   AUTH SCREENS — dark, centred, no image dependency
+   -------------------------------------------------------------------------- */
+
+.admin-auth {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+  background: #0B0B0B;
+  overflow: hidden;
+}
+
+/* Two soft gradients only — pure CSS, so the sign-in screen never waits on
+   an asset download. */
+.auth-backdrop {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(60ch 40ch at 18% 12%, rgba(41, 151, 255, 0.14), transparent 60%),
+    radial-gradient(50ch 36ch at 88% 88%, rgba(255, 255, 255, 0.06), transparent 62%);
+  pointer-events: none;
+}
+
+.auth-stage {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+}
+
+.auth-card {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  /*
+    The pre-redesign rule caps the card at 380px, which left it sitting 20px
+    off-centre inside the 420px .auth-stage. The stage is the intended width
+    constraint, so the card fills it.
+  */
+  max-width: 100%;
+  padding: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 18px;
+  background: #141414;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  color: #FFFFFF;
+}
+
+.auth-card-status {
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 28px;
+}
+
+.auth-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  border-top-color: #2997ff;
+  border-radius: 50%;
+  animation: auth-spin 0.8s linear infinite;
+}
+
+@keyframes auth-spin { to { transform: rotate(360deg); } }
+
+.auth-head { display: flex; flex-direction: column; gap: 6px; }
+
+.auth-eyebrow {
+  color: #737373;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+}
+
+.auth-title { font-size: 24px; font-weight: 650; letter-spacing: -0.3px; }
+
+.auth-subtitle { color: #A3A3A3; font-size: 14px; line-height: 1.5; }
+
+.auth-form { display: flex; flex-direction: column; gap: 16px; }
+
+.auth-field { display: flex; flex-direction: column; gap: 7px; }
+
+.auth-label { color: #E5E5E5; font-size: 13px; font-weight: 550; }
+
+.auth-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 11px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: #0F0F0F;
+  color: #FFFFFF;
+  font-size: 15px;
+  font-family: inherit;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.auth-input::placeholder { color: #5A5A5A; }
+
+.auth-input:focus {
+  outline: none;
+  border-color: #2997ff;
+  box-shadow: 0 0 0 3px rgba(41, 151, 255, 0.22);
+}
+
+.auth-input-wrap { position: relative; }
+
+.auth-input-wrap .auth-input { padding-right: 46px; }
+
+.auth-reveal {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #8A8A8A;
+  cursor: pointer;
+}
+
+.auth-reveal:hover { color: #FFFFFF; }
+.auth-reveal svg { width: 19px; height: 19px; }
+.auth-reveal[aria-pressed="true"] { color: #2997ff; }
+
+.auth-input-code {
+  font-size: 22px;
+  letter-spacing: 8px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.auth-remember {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.auth-remember .admin-checkbox { margin-top: 2px; flex-shrink: 0; }
+
+.auth-remember-label { display: block; color: #E5E5E5; font-size: 14px; }
+
+.auth-remember-help {
+  display: block;
+  margin-top: 3px;
+  color: #737373;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.auth-submit { width: 100%; min-height: 46px; font-size: 15px; }
+
+.auth-error { color: #FF6B6B; font-size: 13px; min-height: 1em; }
+.auth-error:empty { min-height: 0; }
+
+.auth-help { color: #A3A3A3; font-size: 13px; }
+
+.auth-code {
+  display: block;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: #0F0F0F;
+  color: #E5E5E5;
+  font-family: monospace;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.auth-qr {
+  width: 168px;
+  height: 168px;
+  align-self: center;
+  border-radius: 10px;
+  background: #FFFFFF;
+  padding: 8px;
+}
+
+.auth-link {
+  align-self: center;
+  border: 0;
+  background: transparent;
+  color: #8A8A8A;
+  font-size: 13px;
+  font-family: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.auth-link:hover { color: #FFFFFF; }
+
+.auth-foot {
+  display: flex;
+  justify-content: center;
+  padding-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+/* --------------------------------------------------------------------------
+   LANGUAGE SWITCH — compact ID | EN
+   -------------------------------------------------------------------------- */
+
+.lang-switch {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--admin-border-soft);
+  border-radius: 999px;
+  background: var(--admin-surface-subtle);
+}
+
+.admin-auth .lang-switch {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.lang-switch-option {
+  min-width: 40px;
+  min-height: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--admin-text-secondary);
+  font-size: 12px;
+  font-weight: 650;
+  font-family: inherit;
+  letter-spacing: 0.4px;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.admin-auth .lang-switch-option { color: #8A8A8A; }
+
+.lang-switch-option:hover { color: var(--admin-text-primary); }
+.admin-auth .lang-switch-option:hover { color: #FFFFFF; }
+
+.lang-switch-option.is-active {
+  background: var(--admin-surface);
+  color: var(--admin-text-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.admin-auth .lang-switch-option.is-active {
+  background: #2997ff;
+  color: #FFFFFF;
+  box-shadow: none;
+}
+
+.lang-switch-option:focus-visible {
+  outline: 2px solid var(--admin-focus);
+  outline-offset: 2px;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+@media (max-width: 430px) {
+  .auth-card { padding: 24px 20px; }
+  .auth-title { font-size: 21px; }
 }

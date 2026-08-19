@@ -23,13 +23,14 @@ import { supabaseClient } from "../../core/supabase.js";
 import { el, append, clear, pageHeader } from "../../core/dom.js";
 import { confirmDialog, closeAllModals } from "../../core/modal.js";
 import { toast } from "../../core/toast.js";
+import { t } from "../../core/i18n.js";
 
 import { createExperienceList } from "./list-view.js";
 import { createExperienceEditor } from "./editor-view.js";
 
 export const experienceRoute = {
   name: "experience",
-  title: "Experience",
+  title: "Experience",  // Fallback only: the shell titles routes from nav.*
   render
 };
 
@@ -88,13 +89,10 @@ async function render(container, { signal }) {
 
   async function confirmUnsaved() {
     return await confirmDialog({
-      title: "Leave without saving?",
-      lines: [
-        "You have unsaved changes in this experience.",
-        "Your changes will be lost if you leave now."
-      ],
-      confirmLabel: "Leave Without Saving",
-      cancelLabel: "Stay",
+      title: t("unsaved.title"),
+      lines: [t("unsaved.experience"), t("unsaved.lost")],
+      confirmLabel: t("unsaved.leave"),
+      cancelLabel: t("unsaved.stay"),
       variant: "danger"
     });
   }
@@ -111,13 +109,13 @@ async function render(container, { signal }) {
     append(
       headerSlot,
       pageHeader({
-        title: "Experience",
-        subtitle: "Manage your professional experience and portfolio timeline.",
+        title: t("exp.title"),
+        subtitle: t("exp.subtitle"),
         actions: inEditor
           ? []
           : [
               {
-                label: "+ New Experience",
+                label: t("exp.add"),
                 variant: "primary",
                 onClick: () => showEditor(null)
               }
@@ -161,7 +159,7 @@ async function render(container, { signal }) {
 
     if (id) {
       clear(viewSlot);
-      append(viewSlot, el("p", "loading-text", "Loading experience..."));
+      append(viewSlot, el("p", "loading-text", t("exp.loading")));
 
       const [experience, tagRows] = await Promise.all([
         supabaseClient
@@ -186,7 +184,7 @@ async function render(container, { signal }) {
 
       if (experience.error || !experience.data || tagRows.error) {
         console.error(experience.error || tagRows.error);
-        toast("Could not open this experience.", "error");
+        toast(t("exp.errOpen"), "error");
         showList();
         return;
       }

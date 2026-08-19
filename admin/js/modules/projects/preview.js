@@ -17,31 +17,22 @@
   live anchor, so a hostile value can never become a clickable target.
 */
 
-import { el, append } from "../../core/dom.js";
+import { el, append, statusBadge } from "../../core/dom.js";
 import { openModal } from "../../core/modal.js";
+import { t } from "../../core/i18n.js";
 
 function line(label, value) {
   const block = el("div", "preview-line");
   append(
     block,
     el("span", "preview-label", label),
-    el("p", "preview-value", value && String(value).trim() !== "" ? value : "—")
+    el(
+      "p",
+      "preview-value",
+      value && String(value).trim() !== "" ? value : t("common.none")
+    )
   );
   return block;
-}
-
-function statusLabel(status) {
-  const key = String(status || "draft").toLowerCase();
-
-  if (key === "published") {
-    return "Published";
-  }
-
-  if (key === "archived") {
-    return "Archived";
-  }
-
-  return "Draft";
 }
 
 export function openProjectPreview(data) {
@@ -52,7 +43,7 @@ export function openProjectPreview(data) {
     el(
       "p",
       "form-help",
-      "Admin content preview of the current values, including unsaved changes. The public Project card and detail page still render their existing static content."
+      t("projPreview.note")
     )
   );
 
@@ -65,14 +56,17 @@ export function openProjectPreview(data) {
   if (data.coverUrl) {
     const img = el("img", "project-preview-cover");
     img.src = data.coverUrl;
-    img.alt = data.coverAlt || "Project cover";
+    img.alt = data.coverAlt || t("projPreview.cover");
     append(mediaSlot, img);
 
     if (data.coverPending) {
-      append(mediaSlot, el("span", "status-badge status-badge-pending", "Pending upload"));
+      append(
+        mediaSlot,
+        el("span", "status-badge status-badge-pending", t("projMedia.pendingUpload"))
+      );
     }
   } else {
-    append(mediaSlot, el("span", "media-field-empty", "No cover image yet."));
+    append(mediaSlot, el("span", "media-field-empty", t("projPreview.noCover")));
   }
 
   append(card, mediaSlot);
@@ -83,15 +77,16 @@ export function openProjectPreview(data) {
     append(head, el("span", "type-badge", data.cardCategory));
   }
 
-  const key = String(data.status || "draft").toLowerCase();
-  append(head, el("span", `status-badge status-badge-${key}`, statusLabel(data.status)));
+  /* The shared badge already translates its own label, so the preview no
+     longer keeps a second copy of the status vocabulary. */
+  append(head, statusBadge(data.status || "draft"));
 
   if (data.featured) {
-    append(head, el("span", "flag-badge flag-badge-yes", "Featured"));
+    append(head, el("span", "flag-badge flag-badge-yes", t("projPreview.featured")));
   }
 
   append(card, head);
-  append(card, el("h4", "project-preview-title", data.title || "Untitled project"));
+  append(card, el("h4", "project-preview-title", data.title || t("proj.untitled")));
   append(
     card,
     el(
@@ -99,7 +94,7 @@ export function openProjectPreview(data) {
       "project-preview-description",
       data.shortDescription && String(data.shortDescription).trim() !== ""
         ? data.shortDescription
-        : "No short description yet."
+        : t("projPreview.noShort")
     )
   );
 
@@ -111,7 +106,14 @@ export function openProjectPreview(data) {
     append(card, chipRow);
   }
 
-  append(card, el("p", "project-preview-slug", `project.html?slug=${data.slug || "—"}`));
+  append(
+    card,
+    el(
+      "p",
+      "project-preview-slug",
+      `project.html?slug=${data.slug || t("common.none")}`
+    )
+  );
 
   append(body, card);
 
@@ -125,20 +127,20 @@ export function openProjectPreview(data) {
 
   append(
     detail,
-    line("Detail Title", detailTitle),
-    line("Introduction", data.detailIntro),
-    line("Role", data.role),
-    line("Date", data.projectDate),
-    line("Project Type", data.projectType),
-    line("About Heading", data.aboutHeading)
+    line(t("projPreview.detailTitle"), detailTitle),
+    line(t("projEditor.fieldIntro"), data.detailIntro),
+    line(t("common.role"), data.role),
+    line(t("common.date"), data.projectDate),
+    line(t("projEditor.fieldType"), data.projectType),
+    line(t("projEditor.fieldAbout"), data.aboutHeading)
   );
 
   const paragraphs = data.paragraphs || [];
   const paragraphBlock = el("div", "preview-line");
-  append(paragraphBlock, el("span", "preview-label", "About The Project"));
+  append(paragraphBlock, el("span", "preview-label", t("projPreview.about")));
 
   if (paragraphs.length === 0) {
-    append(paragraphBlock, el("p", "preview-value", "—"));
+    append(paragraphBlock, el("p", "preview-value", t("common.none")));
   } else {
     const list = el("ol", "preview-paragraph-list");
 
@@ -153,10 +155,10 @@ export function openProjectPreview(data) {
 
   const documentation = data.documentation || [];
   const galleryBlock = el("div", "preview-line");
-  append(galleryBlock, el("span", "preview-label", "Documentation Gallery"));
+  append(galleryBlock, el("span", "preview-label", t("projPreview.gallery")));
 
   if (documentation.length === 0) {
-    append(galleryBlock, el("p", "preview-value", "—"));
+    append(galleryBlock, el("p", "preview-value", t("common.none")));
   } else {
     const grid = el("div", "preview-photo-grid");
 
@@ -166,10 +168,11 @@ export function openProjectPreview(data) {
       if (item.url) {
         const img = el("img", "preview-photo-image");
         img.src = item.url;
-        img.alt = item.altText || `Documentation image ${index + 1}`;
+        img.alt =
+          item.altText || t("projPreview.docImageAt", { index: index + 1 });
         append(figure, img);
       } else {
-        append(figure, el("p", "media-field-empty", "No image"));
+        append(figure, el("p", "media-field-empty", t("projMedia.noImage")));
       }
 
       const caption = el("figcaption", "preview-photo-caption");
@@ -178,16 +181,25 @@ export function openProjectPreview(data) {
         el(
           "span",
           "preview-photo-title",
-          item.altText || `Image ${String(index + 1).padStart(2, "0")}`
+          item.altText ||
+            t("projPreview.imageAt", {
+              index: String(index + 1).padStart(2, "0")
+            })
         )
       );
 
       if (!item.isActive) {
-        append(caption, el("span", "status-badge status-badge-disabled", "Disabled"));
+        append(
+          caption,
+          el("span", "status-badge status-badge-disabled", t("projPreview.disabled"))
+        );
       }
 
       if (item.pending) {
-        append(caption, el("span", "status-badge status-badge-pending", "Pending"));
+        append(
+          caption,
+          el("span", "status-badge status-badge-pending", t("projPreview.pending"))
+        );
       }
 
       append(figure, caption);
@@ -201,17 +213,18 @@ export function openProjectPreview(data) {
 
   append(
     detail,
-    line("Repository URL", data.githubUrl),
-    line("Live Demo URL", data.demoUrl)
+    line(t("projEditor.fieldRepo"), data.githubUrl),
+    line(t("projEditor.fieldDemo"), data.demoUrl)
   );
 
   append(body, detail);
 
   return openModal({
-    title: "Project preview",
-    description:
-      "Read-only preview of the current values, including unsaved text and pending images. This is an Admin content preview, not the public layout.",
+    title: t("projPreview.title"),
+    description: t("projPreview.description"),
     body,
-    actions: [{ label: "Close", variant: "secondary", onClick: ctl => ctl.close() }]
+    actions: [
+      { label: t("common.close"), variant: "secondary", onClick: ctl => ctl.close() }
+    ]
   });
 }

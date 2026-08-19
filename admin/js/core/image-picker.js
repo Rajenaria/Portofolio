@@ -21,6 +21,7 @@
 */
 
 import { el, append, clear } from "./dom.js";
+import { t } from "./i18n.js";
 
 import {
   processImage,
@@ -28,12 +29,17 @@ import {
   formatBytes,
   formatDimensions,
   formatPercent,
+  MAX_INPUT_BYTES,
   ACCEPTED_MIME_TYPES
 } from "./image-processor.js";
 
 let instanceCounter = 0;
 
-const HELPER_TEXT = "JPG, PNG or WebP · Max 15 MB";
+/* Resolved per render, not at module load, so a language switch reaches it
+   and the limit is read from the processor rather than restated here. */
+function helperText() {
+  return t("picker.hint", { size: formatBytes(MAX_INPUT_BYTES) });
+}
 
 /*
   createImagePicker(options)
@@ -60,7 +66,7 @@ export function createImagePicker(options = {}) {
 
   /* ---------------- persistent parts ---------------- */
 
-  const label = el("label", "form-label", options.label || "Image");
+  const label = el("label", "form-label", options.label || t("picker.label"));
   label.htmlFor = `${idPrefix}-input`;
 
   const input = el("input", "visually-hidden");
@@ -137,9 +143,9 @@ export function createImagePicker(options = {}) {
 
     append(
       zone,
-      el("p", "image-picker-hint", "No image selected."),
-      browseButton("Browse Image"),
-      el("p", "form-help", options.helperText || HELPER_TEXT)
+      el("p", "image-picker-hint", t("picker.empty")),
+      browseButton(t("picker.browse")),
+      el("p", "form-help", options.helperText || helperText())
     );
 
     append(body, zone);
@@ -153,17 +159,13 @@ export function createImagePicker(options = {}) {
 
     append(
       zone,
-      el("p", "image-picker-hint", "Processing image..."),
-      el(
-        "p",
-        "form-help",
-        "Resizing and converting to WebP in your browser. Nothing is uploaded."
-      )
+      el("p", "image-picker-hint", t("picker.processing")),
+      el("p", "form-help", t("picker.processingHelp"))
     );
 
     append(body, zone);
     setState("processing");
-    announce("Processing image.");
+    announce(t("picker.processingStatus"));
   }
 
   function statRow(term, value) {
@@ -205,7 +207,7 @@ export function createImagePicker(options = {}) {
       Alt text describes the role of the image, not the untrusted filename.
       The filename itself is shown below as plain text.
     */
-    image.alt = "Preview of the optimized image";
+    image.alt = t("picker.previewAlt");
     image.decoding = "async";
 
     const caption = el("figcaption", "image-picker-caption");
@@ -218,22 +220,22 @@ export function createImagePicker(options = {}) {
 
     append(
       stats,
-      statBlock("Original", [
+      statBlock(t("picker.original"), [
         [
-          "Dimensions",
+          t("picker.dimensions"),
           formatDimensions(result.original.width, result.original.height)
         ],
-        ["Size", formatBytes(result.original.size)],
-        ["Type", result.original.type]
+        [t("picker.size"), formatBytes(result.original.size)],
+        [t("picker.type"), result.original.type]
       ]),
-      statBlock("Optimized", [
+      statBlock(t("picker.optimized"), [
         [
-          "Dimensions",
+          t("picker.dimensions"),
           formatDimensions(result.optimized.width, result.optimized.height)
         ],
-        ["Size", formatBytes(result.optimized.size)],
-        ["Type", "WebP"],
-        ["Quality", String(result.optimized.quality)]
+        [t("picker.size"), formatBytes(result.optimized.size)],
+        [t("picker.type"), "WebP"],
+        [t("picker.quality"), String(result.optimized.quality)]
       ])
     );
 
@@ -246,7 +248,7 @@ export function createImagePicker(options = {}) {
         el(
           "span",
           "image-savings-label",
-          ` smaller · ${formatBytes(result.savings.bytes)} saved`
+          t("picker.savings", { bytes: formatBytes(result.savings.bytes) })
         )
       );
     } else {
@@ -255,7 +257,7 @@ export function createImagePicker(options = {}) {
         el(
           "span",
           "image-savings-label",
-          "Already well optimized · no size reduction"
+          t("picker.noSavings")
         )
       );
     }
@@ -265,7 +267,7 @@ export function createImagePicker(options = {}) {
     const useButton = el(
       "button",
       "admin-button admin-button-primary",
-      "Use Optimized"
+      t("picker.use")
     );
 
     useButton.type = "button";
@@ -274,10 +276,10 @@ export function createImagePicker(options = {}) {
         options.onReady(currentResult);
       }
 
-      announce("Optimized image selected.");
+      announce(t("picker.selected"));
     });
 
-    append(actions, browseButton("Choose Another"), useButton);
+    append(actions, browseButton(t("picker.chooseAnother")), useButton);
 
     append(body, figure, stats, savings, actions);
 
@@ -302,7 +304,7 @@ export function createImagePicker(options = {}) {
       box,
       el("p", "image-picker-error-text", error.message),
       el("p", "form-help", options.helperText || HELPER_TEXT),
-      browseButton("Choose Another")
+      browseButton(t("picker.chooseAnother"))
     );
 
     append(body, box);

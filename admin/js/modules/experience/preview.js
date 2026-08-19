@@ -13,15 +13,20 @@
   SECURITY: every value is written with textContent through js/core/dom.js.
 */
 
-import { el, append } from "../../core/dom.js";
+import { el, append, statusBadge } from "../../core/dom.js";
 import { openModal } from "../../core/modal.js";
+import { t } from "../../core/i18n.js";
 
 function line(label, value) {
   const block = el("div", "preview-line");
   append(
     block,
     el("span", "preview-label", label),
-    el("p", "preview-value", value && String(value).trim() !== "" ? value : "—")
+    el(
+      "p",
+      "preview-value",
+      value && String(value).trim() !== "" ? value : t("common.none")
+    )
   );
   return block;
 }
@@ -45,23 +50,24 @@ export function buildPreviewCard(data) {
     append(head, el("span", "type-badge", data.type));
   }
 
+  /* The shared badge already translates its own label, so the preview no
+     longer keeps a second copy of the status vocabulary. */
   if (data.status) {
-    const key = String(data.status).toLowerCase();
-    append(
-      head,
-      el("span", `status-badge status-badge-${key}`, statusLabel(key))
-    );
+    append(head, statusBadge(data.status));
   }
 
   append(card, head);
-  append(card, el("h4", "experience-preview-title", data.title || "Untitled experience"));
+  append(
+    card,
+    el("h4", "experience-preview-title", data.title || t("exp.untitled"))
+  );
 
   const meta = el("p", "experience-preview-meta");
   const parts = [data.role, data.location].filter(
     value => value && String(value).trim() !== ""
   );
 
-  meta.textContent = parts.length > 0 ? parts.join(" · ") : "—";
+  meta.textContent = parts.length > 0 ? parts.join(" · ") : t("common.none");
   append(card, meta);
 
   append(
@@ -71,7 +77,7 @@ export function buildPreviewCard(data) {
       "experience-preview-description",
       data.description && String(data.description).trim() !== ""
         ? data.description
-        : "No description yet."
+        : t("expPreview.noDescription")
     )
   );
 
@@ -90,18 +96,6 @@ export function buildPreviewCard(data) {
   return card;
 }
 
-function statusLabel(key) {
-  if (key === "published") {
-    return "Published";
-  }
-
-  if (key === "archived") {
-    return "Archived";
-  }
-
-  return "Draft";
-}
-
 /*
   Opens the preview dialog. `data` is always the CURRENT form state, so unsaved
   edits appear exactly as they would be saved.
@@ -114,7 +108,7 @@ export function openExperiencePreview(data) {
     el(
       "p",
       "form-help",
-      "This is an Admin content preview. The public Experience section still renders its existing static cards; the sticky stack is not reproduced here."
+      t("expPreview.note")
     ),
     buildPreviewCard(data)
   );
@@ -123,26 +117,22 @@ export function openExperiencePreview(data) {
 
   append(
     details,
-    line("Type", data.type),
-    line("Title", data.title),
-    line("Role", data.role),
-    line("Location", data.location),
-    line("Description", data.description),
-    line(
-      "Tags",
-      (data.tags || []).map(tag => tag.label).join(", ")
-    )
+    line(t("common.type"), data.type),
+    line(t("common.title"), data.title),
+    line(t("common.role"), data.role),
+    line(t("common.location"), data.location),
+    line(t("common.description"), data.description),
+    line(t("common.tags"), (data.tags || []).map(tag => tag.label).join(", "))
   );
 
   append(body, details);
 
   return openModal({
-    title: "Experience preview",
-    description:
-      "Read-only preview of the current values, including unsaved changes.",
+    title: t("expPreview.title"),
+    description: t("expPreview.description"),
     body,
     actions: [
-      { label: "Close", variant: "secondary", onClick: ctl => ctl.close() }
+      { label: t("common.close"), variant: "secondary", onClick: ctl => ctl.close() }
     ]
   });
 }

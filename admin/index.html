@@ -73,103 +73,156 @@
 
   <main class="admin-auth" id="auth-layout">
 
-    <section id="loading-screen" class="auth-card auth-card-status">
-      <p class="auth-status-text">Checking session...</p>
-    </section>
+    <!-- Dekorasi CSS murni: dua gradient lembut di latar gelap.
+         Tidak ada aset gambar, jadi layar masuk tidak menunggu unduhan apa pun. -->
+    <div class="auth-backdrop" aria-hidden="true"></div>
 
-    <section id="login-screen" class="auth-card" hidden>
-      <p class="auth-eyebrow">Portfolio</p>
-      <h1 class="auth-title">Admin Login</h1>
+    <div class="auth-stage">
 
-      <form id="login-form" class="auth-form">
-        <label class="auth-label">
-          Email
-          <input
-            class="auth-input"
-            id="email"
-            type="email"
-            autocomplete="username"
-            required
-          >
-        </label>
+      <section id="loading-screen" class="auth-card auth-card-status">
+        <span class="auth-spinner" aria-hidden="true"></span>
+        <p class="auth-status-text" data-i18n="auth.checkingSession">Memeriksa sesi...</p>
+      </section>
 
-        <label class="auth-label">
-          Password
-          <input
-            class="auth-input"
-            id="password"
-            type="password"
-            autocomplete="current-password"
-            required
-          >
-        </label>
+      <section id="login-screen" class="auth-card" hidden>
 
-        <p class="auth-error" id="login-error"></p>
+        <div class="auth-head">
+          <p class="auth-eyebrow" data-i18n="shell.brandEyebrow">Portofolio</p>
+          <h1 class="auth-title" data-i18n="auth.welcomeTitle">Selamat datang kembali</h1>
+          <p class="auth-subtitle" data-i18n="auth.welcomeSubtitle">Masuk untuk mengelola konten portofolio Anda.</p>
+        </div>
 
-        <button class="admin-button admin-button-primary auth-submit" type="submit">
-          Sign In
-        </button>
-      </form>
-    </section>
+        <form id="login-form" class="auth-form">
 
-    <section id="mfa-enroll-screen" class="auth-card" hidden>
-      <p class="auth-eyebrow">Security</p>
-      <h1 class="auth-title">Set up two-factor authentication</h1>
+          <div class="auth-field">
+            <label class="auth-label" for="email" data-i18n="auth.email">Email</label>
+            <input
+              class="auth-input"
+              id="email"
+              type="email"
+              autocomplete="username"
+              data-i18n-placeholder="auth.emailPlaceholder"
+              required
+            >
+          </div>
 
-      <p class="auth-help">
-        Scan this QR code using your authenticator app.
-      </p>
+          <div class="auth-field">
+            <label class="auth-label" for="password" data-i18n="auth.password">Kata sandi</label>
 
-      <img
-        class="auth-qr"
-        id="mfa-qr"
-        alt="MFA QR Code"
-      >
+            <div class="auth-input-wrap">
+              <input
+                class="auth-input"
+                id="password"
+                type="password"
+                autocomplete="current-password"
+                data-i18n-placeholder="auth.passwordPlaceholder"
+                required
+              >
 
-      <p class="auth-help">
-        Manual key:
+              <button
+                type="button"
+                class="auth-reveal"
+                id="password-toggle"
+                data-i18n-aria-label="auth.showPassword"
+                aria-pressed="false"
+              >
+                <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+                  <path d="M1.5 10S4.5 4.5 10 4.5 18.5 10 18.5 10 15.5 15.5 10 15.5 1.5 10 1.5 10Z"
+                    fill="none" stroke="currentColor" stroke-width="1.4" />
+                  <circle cx="10" cy="10" r="2.6" fill="none" stroke="currentColor" stroke-width="1.4" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Hanya menentukan DI MANA sesi disimpan setelah MFA berhasil.
+               Tidak melewati MFA dan tidak mengubah hak akses apa pun. -->
+          <label class="auth-remember" for="remember-me">
+            <input type="checkbox" id="remember-me" class="admin-checkbox" checked>
+            <span>
+              <span class="auth-remember-label" data-i18n="auth.rememberMe">Ingat saya di perangkat ini</span>
+              <span class="auth-remember-help" data-i18n="auth.rememberHelp">Sesi tetap aktif di browser ini. Jangan aktifkan di perangkat bersama.</span>
+            </span>
+          </label>
+
+          <p class="auth-error" id="login-error" role="alert"></p>
+
+          <button class="admin-button admin-button-primary auth-submit" type="submit" id="login-submit">
+            <span data-i18n="auth.signIn">Masuk</span>
+          </button>
+
+        </form>
+
+        <div class="auth-foot" id="login-language"></div>
+
+      </section>
+
+      <section id="mfa-enroll-screen" class="auth-card" hidden>
+
+        <div class="auth-head">
+          <p class="auth-eyebrow" data-i18n="shell.brandEyebrow">Portofolio</p>
+          <h1 class="auth-title" data-i18n="mfa.enrollTitle">Aktifkan verifikasi dua langkah</h1>
+          <p class="auth-subtitle" data-i18n="mfa.enrollSubtitle">Pindai kode QR dengan aplikasi authenticator, lalu masukkan 6 digit kodenya.</p>
+        </div>
+
+        <img class="auth-qr" id="mfa-qr" alt="">
+
+        <p class="auth-help" data-i18n="mfa.secretLabel">Atau masukkan kode ini secara manual</p>
         <code class="auth-code" id="mfa-secret"></code>
-      </p>
 
-      <input
-        class="auth-input auth-input-code"
-        id="mfa-enroll-code"
-        inputmode="numeric"
-        autocomplete="one-time-code"
-        maxlength="6"
-        placeholder="123456"
-      >
+        <div class="auth-field">
+          <label class="auth-label" for="mfa-enroll-code" data-i18n="mfa.code">Kode verifikasi</label>
+          <input
+            class="auth-input auth-input-code"
+            id="mfa-enroll-code"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            maxlength="6"
+            placeholder="000000"
+          >
+        </div>
 
-      <p class="auth-error" id="mfa-enroll-error"></p>
+        <p class="auth-error" id="mfa-enroll-error" role="alert"></p>
 
-      <button class="admin-button admin-button-primary auth-submit" id="mfa-enable-button">
-        Enable MFA
-      </button>
-    </section>
+        <button class="admin-button admin-button-primary auth-submit" id="mfa-enable-button">
+          <span data-i18n="mfa.enable">Aktifkan</span>
+        </button>
 
-    <section id="mfa-challenge-screen" class="auth-card" hidden>
-      <p class="auth-eyebrow">Security</p>
-      <h1 class="auth-title">Two-factor authentication</h1>
+      </section>
 
-      <p class="auth-help">
-        Enter the code from your authenticator app.
-      </p>
+      <section id="mfa-challenge-screen" class="auth-card" hidden>
 
-      <input
-        class="auth-input auth-input-code"
-        id="mfa-code"
-        inputmode="numeric"
-        autocomplete="one-time-code"
-        maxlength="6"
-        placeholder="123456"
-      >
+        <div class="auth-head">
+          <p class="auth-eyebrow" data-i18n="shell.brandEyebrow">Portofolio</p>
+          <h1 class="auth-title" data-i18n="mfa.title">Verifikasi keamanan</h1>
+          <p class="auth-subtitle" data-i18n="mfa.subtitle">Masukkan 6 digit kode dari aplikasi authenticator.</p>
+        </div>
 
-      <p class="auth-error" id="mfa-error"></p>
+        <div class="auth-field">
+          <label class="auth-label" for="mfa-code" data-i18n="mfa.code">Kode verifikasi</label>
+          <input
+            class="auth-input auth-input-code"
+            id="mfa-code"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            maxlength="6"
+            placeholder="000000"
+          >
+        </div>
 
-      <button class="admin-button admin-button-primary auth-submit" id="mfa-submit-button">
-        Verify
-      </button>
-    </section>
+        <p class="auth-error" id="mfa-error" role="alert"></p>
+
+        <button class="admin-button admin-button-primary auth-submit" id="mfa-submit-button">
+          <span data-i18n="mfa.verify">Verifikasi</span>
+        </button>
+
+        <button class="auth-link" type="button" id="mfa-signout" data-i18n="mfa.useAnotherAccount">
+          Keluar dan masuk sebagai akun lain
+        </button>
+
+      </section>
+
+    </div>
 
   </main>
 
@@ -212,7 +265,7 @@
 
       <nav class="sidebar-nav">
 
-        <p class="sidebar-group-label" id="group-overview">Overview</p>
+        <p class="sidebar-group-label" id="group-overview" data-i18n="nav.overview">Ringkasan</p>
         <ul class="sidebar-list" aria-labelledby="group-overview">
           <li>
             <a class="sidebar-link" data-route="dashboard" href="#/dashboard">
@@ -226,12 +279,12 @@
                 <rect x="11" y="11" width="6" height="6" rx="1.5" fill="none"
                   stroke="currentColor" stroke-width="1.4" />
               </svg>
-              <span class="sidebar-link-text">Dashboard</span>
+              <span class="sidebar-link-text" data-i18n="nav.dashboard">Dasbor</span>
             </a>
           </li>
         </ul>
 
-        <p class="sidebar-group-label" id="group-content">Content</p>
+        <p class="sidebar-group-label" id="group-content" data-i18n="nav.content">Konten</p>
         <ul class="sidebar-list" aria-labelledby="group-content">
           <li>
             <a class="sidebar-link" data-route="profile" href="#/profile">
@@ -241,7 +294,7 @@
                 <path d="M4 16.5c1.3-2.6 3.4-3.9 6-3.9s4.7 1.3 6 3.9" fill="none"
                   stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
               </svg>
-              <span class="sidebar-link-text">Profile &amp; About</span>
+              <span class="sidebar-link-text" data-i18n="nav.profile">Profil &amp; Tentang</span>
             </a>
           </li>
           <li>
@@ -252,7 +305,7 @@
                 <path d="M7.5 6V4.8A1.3 1.3 0 018.8 3.5h2.4a1.3 1.3 0 011.3 1.3V6"
                   fill="none" stroke="currentColor" stroke-width="1.4" />
               </svg>
-              <span class="sidebar-link-text">Experience</span>
+              <span class="sidebar-link-text" data-i18n="nav.experience">Pengalaman</span>
             </a>
           </li>
           <li>
@@ -265,7 +318,7 @@
                 <path d="M8 12.4L7.2 17l2.8-1.6 2.8 1.6-.8-4.6" fill="none"
                   stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
               </svg>
-              <span class="sidebar-link-text">Certificates</span>
+              <span class="sidebar-link-text" data-i18n="nav.certificates">Sertifikat</span>
             </a>
           </li>
           <li>
@@ -275,7 +328,7 @@
                   stroke="currentColor" stroke-width="1.4" />
                 <path d="M3 8h14" fill="none" stroke="currentColor" stroke-width="1.4" />
               </svg>
-              <span class="sidebar-link-text">Projects</span>
+              <span class="sidebar-link-text" data-i18n="nav.projects">Proyek</span>
             </a>
           </li>
           <li>
@@ -284,12 +337,12 @@
                 <path d="M10 3.2l6 3.4v6.8l-6 3.4-6-3.4V6.6z" fill="none"
                   stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
               </svg>
-              <span class="sidebar-link-text">Technologies</span>
+              <span class="sidebar-link-text" data-i18n="nav.technologies">Teknologi</span>
             </a>
           </li>
         </ul>
 
-        <p class="sidebar-group-label" id="group-account">Account</p>
+        <p class="sidebar-group-label" id="group-account" data-i18n="common.language">Bahasa</p>
         <ul class="sidebar-list" aria-labelledby="group-account">
           <li>
             <button type="button" id="logout-button" class="sidebar-link sidebar-link-button">
@@ -300,7 +353,7 @@
                   stroke="currentColor" stroke-width="1.4" stroke-linecap="round"
                   stroke-linejoin="round" />
               </svg>
-              <span class="sidebar-link-text">Logout</span>
+              <span class="sidebar-link-text" data-i18n="auth.signOut">Keluar</span>
             </button>
           </li>
         </ul>
@@ -327,7 +380,8 @@
           </svg>
         </button>
 
-        <span class="topbar-title" id="admin-topbar-title">Dashboard</span>
+        <span class="topbar-title" id="admin-topbar-title">Dasbor</span>
+        <div class="topbar-actions" id="admin-topbar-actions"></div>
       </header>
 
       <main class="admin-content" id="admin-content" tabindex="-1"></main>

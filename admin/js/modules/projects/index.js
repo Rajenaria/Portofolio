@@ -24,13 +24,14 @@ import { supabaseClient } from "../../core/supabase.js";
 import { el, append, clear, pageHeader } from "../../core/dom.js";
 import { confirmDialog, closeAllModals } from "../../core/modal.js";
 import { toast } from "../../core/toast.js";
+import { t } from "../../core/i18n.js";
 
 import { createProjectList } from "./list-view.js";
 import { createProjectEditor } from "./editor-view.js";
 
 export const projectsRoute = {
   name: "projects",
-  title: "Projects",
+  title: "Projects",  // Fallback only: the shell titles routes from nav.*
   render
 };
 
@@ -93,13 +94,10 @@ async function render(container, { signal }) {
 
   async function confirmUnsaved() {
     return await confirmDialog({
-      title: "Leave without saving?",
-      lines: [
-        "You have unsaved changes in this project.",
-        "Your changes will be lost if you leave now."
-      ],
-      confirmLabel: "Leave Without Saving",
-      cancelLabel: "Stay",
+      title: t("unsaved.title"),
+      lines: [t("unsaved.project"), t("unsaved.lost")],
+      confirmLabel: t("unsaved.leave"),
+      cancelLabel: t("unsaved.stay"),
       variant: "danger"
     });
   }
@@ -112,13 +110,13 @@ async function render(container, { signal }) {
     append(
       headerSlot,
       pageHeader({
-        title: "Projects",
-        subtitle: "Manage portfolio projects and their published content.",
+        title: t("proj.title"),
+        subtitle: t("proj.subtitle"),
         actions: inEditor
           ? []
           : [
               {
-                label: "+ New Project",
+                label: t("proj.add"),
                 variant: "primary",
                 onClick: () => showEditor(null)
               }
@@ -155,7 +153,7 @@ async function render(container, { signal }) {
 
   async function showEditor(id) {
     clear(viewSlot);
-    append(viewSlot, el("p", "loading-text", "Loading project..."));
+    append(viewSlot, el("p", "loading-text", t("proj.loading")));
 
     // The technology library is always needed by the selector.
     const requests = [
@@ -199,7 +197,7 @@ async function render(container, { signal }) {
 
     if (failure || (id && !results[1].data)) {
       console.error(failure ? failure.error : "project not found");
-      toast("Could not open this project.", "error");
+      toast(t("proj.errOpen"), "error");
       showList();
       return;
     }

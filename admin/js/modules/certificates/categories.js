@@ -15,8 +15,9 @@
   KEYS ARE THE CONTRACT
   ---------------------
   The keys below must stay identical to certificates_category_check in
-  20260818110000_certificates_schema.sql. Labels are display text and may be
-  reworded freely; keys may not. If the two ever drift, the database rejects
+  20260818110000_certificates_schema.sql. Labels are display text, now
+  resolved through i18n as certCategory.<key>, and may be reworded freely in
+  either language; keys may not. If the two ever drift, the database rejects
   the write loudly rather than storing something the renderer cannot resolve.
 
   The icon ids are Iconify `tabler:*` names — the same collection the public
@@ -35,6 +36,13 @@
   builder (for the Admin). No CSP change is required for either.
 */
 
+import { t } from "../../core/i18n.js";
+
+/*
+  The `label` on each entry is the English fallback that ships with the table.
+  Display text comes from certCategory.<key> so the picker, the table column
+  and the preview all follow the interface language.
+*/
 export const CERTIFICATE_CATEGORIES = Object.freeze([
   Object.freeze({ key: "education",     label: "Education / Degree",             icon: "tabler:school" }),
   Object.freeze({ key: "course",        label: "Course / Training",              icon: "tabler:certificate" }),
@@ -66,7 +74,12 @@ export function categoryEntry(key) {
 }
 
 export function categoryLabel(key) {
-  return categoryEntry(key).label;
+  const entry = categoryEntry(key);
+  const translated = t(`certCategory.${entry.key}`);
+
+  /* t() echoes the key back when a string is missing; fall back to the frozen
+     English label rather than showing "certCategory.course" in the UI. */
+  return translated === `certCategory.${entry.key}` ? entry.label : translated;
 }
 
 export function categoryIcon(key) {
@@ -81,7 +94,7 @@ export function isKnownCategory(key) {
 export function categoryOptions() {
   return CERTIFICATE_CATEGORIES.map(entry => ({
     value: entry.key,
-    label: entry.label
+    label: categoryLabel(entry.key)
   }));
 }
 

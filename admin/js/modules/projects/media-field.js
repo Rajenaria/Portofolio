@@ -32,6 +32,7 @@ import { openModal } from "../../core/modal.js";
 import { createImagePicker } from "../../core/image-picker.js";
 import { processImage, formatBytes } from "../../core/image-processor.js";
 import { resolveMediaUrl } from "../../core/media-storage.js";
+import { t } from "../../core/i18n.js";
 
 export const DESKTOP_MAX_DIMENSION = 2000;
 export const MOBILE_MAX_DIMENSION = 1200;
@@ -50,7 +51,7 @@ export async function deriveVariants(originalFile) {
 
 export function createProjectMediaField({
   title,
-  emptyText = "No image configured.",
+  emptyText,
   current,
   compact = false,
   onChange
@@ -70,14 +71,14 @@ export function createProjectMediaField({
   const replaceButton = el(
     "button",
     "admin-button admin-button-secondary",
-    "Add Image"
+    t("projMedia.addImage")
   );
   replaceButton.type = "button";
 
   const clearButton = el(
     "button",
     "admin-button admin-button-secondary",
-    "Discard Pending"
+    t("projMedia.discardPending")
   );
   clearButton.type = "button";
   clearButton.hidden = true;
@@ -107,17 +108,20 @@ export function createProjectMediaField({
 
       const img = el("img", "media-field-image");
       img.src = pendingUrl;
-      img.alt = "Preview of the replacement image";
+      img.alt = t("projMedia.replacementPreview");
       append(previewSlot, img);
       return;
     }
 
     if (!stored || !stored.desktopPath) {
-      append(previewSlot, el("p", "media-field-empty", emptyText));
+      append(
+        previewSlot,
+        el("p", "media-field-empty", emptyText || t("projMedia.emptyField"))
+      );
       return;
     }
 
-    append(previewSlot, el("p", "media-field-empty", "Loading preview..."));
+    append(previewSlot, el("p", "media-field-empty", t("projMedia.loadingPreview")));
 
     const url = await resolveMediaUrl(stored.bucket, stored.desktopPath);
 
@@ -131,20 +135,20 @@ export function createProjectMediaField({
     if (!url) {
       append(
         previewSlot,
-        el("p", "media-field-empty", "Stored image could not be loaded.")
+        el("p", "media-field-empty", t("projMedia.storedLoadError"))
       );
       return;
     }
 
     const img = el("img", "media-field-image");
     img.src = url;
-    img.alt = "Current image";
+    img.alt = t("projMedia.currentLabel");
     img.loading = "lazy";
     img.addEventListener("error", () => {
       clear(previewSlot);
       append(
         previewSlot,
-        el("p", "media-field-empty", "Stored image could not be loaded.")
+        el("p", "media-field-empty", t("projMedia.storedLoadError"))
       );
     });
 
@@ -156,7 +160,10 @@ export function createProjectMediaField({
 
     if (pending) {
       const line = el("p", "media-field-line");
-      append(line, el("span", "status-badge status-badge-pending", "Pending upload"));
+      append(
+        line,
+        el("span", "status-badge status-badge-pending", t("projMedia.pendingUpload"))
+      );
       append(statusSlot, line);
 
       append(
@@ -175,11 +182,7 @@ export function createProjectMediaField({
             pending.mobile.optimized.size
           )}`
         ),
-        el(
-          "p",
-          "form-help",
-          "Both variants were generated from the same source image and will be uploaded when you save."
-        )
+        el("p", "form-help", t("projMedia.bothVariants"))
       );
 
       clearButton.hidden = false;
@@ -194,13 +197,17 @@ export function createProjectMediaField({
         el(
           "p",
           "media-field-detail",
-          `${stored.bucket === "portfolio-staging" ? "Staged (private)" : "Public"} · ${stored.desktopPath}`
+          `${
+            stored.bucket === "portfolio-staging"
+              ? t("projMedia.staged")
+              : t("projMedia.public")
+          } · ${stored.desktopPath}`
         )
       );
       return;
     }
 
-    append(statusSlot, el("p", "form-help", "No image stored yet."));
+    append(statusSlot, el("p", "form-help", t("projMedia.noneStored")));
   }
 
   function render() {
@@ -209,8 +216,11 @@ export function createProjectMediaField({
 
     // "Add" until something exists to replace, so an empty field never claims
     // there is a current image.
-    replaceButton.textContent =
-      pending || (stored && stored.desktopPath) ? "Replace Image" : "Add Image";
+    replaceButton.textContent = t(
+      pending || (stored && stored.desktopPath)
+        ? "projMedia.replaceImage"
+        : "projMedia.addImage"
+    );
   }
 
   function notify() {
@@ -230,7 +240,10 @@ export function createProjectMediaField({
       el(
         "p",
         "form-help",
-        `One source image is used to generate both variants: desktop up to ${DESKTOP_MAX_DIMENSION} px and mobile up to ${MOBILE_MAX_DIMENSION} px. Images are never enlarged or cropped, and the original file is never uploaded.`
+        t("projMedia.sizeHelp", {
+          desktop: DESKTOP_MAX_DIMENSION,
+          mobile: MOBILE_MAX_DIMENSION
+        })
       )
     );
 
@@ -242,10 +255,10 @@ export function createProjectMediaField({
     append(holder, pickerSlot, busy);
 
     picker = createImagePicker({
-      label: "Source Image",
+      label: t("projMedia.sourceImage"),
       processing: { maxDimension: DESKTOP_MAX_DIMENSION },
       onReady: async result => {
-        busy.textContent = "Generating mobile variant...";
+        busy.textContent = t("projMedia.generating");
 
         try {
           const variants = await deriveVariants(result.original.file);
@@ -268,7 +281,7 @@ export function createProjectMediaField({
           busy.textContent =
             error && error.message
               ? error.message
-              : "Could not prepare the mobile variant. Please try another image.";
+              : t("projMedia.errVariant");
         }
       }
     });
@@ -278,7 +291,9 @@ export function createProjectMediaField({
     controller = openModal({
       title: title ? `${replaceButton.textContent}: ${title}` : replaceButton.textContent,
       body: holder,
-      actions: [{ label: "Cancel", variant: "secondary", onClick: ctl => ctl.close() }],
+      actions: [
+        { label: t("common.cancel"), variant: "secondary", onClick: ctl => ctl.close() }
+      ],
       // Cancelling the picker must never mark unrelated content dirty.
       onClosed: () => picker.destroy()
     });

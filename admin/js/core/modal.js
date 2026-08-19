@@ -15,6 +15,7 @@
 */
 
 import { el, append, clear } from "./dom.js";
+import { t } from "./i18n.js";
 
 const FOCUSABLE = [
   "a[href]",
@@ -305,8 +306,8 @@ export function confirmDialog({
   title,
   description,
   lines = [],
-  confirmLabel = "Confirm",
-  cancelLabel = "Cancel",
+  confirmLabel = t("modal.confirm"),
+  cancelLabel = t("common.cancel"),
   variant = "primary"
 }) {
   return new Promise(resolve => {

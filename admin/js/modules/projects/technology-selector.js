@@ -20,6 +20,7 @@
 */
 
 import { el, append, clear } from "../../core/dom.js";
+import { t } from "../../core/i18n.js";
 
 export function createTechnologySelector({
   technologies = [],
@@ -27,16 +28,9 @@ export function createTechnologySelector({
   onChange
 }) {
   const root = el("section", "admin-subsection");
-  append(root, el("h3", "subsection-title", "Technologies"));
+  append(root, el("h3", "subsection-title", t("projTech.title")));
 
-  append(
-    root,
-    el(
-      "p",
-      "form-help",
-      "Chips shown on the public Project card and detail page. Disabled technologies cannot be added, but any already attached to this project stay selected."
-    )
-  );
+  append(root, el("p", "form-help", t("projTech.help")));
 
   const byId = new Map(technologies.map(row => [row.id, row]));
 
@@ -46,18 +40,18 @@ export function createTechnologySelector({
   /* ---------------- selected chips ---------------- */
 
   const selectedBlock = el("div", "selector-block");
-  append(selectedBlock, el("h4", "selector-heading", "Selected"));
+  append(selectedBlock, el("h4", "selector-heading", t("projTech.selected")));
   const selectedSlot = el("div", "selector-chips");
   append(selectedBlock, selectedSlot);
 
   /* ---------------- search + available ---------------- */
 
   const searchField = el("div", "form-field");
-  const searchLabel = el("label", "form-label", "Search technologies");
+  const searchLabel = el("label", "form-label", t("projTech.searchLabel"));
   const searchInput = el("input", "admin-input");
   searchInput.type = "search";
   searchInput.id = "project-technology-search";
-  searchInput.placeholder = "Search technologies...";
+  searchInput.placeholder = t("projTech.searchPlaceholder");
   searchInput.autocomplete = "off";
   searchLabel.htmlFor = searchInput.id;
 
@@ -69,7 +63,7 @@ export function createTechnologySelector({
   append(searchField, searchLabel, searchInput);
 
   const availableBlock = el("div", "selector-block");
-  append(availableBlock, el("h4", "selector-heading", "Available"));
+  append(availableBlock, el("h4", "selector-heading", t("projTech.available")));
   const availableSlot = el("div", "selector-options");
   append(availableBlock, availableSlot);
 
@@ -83,16 +77,16 @@ export function createTechnologySelector({
 
   function labelFor(row) {
     if (!row.show_in_public_stack) {
-      return "Project-only";
+      return t("projTech.projectOnly");
     }
 
     return row.public_group === "languages"
-      ? "Languages"
+      ? t("projTech.groupLanguages")
       : row.public_group === "development_systems"
-      ? "Development & Systems"
+      ? t("projTech.groupDevelopment")
       : row.public_group === "tools_platforms"
-      ? "Tools & Platforms"
-      : "Public";
+      ? t("projTech.groupTools")
+      : t("projTech.groupPublic");
   }
 
   function renderSelected() {
@@ -101,7 +95,7 @@ export function createTechnologySelector({
     if (selected.length === 0) {
       append(
         selectedSlot,
-        el("p", "form-help", "No technologies selected yet.")
+        el("p", "form-help", t("projTech.emptySelected"))
       );
       return;
     }
@@ -117,12 +111,15 @@ export function createTechnologySelector({
       append(chip, el("span", "selector-chip-label", row.name));
 
       if (row.is_active === false) {
-        append(chip, el("span", "status-badge status-badge-disabled", "Disabled"));
+        append(
+          chip,
+          el("span", "status-badge status-badge-disabled", t("status.inactive"))
+        );
       }
 
       const remove = el("button", "selector-chip-remove", "×");
       remove.type = "button";
-      remove.setAttribute("aria-label", `Remove ${row.name}`);
+      remove.setAttribute("aria-label", t("projTech.removeOf", { name: row.name }));
       remove.addEventListener("click", () => {
         selected = selected.filter(entry => entry !== id);
         renderSelected();
@@ -168,8 +165,8 @@ export function createTechnologySelector({
           "p",
           "form-help",
           technologies.length === 0
-            ? "No technologies exist yet. Add them in the Technologies manager first."
-            : "No matching technologies available."
+            ? t("projTech.emptyAll")
+            : t("projTech.emptyMatch")
         )
       );
       return;
@@ -178,7 +175,7 @@ export function createTechnologySelector({
     options.forEach(row => {
       const button = el("button", "selector-option");
       button.type = "button";
-      button.setAttribute("aria-label", `Add ${row.name}`);
+      button.setAttribute("aria-label", t("projTech.addOf", { name: row.name }));
 
       append(
         button,

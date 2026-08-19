@@ -27,6 +27,7 @@ import { openModal, confirmDialog } from "../../core/modal.js";
 import { textField, trimmed, trimmedOrNull, validateText } from "../../core/form.js";
 import { resolveMediaUrl } from "../../core/media-storage.js";
 import { createProjectMediaField } from "./media-field.js";
+import { t } from "../../core/i18n.js";
 
 export const ALT_TEXT_MAX = 250;
 
@@ -36,12 +37,12 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
   const root = el("section", "admin-subsection");
 
   const header = el("div", "subsection-header");
-  append(header, el("h3", "subsection-title", "Documentation Gallery"));
+  append(header, el("h3", "subsection-title", t("projMedia.docTitle")));
 
   const addButton = el(
     "button",
     "admin-button admin-button-secondary",
-    "+ Add Documentation Image"
+    t("projMedia.docAdd")
   );
   addButton.type = "button";
   addButton.addEventListener("click", () => openAddDialog());
@@ -52,11 +53,7 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
   append(
     root,
     header,
-    el(
-      "p",
-      "form-help",
-      "Ordered images rendered by the future public Project detail page. The number of images is not limited. Disabled images keep their files but are hidden from the public gallery."
-    ),
+    el("p", "form-help", t("projMedia.docHelp")),
     listSlot
   );
 
@@ -103,11 +100,7 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
     if (items.length === 0) {
       append(
         listSlot,
-        el(
-          "p",
-          "form-help",
-          "No documentation images yet. They are optional, but the public detail page usually shows a few."
-        )
+        el("p", "form-help", t("projMedia.docEmpty"))
       );
 
       // No cards left to focus, so any hint resolves to the Add button.
@@ -173,10 +166,10 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
     }
 
     const position = String(index + 1).padStart(2, "0");
-    const label = item.altText || `image ${position}`;
+    const label = item.altText || t("projMedia.imageAt", { position });
 
     const thumb = el("div", "media-card-thumb");
-    append(thumb, el("span", "gallery-thumb-fallback", "Loading..."));
+    append(thumb, el("span", "gallery-thumb-fallback", t("common.loading")));
     paintThumb(thumb, item);
 
     const body = el("div", "media-card-body");
@@ -191,16 +184,19 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
         item.isActive
           ? "status-badge status-badge-active"
           : "status-badge status-badge-disabled",
-        item.isActive ? "Active" : "Disabled"
+        t(item.isActive ? "status.active" : "status.inactive")
       )
     );
 
     if (item.pendingFiles) {
-      append(head, el("span", "status-badge status-badge-pending", "Pending upload"));
+      append(
+        head,
+        el("span", "status-badge status-badge-pending", t("projMedia.pendingUpload"))
+      );
     }
 
     if (!item.id) {
-      append(head, el("span", "status-badge status-badge-pending", "New"));
+      append(head, el("span", "status-badge status-badge-pending", t("projMedia.new")));
     }
 
     append(body, head);
@@ -210,7 +206,9 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
       el(
         "p",
         "media-card-alt",
-        item.altText ? `Alt: ${item.altText}` : "No alt text (decorative)"
+        item.altText
+          ? t("projMedia.altOf", { text: item.altText })
+          : t("projMedia.noAlt")
       )
     );
 
@@ -220,15 +218,30 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
         el(
           "p",
           "media-field-detail",
-          `${item.bucket === "portfolio-staging" ? "Staged (private)" : "Public"} · ${item.desktopPath}`
+          `${
+            item.bucket === "portfolio-staging"
+              ? t("projMedia.staged")
+              : t("projMedia.public")
+          } · ${item.desktopPath}`
         )
       );
     }
 
     const actions = el("div", "ordered-actions");
 
-    const up = actionButton("Move up", `Move ${label} up`, () => move(index, -1), "up");
-    const down = actionButton("Move down", `Move ${label} down`, () => move(index, 1), "down");
+    const up = actionButton(
+      t("action.moveUp"),
+      t("projMedia.moveUpOf", { label }),
+      () => move(index, -1),
+      "up"
+    );
+
+    const down = actionButton(
+      t("action.moveDown"),
+      t("projMedia.moveDownOf", { label }),
+      () => move(index, 1),
+      "down"
+    );
 
     if (index === 0) {
       up.disabled = true;
@@ -242,24 +255,32 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
       actions,
       up,
       down,
-      actionButton("Replace", `Replace ${label}`, () => openReplaceDialog(item), "replace"),
       actionButton(
-        "Edit Alt",
-        `Edit alt text for ${label}`,
+        t("common.replace"),
+        t("projMedia.replaceOf", { label }),
+        () => openReplaceDialog(item),
+        "replace"
+      ),
+      actionButton(
+        t("projMedia.editAlt"),
+        t("projMedia.editAltOf", { label }),
         () => openAltDialog(item),
         "alt"
       ),
       actionButton(
-        item.isActive ? "Disable" : "Enable",
-        `${item.isActive ? "Disable" : "Enable"} ${label}`,
+        t(item.isActive ? "common.disable" : "common.enable"),
+        t("projMedia.toggleOf", {
+          action: t(item.isActive ? "common.disable" : "common.enable"),
+          label
+        }),
         () => toggleActive(item),
         "active"
       )
     );
 
     const remove = actionButton(
-      "Remove",
-      `Remove ${label}`,
+      t("common.remove"),
+      t("projMedia.removeOf", { label }),
       () => removeItem(item, position),
       "remove"
     );
@@ -277,14 +298,14 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
       clear(thumb);
       const img = el("img", "gallery-thumb-image");
       img.src = item.pendingPreviewUrl;
-      img.alt = item.altText || "Pending documentation image";
+      img.alt = item.altText || t("projMedia.pendingDoc");
       append(thumb, img);
       return;
     }
 
     if (!item.desktopPath) {
       clear(thumb);
-      append(thumb, el("span", "gallery-thumb-fallback", "No image"));
+      append(thumb, el("span", "gallery-thumb-fallback", t("projMedia.noImage")));
       return;
     }
 
@@ -297,17 +318,17 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
     clear(thumb);
 
     if (!url) {
-      append(thumb, el("span", "gallery-thumb-fallback", "Unavailable"));
+      append(thumb, el("span", "gallery-thumb-fallback", t("projMedia.unavailable")));
       return;
     }
 
     const img = el("img", "gallery-thumb-image");
     img.src = url;
-    img.alt = item.altText || "Documentation image";
+    img.alt = item.altText || t("projMedia.docImage");
     img.loading = "lazy";
     img.addEventListener("error", () => {
       clear(thumb);
-      append(thumb, el("span", "gallery-thumb-fallback", "Unavailable"));
+      append(thumb, el("span", "gallery-thumb-fallback", t("projMedia.unavailable")));
     });
     append(thumb, img);
   }
@@ -351,14 +372,12 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
 
   async function removeItem(item, position) {
     const confirmed = await confirmDialog({
-      title: `Remove documentation image ${position}?`,
+      title: t("projMedia.removeTitle", { position }),
       lines: [
-        item.altText ? `"${item.altText}"` : "This image",
-        item.id
-          ? "The image and its stored files are removed when you save."
-          : "This image has not been uploaded yet and will simply be discarded."
+        item.altText ? `"${item.altText}"` : t("projMedia.thisImage"),
+        t(item.id ? "projMedia.removeStored" : "projMedia.removePending")
       ],
-      confirmLabel: "Remove",
+      confirmLabel: t("common.remove"),
       variant: "danger"
     });
 
@@ -394,10 +413,10 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
 
     const alt = textField({
       id: "documentation-alt",
-      label: "Alt Text",
+      label: t("projMedia.altLabel"),
       maxLength: ALT_TEXT_MAX,
       value: item.altText,
-      help: "Describes the image for screen readers. Leave blank if the image is decorative."
+      help: t("projMedia.altHelp")
     });
 
     append(form, alt.node);
@@ -405,12 +424,16 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
     const initialValue = alt.value;
 
     const controller = openModal({
-      title: "Edit Alt Text",
+      title: t("projMedia.editAltTitle"),
       body: form,
       size: "small",
       actions: [
-        { label: "Cancel", variant: "secondary", onClick: ctl => ctl.requestClose("cancel") },
-        { label: "Save Alt Text", variant: "primary", onClick: () => apply() }
+        {
+          label: t("common.cancel"),
+          variant: "secondary",
+          onClick: ctl => ctl.requestClose("cancel")
+        },
+        { label: t("projMedia.saveAlt"), variant: "primary", onClick: () => apply() }
       ],
       onRequestClose: async () => {
         if (alt.value === initialValue) {
@@ -418,10 +441,10 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
         }
 
         return await confirmDialog({
-          title: "Discard changes?",
-          lines: ["You have unsaved changes in this form."],
-          confirmLabel: "Discard",
-          cancelLabel: "Keep Editing",
+          title: t("discard.title"),
+          lines: [t("discard.line")],
+          confirmLabel: t("discard.confirm"),
+          cancelLabel: t("discard.cancel"),
           variant: "danger"
         });
       }
@@ -434,7 +457,7 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
 
     function apply() {
       const message = validateText(alt.value, {
-        label: "Alt Text",
+        label: t("projMedia.altLabel"),
         maxLength: ALT_TEXT_MAX
       });
 
@@ -473,8 +496,8 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
     formError.setAttribute("role", "alert");
 
     const field = createProjectMediaField({
-      title: isAdd ? "Documentation Image" : "Current Image",
-      emptyText: isAdd ? "Choose an image to add." : "No image configured.",
+      title: t(isAdd ? "projMedia.docImageField" : "projMedia.currentImage"),
+      emptyText: t(isAdd ? "projMedia.chooseToAdd" : "projMedia.emptyField"),
       compact: true,
       current:
         !isAdd && item.desktopPath
@@ -491,21 +514,25 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
 
     const alt = textField({
       id: "documentation-new-alt",
-      label: "Alt Text",
+      label: t("projMedia.altLabel"),
       maxLength: ALT_TEXT_MAX,
       value: isAdd ? "" : item.altText,
-      help: "Describes the image for screen readers. Leave blank if the image is decorative."
+      help: t("projMedia.altHelp")
     });
 
     append(form, formError, field.element, alt.node);
 
     const controller = openModal({
-      title: isAdd ? "Add Documentation Image" : "Replace Documentation Image",
+      title: t(isAdd ? "projMedia.addDocTitle" : "projMedia.replaceDocTitle"),
       body: form,
       actions: [
-        { label: "Cancel", variant: "secondary", onClick: ctl => ctl.requestClose("cancel") },
         {
-          label: isAdd ? "Use Image" : "Use Replacement",
+          label: t("common.cancel"),
+          variant: "secondary",
+          onClick: ctl => ctl.requestClose("cancel")
+        },
+        {
+          label: t(isAdd ? "projMedia.useImage" : "projMedia.useReplacement"),
           variant: "primary",
           onClick: () => apply()
         }
@@ -516,10 +543,10 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
         }
 
         return await confirmDialog({
-          title: "Discard changes?",
-          lines: ["You have unsaved changes in this form."],
-          confirmLabel: "Discard",
-          cancelLabel: "Keep Editing",
+          title: t("discard.title"),
+          lines: [t("discard.line")],
+          confirmLabel: t("discard.confirm"),
+          cancelLabel: t("discard.cancel"),
           variant: "danger"
         });
       },
@@ -530,7 +557,7 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
       formError.textContent = "";
 
       const message = validateText(alt.value, {
-        label: "Alt Text",
+        label: t("projMedia.altLabel"),
         maxLength: ALT_TEXT_MAX
       });
 
@@ -544,7 +571,7 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
       const files = field.getPendingFiles();
 
       if (isAdd && !files) {
-        formError.textContent = "Choose an image before adding it.";
+        formError.textContent = t("projMedia.chooseFirst");
         return;
       }
 

@@ -21,6 +21,7 @@
 import { supabaseClient } from "../../core/supabase.js";
 import { el, append, clear, statusBadge, updatedAt } from "../../core/dom.js";
 import { toast } from "../../core/toast.js";
+import { t } from "../../core/i18n.js";
 
 import {
   textField,
@@ -62,7 +63,7 @@ export function createExperienceEditor({
 
   /* ---------------- header ---------------- */
 
-  const back = el("button", "link-button", "← Back to Experience");
+  const back = el("button", "link-button", t("expEditor.back"));
   back.type = "button";
   back.addEventListener("click", () => onBack());
 
@@ -72,7 +73,7 @@ export function createExperienceEditor({
   const heading = el(
     "h2",
     "editor-title",
-    isNew ? "New Experience" : record.title || "Untitled experience"
+    isNew ? t("expEditor.newTitle") : record.title || t("exp.untitled")
   );
 
   append(headingBlock, heading);
@@ -83,17 +84,25 @@ export function createExperienceEditor({
 
   const actions = el("div", "editor-actions");
 
-  const previewButton = el("button", "admin-button admin-button-secondary", "Preview");
+  const previewButton = el(
+    "button",
+    "admin-button admin-button-secondary",
+    t("common.preview")
+  );
   previewButton.type = "button";
 
   const saveButton = el(
     "button",
     "admin-button admin-button-secondary",
-    isNew ? "Save Draft" : "Save Changes"
+    t(isNew ? "common.saveDraft" : "common.saveChanges")
   );
   saveButton.type = "button";
 
-  const publishButton = el("button", "admin-button admin-button-primary", "Publish");
+  const publishButton = el(
+    "button",
+    "admin-button admin-button-primary",
+    t("common.publish")
+  );
   publishButton.type = "button";
 
   append(actions, previewButton, saveButton, publishButton);
@@ -107,61 +116,72 @@ export function createExperienceEditor({
   const fields = {
     title: textField({
       id: "experience-title",
-      label: "Title",
+      label: t("expEditor.fieldTitle"),
       required: true,
       maxLength: LIMITS.title,
       value: record ? record.title : "",
-      help: "Main heading of the Experience card."
+      help: t("expEditor.fieldTitleHelp")
     }),
     type: textField({
       id: "experience-type",
-      label: "Type",
+      label: t("expEditor.fieldType"),
       maxLength: LIMITS.type,
       value: record ? record.type : "",
-      help: "For example: Laboratory, Organization, Internship, Work."
+      help: t("expEditor.fieldTypeHelp")
     }),
     role: textField({
       id: "experience-role",
-      label: "Role",
+      label: t("common.role"),
       maxLength: LIMITS.role,
       value: record ? record.role : ""
     }),
     location: textField({
       id: "experience-location",
-      label: "Location",
+      label: t("common.location"),
       maxLength: LIMITS.location,
       value: record ? record.location : ""
     }),
     description: textareaField({
       id: "experience-description",
-      label: "Description",
+      label: t("common.description"),
       value: record ? record.description : "",
       rows: 8,
-      help: "Plain text only. No HTML or formatting markup. Required before publishing."
+      help: t("expEditor.fieldDescriptionHelp")
     })
   };
 
-  const basicSection = el("section", "admin-subsection");
-  append(basicSection, el("h3", "subsection-title", "Basic Information"));
+  /* One shape for every group, matching the Certificates editor so the two
+     forms read as the same product. */
+  function group(titleKey, helpKey) {
+    const node = el("section", "admin-subsection");
+
+    append(node, el("h3", "subsection-title", t(titleKey)));
+
+    if (helpKey) {
+      append(node, el("p", "form-help", t(helpKey)));
+    }
+
+    return node;
+  }
+
+  const basicSection = group("expEditor.basic", "expEditor.basicHelp");
 
   const grid = el("div", "form-grid");
   append(grid, fields.title.node, fields.type.node, fields.role.node, fields.location.node);
   append(basicSection, grid);
 
-  const descriptionSection = el("section", "admin-subsection");
-  append(
-    descriptionSection,
-    el("h3", "subsection-title", "Description"),
-    fields.description.node
+  const descriptionSection = group(
+    "expEditor.description",
+    "expEditor.descriptionHelp"
   );
+  append(descriptionSection, fields.description.node);
 
   const tagsEditor = createTagsEditor({
     initialTags,
     onChange: markDirty
   });
 
-  const settingsSection = el("section", "admin-subsection");
-  append(settingsSection, el("h3", "subsection-title", "Settings"));
+  const settingsSection = group("expEditor.visibility", "expEditor.visibilityHelp");
 
   const settingsList = el("dl", "settings-list");
   append(settingsSection, settingsList);
@@ -182,28 +202,32 @@ export function createExperienceEditor({
       append(settingsList, wrap);
     }
 
-    row("Status", statusBadge(state.status));
+    row(t("common.status"), statusBadge(state.status));
     row(
-      "Order",
+      t("common.order"),
       el(
         "span",
         null,
         state.sortOrder === null || state.sortOrder === undefined
-          ? "Assigned on first save"
+          ? t("common.assignedOnFirstSave")
           : String(state.sortOrder)
       )
     );
     row(
-      "Created",
-      state.createdAt ? updatedAt(state.createdAt) : el("span", null, "—")
+      t("common.created"),
+      state.createdAt ? updatedAt(state.createdAt) : el("span", null, t("common.none"))
     );
     row(
-      "Last updated",
-      state.updatedAtValue ? updatedAt(state.updatedAtValue) : el("span", null, "—")
+      t("common.lastUpdated"),
+      state.updatedAtValue
+        ? updatedAt(state.updatedAtValue)
+        : el("span", null, t("common.none"))
     );
     row(
-      "Published",
-      state.publishedAt ? updatedAt(state.publishedAt) : el("span", null, "Not published yet")
+      t("common.publishedOn"),
+      state.publishedAt
+        ? updatedAt(state.publishedAt)
+        : el("span", null, t("common.notPublishedYet"))
     );
   }
 
@@ -270,29 +294,35 @@ export function createExperienceEditor({
     if (label) {
       saveButton.textContent = label;
     } else {
-      saveButton.textContent = state.id ? "Save Changes" : "Save Draft";
+      saveButton.textContent = t(
+        state.id ? "common.saveChanges" : "common.saveDraft"
+      );
     }
   }
 
   function syncPublishButton() {
     if (state.status === "published") {
-      publishButton.textContent = "Published";
+      publishButton.textContent = t("status.published");
       publishButton.disabled = true;
-      publishButton.title = "This experience is already published.";
+      publishButton.title = t("expEditor.alreadyPublished");
       return;
     }
 
-    publishButton.textContent = "Publish";
+    publishButton.textContent = t("common.publish");
     publishButton.disabled = false;
     publishButton.removeAttribute("title");
   }
 
   function validate({ forPublish }) {
     const rules = {
-      title: { label: "Title", required: true, maxLength: LIMITS.title },
-      type: { label: "Type", maxLength: LIMITS.type },
-      role: { label: "Role", maxLength: LIMITS.role },
-      location: { label: "Location", maxLength: LIMITS.location }
+      title: {
+        label: t("expEditor.fieldTitle"),
+        required: true,
+        maxLength: LIMITS.title
+      },
+      type: { label: t("expEditor.fieldType"), maxLength: LIMITS.type },
+      role: { label: t("common.role"), maxLength: LIMITS.role },
+      location: { label: t("common.location"), maxLength: LIMITS.location }
     };
 
     if (forPublish) {
@@ -301,13 +331,13 @@ export function createExperienceEditor({
         publishing is an application-level rule so a published card can never
         render empty; Save Draft stays permissive.
       */
-      rules.description = { label: "Description", required: true };
+      rules.description = { label: t("common.description"), required: true };
     }
 
     const ok = applyValidation(fields, rules);
 
     if (!ok) {
-      toast("Please correct the highlighted fields.", "error");
+      toast(t("expEditor.errFields"), "error");
     }
 
     return ok;
@@ -435,7 +465,7 @@ export function createExperienceEditor({
       return false;
     }
 
-    setBusy(true, forPublish ? "Publishing..." : "Saving...");
+    setBusy(true, t(forPublish ? "common.publishing" : "common.saving"));
 
     const payload = currentValues();
 
@@ -487,12 +517,12 @@ export function createExperienceEditor({
     }
 
     setBusy(false);
-    heading.textContent = trimmed(fields.title.value) || "Untitled experience";
+    heading.textContent = trimmed(fields.title.value) || t("exp.untitled");
     refreshStatusUi();
     resetBaseline();
 
     if (!forPublish) {
-      toast(isNewLabelUsed() ? "Draft saved." : "Changes saved successfully.");
+      toast(t(isNewLabelUsed() ? "expEditor.draftSaved" : "expEditor.saved"));
     }
 
     if (typeof onSaved === "function") {
@@ -524,7 +554,7 @@ export function createExperienceEditor({
       return;
     }
 
-    setBusy(true, "Publishing...");
+    setBusy(true, t("common.publishing"));
 
     const patch = { status: "published" };
 
@@ -547,7 +577,7 @@ export function createExperienceEditor({
         console.error(error);
       }
 
-      toast("Could not publish this experience. It is still saved as a draft.", "error");
+      toast(t("expEditor.errPublish"), "error");
       return;
     }
 
@@ -556,7 +586,7 @@ export function createExperienceEditor({
     state.updatedAtValue = data[0].updated_at;
 
     refreshStatusUi();
-    toast("Experience published.");
+    toast(t("expEditor.published"));
 
     if (typeof onSaved === "function") {
       onSaved({ id: state.id, status: state.status });
@@ -568,7 +598,9 @@ export function createExperienceEditor({
     append(statusSlot, statusBadge(state.status));
     syncPublishButton();
     renderSettings();
-    saveButton.textContent = state.id ? "Save Changes" : "Save Draft";
+    saveButton.textContent = t(
+      state.id ? "common.saveChanges" : "common.saveDraft"
+    );
   }
 
   function friendlyError(error) {
@@ -576,18 +608,18 @@ export function createExperienceEditor({
       error.details}`.toLowerCase();
 
     if (haystack.includes("experience_tags_experience_label_lower_unique")) {
-      return "This experience already has a tag with that label.";
+      return t("expEditor.errDuplicateTag");
     }
 
     if (haystack.includes("experiences_status_check")) {
-      return "That status is not allowed.";
+      return t("list.statusNotAllowed");
     }
 
     if (haystack.includes("row-level security") || haystack.includes("42501")) {
-      return "Your session is not authorized for this change. Sign in again and retry.";
+      return t("list.sessionError");
     }
 
-    return "Could not save this experience. Your changes are still here.";
+    return t("expEditor.errSave");
   }
 
   saveButton.addEventListener("click", () => save());

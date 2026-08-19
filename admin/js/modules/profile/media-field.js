@@ -28,6 +28,7 @@ import { openModal } from "../../core/modal.js";
 import { createImagePicker } from "../../core/image-picker.js";
 import { processImage, formatBytes } from "../../core/image-processor.js";
 import { publicUrl } from "../../core/media-storage.js";
+import { t } from "../../core/i18n.js";
 
 export const DESKTOP_MAX_DIMENSION = 2000;
 export const MOBILE_MAX_DIMENSION = 1200;
@@ -51,7 +52,7 @@ export async function deriveVariants(originalFile) {
 
 export function createMediaField({
   title,
-  emptyText = "No image configured.",
+  emptyText,
   current,
   onChange
 }) {
@@ -68,14 +69,14 @@ export function createMediaField({
   const replaceButton = el(
     "button",
     "admin-button admin-button-secondary",
-    "Replace Image"
+    t("pmedia.replace")
   );
   replaceButton.type = "button";
 
   const clearButton = el(
     "button",
     "admin-button admin-button-secondary",
-    "Discard Pending"
+    t("pmedia.discard")
   );
   clearButton.type = "button";
   clearButton.hidden = true;
@@ -103,7 +104,7 @@ export function createMediaField({
 
       const img = el("img", "media-field-image");
       img.src = pendingUrl;
-      img.alt = "Preview of the replacement image";
+      img.alt = t("pmedia.replacementPreview");
       append(previewSlot, img);
       return;
     }
@@ -114,13 +115,16 @@ export function createMediaField({
         : null;
 
     if (!url) {
-      append(previewSlot, el("p", "media-field-empty", emptyText));
+      append(
+        previewSlot,
+        el("p", "media-field-empty", emptyText || t("pmedia.empty"))
+      );
       return;
     }
 
     const img = el("img", "media-field-image");
     img.src = url;
-    img.alt = "Current image";
+    img.alt = t("pmedia.current");
     img.loading = "lazy";
 
     // A stored path whose object is missing must not look like a broken page.
@@ -128,7 +132,7 @@ export function createMediaField({
       clear(previewSlot);
       append(
         previewSlot,
-        el("p", "media-field-empty", "Stored image could not be loaded.")
+        el("p", "media-field-empty", t("pmedia.loadError"))
       );
     });
 
@@ -139,7 +143,11 @@ export function createMediaField({
     clear(statusSlot);
 
     if (pending) {
-      const badge = el("span", "status-badge status-badge-pending", "Pending upload");
+      const badge = el(
+        "span",
+        "status-badge status-badge-pending",
+        t("pmedia.pending")
+      );
       const line = el("p", "media-field-line");
       append(line, badge);
       append(statusSlot, line);
@@ -160,11 +168,7 @@ export function createMediaField({
             pending.mobile.optimized.size
           )}`
         ),
-        el(
-          "p",
-          "form-help",
-          "Both variants were generated from the same source image and will be uploaded when you save."
-        )
+        el("p", "form-help", t("pmedia.bothVariants"))
       );
 
       clearButton.hidden = false;
@@ -176,15 +180,23 @@ export function createMediaField({
     if (stored && stored.desktopPath) {
       append(
         statusSlot,
-        el("p", "media-field-detail", `Desktop: ${stored.desktopPath}`),
-        el("p", "media-field-detail", `Mobile: ${stored.mobilePath || "—"}`)
+        el(
+          "p",
+          "media-field-detail",
+          t("pmedia.desktopPath", { path: stored.desktopPath })
+        ),
+        el(
+          "p",
+          "media-field-detail",
+          t("pmedia.mobilePath", { path: stored.mobilePath || t("common.none") })
+        )
       );
       return;
     }
 
     append(
       statusSlot,
-      el("p", "form-help", "No image stored yet for this slot.")
+      el("p", "form-help", t("pmedia.noneStored"))
     );
   }
 
@@ -210,7 +222,10 @@ export function createMediaField({
       el(
         "p",
         "form-help",
-        `One source image is used to generate both variants: desktop up to ${DESKTOP_MAX_DIMENSION} px and mobile up to ${MOBILE_MAX_DIMENSION} px. Images are never enlarged or cropped.`
+        t("pmedia.sizeHelp", {
+          desktop: DESKTOP_MAX_DIMENSION,
+          mobile: MOBILE_MAX_DIMENSION
+        })
       )
     );
 
@@ -222,10 +237,10 @@ export function createMediaField({
     append(holder, pickerSlot, busy);
 
     picker = createImagePicker({
-      label: "Source Image",
+      label: t("pmedia.sourceImage"),
       processing: { maxDimension: DESKTOP_MAX_DIMENSION },
       onReady: async result => {
-        busy.textContent = "Generating mobile variant...";
+        busy.textContent = t("pmedia.generating");
 
         try {
           const variants = await deriveVariants(result.original.file);
@@ -248,7 +263,7 @@ export function createMediaField({
           busy.textContent =
             error && error.message
               ? error.message
-              : "Could not prepare the mobile variant. Please try another image.";
+              : t("pmedia.errVariant");
         }
       }
     });
@@ -256,11 +271,11 @@ export function createMediaField({
     append(pickerSlot, picker.element);
 
     controller = openModal({
-      title: `Replace ${title}`,
+      title: t("pmedia.replaceOf", { title }),
       body: holder,
       actions: [
         {
-          label: "Cancel",
+          label: t("common.cancel"),
           variant: "secondary",
           onClick: ctl => ctl.close()
         }

@@ -13,6 +13,8 @@
   authorization lives in the database.
 */
 
+import { t, applyStaticTranslations, createLanguageSwitch } from "./i18n.js";
+
 const DESKTOP_QUERY = "(min-width: 1024px)";
 
 const FOCUSABLE = [
@@ -172,6 +174,26 @@ export function initShell() {
 
   syncSidebarHiddenState();
 
+  let activeRouteName = null;
+
+  const actionsEl = document.getElementById("admin-topbar-actions");
+
+  if (actionsEl && actionsEl.childElementCount === 0) {
+    actionsEl.appendChild(createLanguageSwitch());
+  }
+
+  /* Re-labels the parts of the shell that are static markup, then the
+     header title, which is derived from the active route. */
+  function applyLanguage() {
+    applyStaticTranslations(shellEl);
+
+    if (activeRouteName) {
+      const label = t("nav." + activeRouteName);
+      topbarTitleEl.textContent = label;
+      document.title = `${label} · ${t("shell.brandName")}`;
+    }
+  }
+
   function setActiveRoute(route) {
     navLinks.forEach(link => {
       const isActive = link.dataset.route === route.name;
@@ -185,8 +207,13 @@ export function initShell() {
       }
     });
 
-    topbarTitleEl.textContent = route.title;
-    document.title = `${route.title} · Admin CMS`;
+    /* Route titles come from the dictionary via nav.<name>, so the header
+       and the sidebar always agree in whichever language is active. */
+    activeRouteName = route.name;
+    const label = t("nav." + route.name);
+
+    topbarTitleEl.textContent = label;
+    document.title = `${label} · ${t("shell.brandName")}`;
   }
 
   function destroy() {
@@ -213,6 +240,7 @@ export function initShell() {
   return {
     contentEl,
     setActiveRoute,
+    applyLanguage,
     destroy
   };
 }

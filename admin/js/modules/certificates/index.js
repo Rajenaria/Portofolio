@@ -27,6 +27,7 @@ import { supabaseClient } from "../../core/supabase.js";
 import { el, append, clear, pageHeader } from "../../core/dom.js";
 import { confirmDialog, closeAllModals } from "../../core/modal.js";
 import { toast } from "../../core/toast.js";
+import { t } from "../../core/i18n.js";
 
 import { createCertificateList } from "./list-view.js";
 import { createCertificateEditor } from "./editor-view.js";
@@ -36,7 +37,7 @@ const SELECT_COLUMNS =
 
 export const certificatesRoute = {
   name: "certificates",
-  title: "Certificates",
+  title: "Certificates",  // Fallback only: the shell titles routes from nav.*
   render
 };
 
@@ -94,13 +95,13 @@ async function render(container, { signal }) {
 
   async function confirmUnsaved() {
     return await confirmDialog({
-      title: "Leave without saving?",
+      title: t("certEditor.leaveTitle"),
       lines: [
-        "You have unsaved changes in this certificate.",
-        "Your changes will be lost if you leave now."
+        t("certEditor.leaveLine1"),
+        t("certEditor.leaveLine2")
       ],
-      confirmLabel: "Leave Without Saving",
-      cancelLabel: "Stay",
+      confirmLabel: t("certEditor.leaveConfirm"),
+      cancelLabel: t("certEditor.leaveCancel"),
       variant: "danger"
     });
   }
@@ -117,14 +118,13 @@ async function render(container, { signal }) {
     append(
       headerSlot,
       pageHeader({
-        title: "Certificates",
-        subtitle:
-          "Manage the certificates, copyrights and achievements shown in the public carousel.",
+        title: t("certificates.title"),
+        subtitle: t("certificates.subtitle"),
         actions: inEditor
           ? []
           : [
               {
-                label: "+ New Certificate",
+                label: t("certificates.add"),
                 variant: "primary",
                 onClick: () => showEditor(null)
               }
@@ -164,7 +164,7 @@ async function render(container, { signal }) {
 
     if (id) {
       clear(viewSlot);
-      append(viewSlot, el("p", "loading-text", "Loading certificate..."));
+      append(viewSlot, el("p", "loading-text", t("common.loading")));
 
       const { data, error } = await supabaseClient
         .from("certificates")
@@ -178,7 +178,7 @@ async function render(container, { signal }) {
 
       if (error || !data) {
         console.error(error);
-        toast("Could not open this certificate.", "error");
+        toast(t("certificates.errOpen"), "error");
         showList();
         return;
       }
