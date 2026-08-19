@@ -43,6 +43,40 @@ const CARDS = [
   { key: "technologies", labelKey: "dashboard.technologies" }
 ];
 
+/*
+  One line-art glyph per card, drawn inline so the Admin loads no icon font
+  and no third-party script. They are decorative — every card states its
+  subject in text — so each is aria-hidden.
+*/
+const CARD_GLYPHS = {
+  projects: "M3 6.5A1.5 1.5 0 014.5 5h3.2l1.6 2h6.2A1.5 1.5 0 0117 8.5v6A1.5 1.5 0 0115.5 16h-11A1.5 1.5 0 013 14.5v-8Z",
+  experiences: "M4 7h12v8.5A1.5 1.5 0 0114.5 17h-9A1.5 1.5 0 014 15.5V7Zm3 0V5.5A1.5 1.5 0 018.5 4h3A1.5 1.5 0 0113 5.5V7",
+  certificates: "M10 3l2 4.2 4.5.6-3.3 3.2.8 4.5L10 13.4 5.9 15.5l.8-4.5L3.5 7.8 8 7.2 10 3Z",
+  technologies: "M7 6.5L3.5 10 7 13.5M13 6.5L16.5 10 13 13.5M11.2 4.5l-2.4 11"
+};
+
+function cardGlyph(key) {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", "0 0 20 20");
+  svg.setAttribute("aria-hidden", "true");
+  svg.setAttribute("focusable", "false");
+
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("d", CARD_GLYPHS[key] || CARD_GLYPHS.projects);
+  path.setAttribute("fill", "none");
+  path.setAttribute("stroke", "currentColor");
+  path.setAttribute("stroke-width", "1.5");
+  path.setAttribute("stroke-linecap", "round");
+  path.setAttribute("stroke-linejoin", "round");
+
+  svg.appendChild(path);
+
+  const wrap = el("span", "kpi-glyph");
+  wrap.appendChild(svg);
+
+  return wrap;
+}
+
 const TYPE_LABELS = {
   project: "dashboard.typeProject",
   experience: "dashboard.typeExperience",
@@ -169,7 +203,8 @@ async function load(container, signal) {
       unit: t("dashboard.totalActive"),
       breakdown: statusBreakdown(data.projects),
       href: "#/projects",
-      linkLabel: t("dashboard.manageProjects")
+      linkLabel: t("dashboard.manageProjects"),
+      glyph: "projects"
     }),
     kpiCard({
       label: t("dashboard.experiences"),
@@ -177,7 +212,8 @@ async function load(container, signal) {
       unit: t("dashboard.totalActive"),
       breakdown: statusBreakdown(data.experiences),
       href: "#/experience",
-      linkLabel: t("dashboard.manageExperience")
+      linkLabel: t("dashboard.manageExperience"),
+      glyph: "experiences"
     }),
     kpiCard({
       label: t("dashboard.certificates"),
@@ -185,7 +221,8 @@ async function load(container, signal) {
       unit: t("dashboard.totalActive"),
       breakdown: statusBreakdown(data.certificates),
       href: "#/certificates",
-      linkLabel: t("dashboard.manageCertificates")
+      linkLabel: t("dashboard.manageCertificates"),
+      glyph: "certificates"
     }),
     kpiCard({
       label: t("dashboard.technologies"),
@@ -196,7 +233,8 @@ async function load(container, signal) {
         { label: t("dashboard.inactive"), value: data.technologies.inactive }
       ],
       href: "#/technologies",
-      linkLabel: t("dashboard.manageTechnologies")
+      linkLabel: t("dashboard.manageTechnologies"),
+      glyph: "technologies"
     })
   );
 
@@ -339,9 +377,12 @@ function renderKpiSkeleton(grid) {
   CARDS.forEach(card => {
     const node = el("article", "kpi-card is-loading");
 
+    const head = el("div", "kpi-head");
+    append(head, el("p", "kpi-label", t(card.labelKey)), cardGlyph(card.key));
+
     append(
       node,
-      el("p", "kpi-label", t(card.labelKey)),
+      head,
       el("p", "kpi-value", "—"),
       el("p", "kpi-unit", t("common.loading"))
     );
@@ -363,12 +404,19 @@ function unavailableCard(label) {
   return card;
 }
 
-function kpiCard({ label, total, unit, breakdown, href, linkLabel }) {
+function kpiCard({ label, total, unit, breakdown, href, linkLabel, glyph }) {
   const card = el("article", "kpi-card");
+
+  const head = el("div", "kpi-head");
+  append(head, el("p", "kpi-label", label));
+
+  if (glyph) {
+    append(head, cardGlyph(glyph));
+  }
 
   append(
     card,
-    el("p", "kpi-label", label),
+    head,
     el("p", "kpi-value", total),
     el("p", "kpi-unit", unit)
   );

@@ -176,10 +176,17 @@ export function initShell() {
 
   let activeRouteName = null;
 
-  const actionsEl = document.getElementById("admin-topbar-actions");
+  /*
+    Top bar, right-hand side, at every breakpoint. The bar is shown on desktop
+    too (it used to be mobile-only), so this is a single reachable home for the
+    control rather than two conditional ones.
+  */
+  const languageEl =
+    document.getElementById("admin-topbar-actions") ||
+    document.getElementById("admin-sidebar-language");
 
-  if (actionsEl && actionsEl.childElementCount === 0) {
-    actionsEl.appendChild(createLanguageSwitch());
+  if (languageEl && languageEl.childElementCount === 0) {
+    languageEl.appendChild(createLanguageSwitch("lang-switch lang-switch-compact"));
   }
 
   /* Re-labels the parts of the shell that are static markup, then the

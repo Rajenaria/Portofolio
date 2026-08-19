@@ -342,23 +342,22 @@
           </li>
         </ul>
 
-        <p class="sidebar-group-label" id="group-account" data-i18n="common.language">Bahasa</p>
-        <ul class="sidebar-list" aria-labelledby="group-account">
-          <li>
-            <button type="button" id="logout-button" class="sidebar-link sidebar-link-button">
-              <svg class="sidebar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
-                <path d="M12 6V4.5A1.5 1.5 0 0010.5 3h-5A1.5 1.5 0 004 4.5v11A1.5 1.5 0 005.5 17h5a1.5 1.5 0 001.5-1.5V14"
-                  fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
-                <path d="M9 10h8m0 0l-2.4-2.4M17 10l-2.4 2.4" fill="none"
-                  stroke="currentColor" stroke-width="1.4" stroke-linecap="round"
-                  stroke-linejoin="round" />
-              </svg>
-              <span class="sidebar-link-text" data-i18n="auth.signOut">Keluar</span>
-            </button>
-          </li>
-        </ul>
-
       </nav>
+
+      <!-- Sign out sits at the foot of the rail, away from the content
+           navigation above it. The language switch lives in the top bar. -->
+      <div class="sidebar-footer">
+        <button type="button" id="logout-button" class="sidebar-link sidebar-link-button">
+          <svg class="sidebar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+            <path d="M12 6V4.5A1.5 1.5 0 0010.5 3h-5A1.5 1.5 0 004 4.5v11A1.5 1.5 0 005.5 17h5a1.5 1.5 0 001.5-1.5V14"
+              fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+            <path d="M9 10h8m0 0l-2.4-2.4M17 10l-2.4 2.4" fill="none"
+              stroke="currentColor" stroke-width="1.4" stroke-linecap="round"
+              stroke-linejoin="round" />
+          </svg>
+          <span class="sidebar-link-text" data-i18n="auth.signOut">Keluar</span>
+        </button>
+      </div>
     </aside>
 
     <div id="admin-backdrop" class="admin-backdrop" hidden></div>
