@@ -13582,3 +13582,180 @@ a.footer-contact-item:hover {
     }
 
 }
+
+/* =========================================================
+   INITIAL LOADER
+
+   Overlay positioning lives inline in index.html so the first
+   paint already shows it. Everything below is the animation and
+   the exit, which are not needed until slightly later.
+
+   The bar animation is the supplied l8 loader, recoloured only
+   where it meets this site: the blocks use the portfolio ink
+   (#1d1d1f) instead of pure black, and the travelling marker
+   uses the dark-surface accent #2997ff already used elsewhere.
+
+   UKURAN
+   Dinaikkan dari 17px agar loader terbaca sebagai elemen utama di
+   layar penuh. Semua nilai turunannya diskalakan dengan rasio yang
+   sama seperti versi aslinya, sehingga karakter animasinya persis:
+
+       jarak jatuh    ~1.68 x tinggi baris   -> --drop
+       border-bottom  ~0.42 x tinggi baris
+       clip-path      ~0.84 x tinggi baris
+
+   --drop dipakai di dalam @keyframes milik loader ini saja, jadi
+   satu breakpoint cukup mengganti variabelnya tanpa menyalin ulang
+   seluruh keyframes.
+========================================================= */
+
+.loader {
+    width: fit-content;
+
+    --drop: 66px;
+
+    font-size: 28px;
+    font-family: monospace;
+    line-height: 1.4;
+    font-weight: bold;
+
+    --c: no-repeat linear-gradient(#1d1d1f 0 0);
+
+    background:
+        var(--c), var(--c), var(--c), var(--c),
+        var(--c), var(--c), var(--c);
+    background-size: calc(1ch + 1px) 100%;
+
+    border-bottom: 16px solid #0000;
+
+    position: relative;
+
+    animation: l8-0 3s infinite linear;
+
+    clip-path: inset(-33px 0);
+}
+
+.loader::before {
+    content: "Loading";
+}
+
+.loader::after {
+    content: "";
+
+    position: absolute;
+
+    width: 14px;
+    height: 20px;
+
+    background: #2997ff;
+
+    left: -14px;
+    bottom: 100%;
+
+    animation: l8-1 3s infinite linear;
+}
+
+@keyframes l8-0 {
+    0%, 12.5% { background-position: calc(0*100%/6) 0,calc(1*100%/6) 0,calc(2*100%/6) 0,calc(3*100%/6) 0,calc(4*100%/6) 0,calc(5*100%/6) 0,calc(6*100%/6) 0; }
+    25%       { background-position: calc(0*100%/6) var(--drop),calc(1*100%/6) 0,calc(2*100%/6) 0,calc(3*100%/6) 0,calc(4*100%/6) 0,calc(5*100%/6) 0,calc(6*100%/6) 0; }
+    37.5%     { background-position: calc(0*100%/6) var(--drop),calc(1*100%/6) var(--drop),calc(2*100%/6) 0,calc(3*100%/6) 0,calc(4*100%/6) 0,calc(5*100%/6) 0,calc(6*100%/6) 0; }
+    50%       { background-position: calc(0*100%/6) var(--drop),calc(1*100%/6) var(--drop),calc(2*100%/6) var(--drop),calc(3*100%/6) 0,calc(4*100%/6) 0,calc(5*100%/6) 0,calc(6*100%/6) 0; }
+    62.5%     { background-position: calc(0*100%/6) var(--drop),calc(1*100%/6) var(--drop),calc(2*100%/6) var(--drop),calc(3*100%/6) var(--drop),calc(4*100%/6) 0,calc(5*100%/6) 0,calc(6*100%/6) 0; }
+    75%       { background-position: calc(0*100%/6) var(--drop),calc(1*100%/6) var(--drop),calc(2*100%/6) var(--drop),calc(3*100%/6) var(--drop),calc(4*100%/6) var(--drop),calc(5*100%/6) 0,calc(6*100%/6) 0; }
+    87.4%     { background-position: calc(0*100%/6) var(--drop),calc(1*100%/6) var(--drop),calc(2*100%/6) var(--drop),calc(3*100%/6) var(--drop),calc(4*100%/6) var(--drop),calc(5*100%/6) var(--drop),calc(6*100%/6) 0; }
+    100%      { background-position: calc(0*100%/6) var(--drop),calc(1*100%/6) var(--drop),calc(2*100%/6) var(--drop),calc(3*100%/6) var(--drop),calc(4*100%/6) var(--drop),calc(5*100%/6) var(--drop),calc(6*100%/6) var(--drop); }
+}
+
+@keyframes l8-1 {
+    100% { left: 115%; }
+}
+
+
+/* ---- EXIT ----
+   Fades the bars a little first, then lifts the whole sheet away.
+   pointer-events is dropped by JS the moment this class lands, so
+   the page is clickable before the animation finishes. */
+
+#initial-loader {
+    transition:
+        opacity 0.45s ease,
+        transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#initial-loader.is-leaving {
+    opacity: 0;
+    transform: translateY(-24px);
+}
+
+#initial-loader.is-leaving .loader {
+    opacity: 0.45;
+    transition: opacity 0.2s ease;
+}
+
+
+/* Screen-reader label. The bars themselves are aria-hidden, so this
+   is what "Loading portfolio" is announced from. */
+
+.visually-hidden-loader {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+
+/* Layar sempit: skalanya diturunkan sedikit, dan semua nilai
+   turunannya ikut agar proporsinya tetap sama. */
+
+@media (max-width: 430px) {
+
+    .loader {
+        --drop: 56px;
+
+        font-size: 24px;
+
+        border-bottom: 14px solid #0000;
+
+        clip-path: inset(-28px 0);
+    }
+
+    .loader::after {
+        width: 12px;
+        height: 17px;
+
+        left: -12px;
+    }
+
+}
+
+
+/* Gerak minimal: tidak ada bar berjalan dan tidak ada sapuan
+   penanda. Overlay-nya tetap ada dan tetap hilang dengan fade,
+   jadi fungsinya utuh, hanya tanpa animasi berulang. */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .loader,
+    .loader::after {
+        animation: none;
+    }
+
+    .loader::after {
+        left: 0;
+        bottom: calc(100% + 4px);
+    }
+
+    #initial-loader {
+        transition: opacity 0.3s ease;
+    }
+
+    #initial-loader.is-leaving {
+        transform: none;
+    }
+
+}

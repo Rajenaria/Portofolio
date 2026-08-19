@@ -799,4 +799,17 @@ async function load() {
    it always patches an already initialised page.
 --------------------------------------------------------- */
 
-load().catch(error => warn("profile/about integration failed", error));
+
+/*
+    Tells the initial loader this section has SETTLED — rendered
+    from the CMS, or fallen back to the static markup. It runs from
+    a finally, so a failed request releases the overlay just as a
+    successful one does.
+*/
+
+load()
+    .catch(error => warn("profile/about integration failed", error))
+    .finally(() => {
+        window.portfolioReady?.mark("hero");
+        window.portfolioReady?.mark("about");
+    });

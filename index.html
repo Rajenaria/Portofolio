@@ -12,10 +12,34 @@
 
     <title>Rajendra Aria Nismara</title>
 
+    <!-- INITIAL LOADER
+         The overlay styling is inlined so the very first paint already shows
+         the loader instead of a white page waiting on style.css. CSP for this
+         page already allows style-src 'unsafe-inline'; no script is inlined. -->
+    <style>
+        html.is-loading, html.is-loading body { overflow: hidden; }
+
+        #initial-loader {
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f5f5f7;
+        }
+
+        html.is-loaded #initial-loader { display: none; }
+    </style>
+
+    <!-- Classic script, loaded before any module, so window.portfolioReady
+         exists by the time the CMS modules run and no early mark is missed. -->
+    <script src="js/initial-loader.js?v=2"></script>
+
     <!-- MAIN CSS -->
     <link
         rel="stylesheet"
-        href="css/style.css?v=26"
+        href="css/style.css?v=28"
     >
 
     <!-- DEVICON -->
@@ -31,6 +55,18 @@
 
 </head>
 <body>
+
+<!-- =========================================
+     INITIAL LOADER
+     Removed from the DOM by js/initial-loader.js once the first
+     screen is ready. Not present on /admin.
+========================================= -->
+
+<div id="initial-loader" role="status" aria-live="polite">
+    <span class="visually-hidden-loader">Loading portfolio</span>
+    <div class="loader" aria-hidden="true"></div>
+</div>
+
 
 <!-- =========================================
      GUESTBOOK PLANE CURSOR
@@ -2613,14 +2649,14 @@
 
     <script src="js/script.js?v=3"></script>
     <script src="js/hero-photo-stack.js?v=2" defer></script>
-    <script src="js/experience-stack.js" type="module"></script>
+    <script src="js/experience-stack.js?v=2" type="module"></script>
     <script src="js/certificates.js?v=15" defer></script>
 
     <!-- PUBLIC CMS INTEGRATION (read-only, patches the static content above) -->
-    <script src="js/cms/profile-about.js?v=2" type="module"></script>
-    <script src="js/cms/technologies.js" type="module"></script>
-    <script src="js/cms/projects.js" type="module"></script>
-    <script src="js/cms/certificates.js?v=1" type="module"></script>
+    <script src="js/cms/profile-about.js?v=3" type="module"></script>
+    <script src="js/cms/technologies.js?v=2" type="module"></script>
+    <script src="js/cms/projects.js?v=2" type="module"></script>
+    <script src="js/cms/certificates.js?v=2" type="module"></script>
 
 </body>
 </html>
