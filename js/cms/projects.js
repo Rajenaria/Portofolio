@@ -406,4 +406,14 @@ async function load() {
    so the refresh hook is always in place.
 --------------------------------------------------------- */
 
-load().catch(error => warn("projects unavailable", error));
+
+/*
+    Tells the initial loader this section has SETTLED — rendered
+    from the CMS, or fallen back to the static markup. It runs from
+    a finally, so a failed request releases the overlay just as a
+    successful one does.
+*/
+
+load()
+    .catch(error => warn("projects unavailable", error))
+    .finally(() => window.portfolioReady?.mark("projects"));

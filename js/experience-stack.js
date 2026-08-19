@@ -384,6 +384,11 @@ import { readTable, filled } from "./cms/client.js";
         .catch((error) => {
             // Fallback stays on screen; this is a development signal only.
             console.warn("[cms] experiences unavailable", error);
-        });
+        })
+        /*
+            Settled, whichever way it went: the initial loader must not
+            wait on a section that has already fallen back.
+        */
+        .finally(() => window.portfolioReady?.mark("experience"));
 
 })();
