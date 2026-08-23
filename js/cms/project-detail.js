@@ -29,6 +29,9 @@ import {
     IS_LOCAL_CMS
 } from "./client.js";
 
+import { localizeField } from "./localize.js";
+import { getLanguage, onLanguageChange, t } from "../core/i18n.js";
+
 
 /*
     Matches the existing V1 <source media> contract exactly, so
@@ -274,8 +277,8 @@ function showState(title, message) {
 function showNotFound() {
 
     showState(
-        "Project not found.",
-        "The project you are looking for is not available."
+        t("projectDetail.notFoundTitle"),
+        t("projectDetail.notFoundMessage")
     );
 
 }
@@ -289,9 +292,8 @@ function showNotFound() {
 function showLoadError() {
 
     showState(
-        "Project could not be loaded.",
-        "Something went wrong while loading this project. " +
-        "Please try again later."
+        t("projectDetail.loadErrorTitle"),
+        t("projectDetail.loadErrorMessage")
     );
 
 }
@@ -301,7 +303,7 @@ function showLoadError() {
    RENDER — HEADER
 --------------------------------------------------------- */
 
-function renderHeader(project) {
+function renderHeader(project, language) {
 
     /*
         V1 reads "01 / UI UX DESIGN". The number is positional
@@ -310,12 +312,13 @@ function renderHeader(project) {
     */
 
     const number = byId("projectNumber");
+    const category = localizeField(project, "card_category", language);
 
     if (number) {
 
-        number.textContent = filled(project.card_category)
-            ? project.card_category.toUpperCase()
-            : "PROJECT";
+        number.textContent = filled(category)
+            ? category.toUpperCase()
+            : t("projectDetail.projectEyebrow");
 
     }
 
@@ -331,9 +334,10 @@ function renderHeader(project) {
 
     if (heading && highlight) {
 
-        const main = filled(project.detail_title_main)
-            ? project.detail_title_main
-            : project.title;
+        const titleMain = localizeField(project, "detail_title_main", language);
+        const main = filled(titleMain)
+            ? titleMain
+            : localizeField(project, "title", language);
 
         replaceChildren(heading, [
             document.createTextNode(filled(main) ? `${main.trim()} ` : "")
@@ -341,8 +345,10 @@ function renderHeader(project) {
 
         heading.appendChild(highlight);
 
-        highlight.textContent = filled(project.detail_title_highlight)
-            ? project.detail_title_highlight.trim()
+        const titleHighlight = localizeField(project, "detail_title_highlight", language);
+
+        highlight.textContent = filled(titleHighlight)
+            ? titleHighlight.trim()
             : "";
 
     }
@@ -351,12 +357,15 @@ function renderHeader(project) {
 
     if (intro) {
 
-        if (filled(project.detail_intro)) {
-            intro.textContent = project.detail_intro;
+        const detailIntro = localizeField(project, "detail_intro", language);
+        const shortDescription = localizeField(project, "short_description", language);
+
+        if (filled(detailIntro)) {
+            intro.textContent = detailIntro;
         }
 
-        else if (filled(project.short_description)) {
-            intro.textContent = project.short_description;
+        else if (filled(shortDescription)) {
+            intro.textContent = shortDescription;
         }
 
         else {
@@ -365,7 +374,7 @@ function renderHeader(project) {
 
     }
 
-    renderMeta(project);
+    renderMeta(project, language);
 
 }
 
@@ -375,7 +384,7 @@ function renderHeader(project) {
     Project without a role does not ship an empty label.
 */
 
-function renderMeta(project) {
+function renderMeta(project, language) {
 
     const meta = byId("projectMeta");
 
@@ -385,8 +394,10 @@ function renderMeta(project) {
 
     const entries = [];
 
-    if (filled(project.role)) {
-        entries.push(["ROLE", project.role]);
+    const role = localizeField(project, "role", language);
+
+    if (filled(role)) {
+        entries.push([t("projectDetail.roleLabel"), role]);
     }
 
     if (filled(project.project_date)) {
@@ -395,13 +406,15 @@ function renderMeta(project) {
         const year = project.project_date.slice(0, 4);
 
         if (/^\d{4}$/.test(year)) {
-            entries.push(["YEAR", year]);
+            entries.push([t("projectDetail.yearLabel"), year]);
         }
 
     }
 
-    if (filled(project.project_type)) {
-        entries.push(["PROJECT TYPE", project.project_type]);
+    const projectType = localizeField(project, "project_type", language);
+
+    if (filled(projectType)) {
+        entries.push([t("projectDetail.typeLabel"), projectType]);
     }
 
     const nodes = entries.map(([label, value]) => {
@@ -433,7 +446,7 @@ function renderMeta(project) {
    RENDER — COVER
 --------------------------------------------------------- */
 
-function renderCover(project) {
+function renderCover(project, language) {
 
     const cover = byId("projectCover");
     const section = byId("projectCoverSection");
@@ -448,7 +461,7 @@ function renderCover(project) {
             desktop: project.cover_desktop_path,
             mobile: project.cover_mobile_path
         },
-        project.cover_alt
+        localizeField(project, "cover_alt", language)
     );
 
     if (!picture) {
@@ -472,7 +485,7 @@ function renderCover(project) {
    RENDER — ABOUT
 --------------------------------------------------------- */
 
-function renderParagraphs(project) {
+function renderParagraphs(project, language) {
 
     const container = byId("projectParagraphs");
     const aboutHeading = byId("projectAboutHeading");
@@ -483,10 +496,12 @@ function renderParagraphs(project) {
         column is empty, so the element is dropped instead.
     */
 
+    const heading = localizeField(project, "about_heading", language);
+
     if (aboutHeading) {
 
-        if (filled(project.about_heading)) {
-            aboutHeading.textContent = project.about_heading;
+        if (filled(heading)) {
+            aboutHeading.textContent = heading;
         }
 
         else {
@@ -500,11 +515,12 @@ function renderParagraphs(project) {
     }
 
     const nodes = sorted(project.project_paragraphs)
-        .filter(row => filled(row.content))
-        .map(row => {
+        .map(row => localizeField(row, "content", language))
+        .filter(filled)
+        .map(content => {
 
             const paragraph = document.createElement("p");
-            paragraph.textContent = row.content;
+            paragraph.textContent = content;
             return paragraph;
 
         });
@@ -609,8 +625,8 @@ function renderLinks(project) {
     }
 
     const entries = [
-        ["View Demo ↗", safeExternalUrl(project.demo_url), false],
-        ["GitHub ↗", safeExternalUrl(project.github_url), true]
+        [t("projectDetail.viewDemo"), safeExternalUrl(project.demo_url), false],
+        [t("projectDetail.github"), safeExternalUrl(project.github_url), true]
     ];
 
     const nodes = entries
@@ -660,7 +676,7 @@ function isLargeAt(index, total) {
 
 }
 
-function renderDocumentation(project) {
+function renderDocumentation(project, language) {
 
     const section = byId("projectDocumentation");
     const grid = byId("projectDocumentationGrid");
@@ -690,7 +706,7 @@ function renderDocumentation(project) {
                 desktop: row.desktop_path,
                 mobile: row.mobile_path
             },
-            row.alt_text
+            localizeField(row, "alt_text", language)
         );
 
         // A row pointing outside the public bucket is skipped
@@ -726,7 +742,7 @@ function renderDocumentation(project) {
    RENDER — NEXT PROJECT
 --------------------------------------------------------- */
 
-function renderNext(currentSlug, ordered) {
+function renderNext(currentSlug, ordered, language) {
 
     const link = byId("projectNextLink");
     const title = byId("projectNextTitle");
@@ -751,7 +767,7 @@ function renderNext(currentSlug, ordered) {
     const next = ordered[(index + 1) % ordered.length];
 
     link.setAttribute("href", projectHref(next.slug));
-    title.textContent = `${next.title} →`;
+    title.textContent = `${localizeField(next, "title", language)} →`;
     link.hidden = false;
 
 }
@@ -794,21 +810,21 @@ function settleAboutSection() {
 
 }
 
-function render(project, ordered) {
+function render(project, ordered, language) {
 
-    renderHeader(project);
-    renderCover(project);
-    renderParagraphs(project);
+    renderHeader(project, language);
+    renderCover(project, language);
+    renderParagraphs(project, language);
     renderTechnologies(project);
     renderLinks(project);
     settleAboutSection();
-    renderDocumentation(project);
-    renderNext(project.slug, ordered);
+    renderDocumentation(project, language);
+    renderNext(project.slug, ordered, language);
 
-    // The tab name is the one place the raw title is still
-    // useful; textContent semantics apply to document.title too.
-    if (filled(project.title)) {
-        document.title = `${project.title} — Rajendra Aria Nismara`;
+    const title = localizeField(project, "title", language);
+
+    if (filled(title)) {
+        document.title = `${title} — Rajendra Aria Nismara`;
     }
 
     const content = byId("projectContent");
@@ -833,11 +849,18 @@ const PROJECT_SELECT =
     "detail_title_main,detail_title_highlight,detail_intro," +
     "role,project_date,project_type,about_heading," +
     "cover_bucket,cover_desktop_path,cover_mobile_path,cover_alt," +
-    "github_url,demo_url,status,deleted_at," +
-    "project_paragraphs(content,sort_order,created_at)," +
+    "github_url,demo_url,status,deleted_at,translations," +
+    "project_paragraphs(content,sort_order,created_at,translations)," +
     "project_media(bucket_name,desktop_path,mobile_path,alt_text," +
-    "sort_order,is_active,created_at)," +
+    "sort_order,is_active,created_at,translations)," +
     "project_technologies(sort_order,created_at,technologies(name,icon_key))";
+
+/*
+    The loaded Project row and the sibling slug/title list, so a language
+    switch can re-render from them instead of firing two more requests.
+*/
+let cachedProject = null;
+let cachedOrdered = [];
 
 async function load() {
 
@@ -876,7 +899,7 @@ async function load() {
             ),
             readTable(
                 "projects",
-                "select=slug,title,sort_order,created_at" +
+                "select=slug,title,sort_order,created_at,translations" +
                 "&status=eq.published&deleted_at=is.null" +
                 "&order=sort_order.asc,created_at.asc"
             )
@@ -911,9 +934,22 @@ async function load() {
         return;
     }
 
-    render(project, Array.isArray(ordered) ? ordered : []);
+    cachedProject = project;
+    cachedOrdered = Array.isArray(ordered) ? ordered : [];
+
+    render(cachedProject, cachedOrdered, getLanguage());
 
 }
+
+onLanguageChange(language => {
+
+    if (!cachedProject) {
+        return;
+    }
+
+    render(cachedProject, cachedOrdered, language);
+
+});
 
 
 /* ---------------------------------------------------------

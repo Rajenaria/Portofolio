@@ -76,6 +76,15 @@ const DICTIONARY = {
     "common.title": "Judul",
     "common.type": "Tipe",
 
+    /* ---------- content-language translation panel ---------- */
+    "translation.en": "English — Default",
+    "translation.id": "Bahasa Indonesia — Translation",
+    "translation.enHint": "Bahasa Inggris diedit pada kolom di atas.",
+    "translation.optionalHint": "Opsional. Kosongkan untuk memakai teks Inggris di publik.",
+    "common.translationsTitle": "Terjemahan",
+    "common.translationsHelp":
+      "Tambahkan terjemahan Bahasa Indonesia untuk kolom yang tampil di situs publik. Kosongkan kolom mana pun untuk memakai versi Inggrisnya.",
+
     /* ---------- status ---------- */
     "status.draft": "Draf",
     "status.published": "Ditampilkan",
@@ -979,6 +988,15 @@ const DICTIONARY = {
     "common.language": "Language",
     "common.title": "Title",
     "common.type": "Type",
+
+    /* ---------- content-language translation panel ---------- */
+    "translation.en": "English — Default",
+    "translation.id": "Bahasa Indonesia — Translation",
+    "translation.enHint": "English is edited in the fields above.",
+    "translation.optionalHint": "Optional. Leave blank to use the English text on the public site.",
+    "common.translationsTitle": "Translations",
+    "common.translationsHelp":
+      "Add an Indonesian translation for the fields shown on the public site. Leave any field blank to use its English version instead.",
 
     "status.draft": "Draft",
     "status.published": "Published",

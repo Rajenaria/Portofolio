@@ -39,6 +39,9 @@ import {
     IS_LOCAL_CMS
 } from "./client.js";
 
+import { localizeField } from "./localize.js";
+import { getLanguage, onLanguageChange, t } from "../core/i18n.js";
+
 
 /* ---------------------------------------------------------
    DETAIL ROUTE
@@ -115,7 +118,7 @@ function detailHref(slug) {
    </article>
 --------------------------------------------------------- */
 
-function buildImage(project, mediaQuery) {
+function buildImage(project, mediaQuery, language) {
 
     const wrap = document.createElement("div");
     wrap.className = "project-image";
@@ -155,10 +158,8 @@ function buildImage(project, mediaQuery) {
 
     // Blank alt is a legitimate answer for decorative cover art,
     // so it becomes alt="" rather than a title or a filename.
-    image.setAttribute(
-        "alt",
-        filled(project.cover_alt) ? project.cover_alt.trim() : ""
-    );
+    const coverAlt = localizeField(project, "cover_alt", language);
+    image.setAttribute("alt", filled(coverAlt) ? coverAlt.trim() : "");
 
     image.setAttribute("draggable", "false");
     image.setAttribute("loading", "lazy");
@@ -210,12 +211,12 @@ function technologyNames(project) {
 
 }
 
-function buildCard(project, mediaQuery) {
+function buildCard(project, mediaQuery, language) {
 
     const card = document.createElement("article");
     card.className = "project-card";
 
-    card.appendChild(buildImage(project, mediaQuery));
+    card.appendChild(buildImage(project, mediaQuery, language));
 
     const content = document.createElement("div");
     content.className = "project-content";
@@ -227,24 +228,28 @@ function buildCard(project, mediaQuery) {
         padding inside the card.
     */
 
-    if (filled(project.card_category)) {
+    const category = localizeField(project, "card_category", language);
 
-        const category = document.createElement("p");
-        category.className = "project-category";
-        category.textContent = project.card_category;
-        content.appendChild(category);
+    if (filled(category)) {
+
+        const categoryNode = document.createElement("p");
+        categoryNode.className = "project-category";
+        categoryNode.textContent = category;
+        content.appendChild(categoryNode);
 
     }
 
     const title = document.createElement("h3");
-    title.textContent = project.title;
+    title.textContent = localizeField(project, "title", language);
     content.appendChild(title);
 
-    if (filled(project.short_description)) {
+    const description = localizeField(project, "short_description", language);
+
+    if (filled(description)) {
 
         const text = document.createElement("p");
         text.className = "project-text";
-        text.textContent = project.short_description;
+        text.textContent = description;
         content.appendChild(text);
 
     }
@@ -271,7 +276,7 @@ function buildCard(project, mediaQuery) {
     const link = document.createElement("a");
     link.className = "project-link";
     link.setAttribute("href", detailHref(project.slug));
-    link.textContent = "Lihat Project →";
+    link.textContent = t("portfolio.viewProject");
     content.appendChild(link);
 
     card.appendChild(content);
@@ -320,7 +325,7 @@ function hidePortfolio(grid) {
 
 }
 
-function renderProjects(projects) {
+function renderProjects(projects, language) {
 
     const grid = document.querySelector("#projectGrid");
 
@@ -335,7 +340,7 @@ function renderProjects(projects) {
 
     const mediaQuery = mediaQueryFrom(grid.querySelector("picture"));
 
-    const cards = projects.map(project => buildCard(project, mediaQuery));
+    const cards = projects.map(project => buildCard(project, mediaQuery, language));
 
     /*
         Clones from the first initialisation are dropped along
@@ -374,13 +379,19 @@ function renderProjects(projects) {
    the second check reads real values rather than undefined.
 --------------------------------------------------------- */
 
+/*
+    The last published rows fetched, so a language switch can re-render the
+    carousel from them instead of firing a second request.
+*/
+let cachedPublished = null;
+
 async function load() {
 
     const projects = await readTable(
         "projects",
         "select=slug,title,card_category,short_description," +
         "cover_bucket,cover_desktop_path,cover_mobile_path,cover_alt," +
-        "status,deleted_at,sort_order,created_at," +
+        "status,deleted_at,sort_order,created_at,translations," +
         "project_technologies(sort_order,created_at,technologies(name))" +
         "&status=eq.published&deleted_at=is.null" +
         "&order=sort_order.asc,created_at.asc"
@@ -393,9 +404,21 @@ async function load() {
         filled(project.title)
     );
 
-    renderProjects(published);
+    cachedPublished = published;
+
+    renderProjects(published, getLanguage());
 
 }
+
+onLanguageChange(language => {
+
+    if (!cachedPublished) {
+        return;
+    }
+
+    renderProjects(cachedPublished, language);
+
+});
 
 
 /* ---------------------------------------------------------

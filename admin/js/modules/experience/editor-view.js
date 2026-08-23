@@ -33,6 +33,7 @@ import {
 
 import { createTagsEditor } from "./tags-editor.js";
 import { openExperiencePreview } from "./preview.js";
+import { createTranslationSection, mergeTranslationPatch } from "../../core/translation-fields.js";
 
 export const LIMITS = {
   type: 80,
@@ -176,6 +177,20 @@ export function createExperienceEditor({
   );
   append(descriptionSection, fields.description.node);
 
+  const TRANSLATABLE_KEYS = ["title", "role", "description"];
+
+  const translationSection = createTranslationSection({
+    fields: [
+      { key: "title", label: t("expEditor.fieldTitle"), maxLength: LIMITS.title },
+      { key: "role", label: t("common.role"), maxLength: LIMITS.role },
+      { key: "description", label: t("common.description"), multiline: true }
+    ],
+    translations: record ? record.translations : null
+  });
+
+  const translationsGroup = group("common.translationsTitle", "common.translationsHelp");
+  append(translationsGroup, translationSection.element);
+
   const tagsEditor = createTagsEditor({
     initialTags,
     onChange: markDirty
@@ -188,7 +203,14 @@ export function createExperienceEditor({
 
   renderSettings();
 
-  append(root, basicSection, descriptionSection, tagsEditor.element, settingsSection);
+  append(
+    root,
+    basicSection,
+    descriptionSection,
+    translationsGroup,
+    tagsEditor.element,
+    settingsSection
+  );
 
   function renderSettings() {
     clear(settingsList);
@@ -239,7 +261,8 @@ export function createExperienceEditor({
       type: trimmed(fields.type.value),
       role: trimmed(fields.role.value),
       location: trimmed(fields.location.value),
-      description: trimmed(fields.description.value)
+      description: trimmed(fields.description.value),
+      translations: translationSection.getValues()
     });
   }
 
@@ -265,6 +288,11 @@ export function createExperienceEditor({
     field.control.addEventListener("input", markDirty)
   );
 
+  Object.values(translationSection.fields).forEach(field => {
+    field.control.addEventListener("input", markDirty);
+    field.control.addEventListener("change", markDirty);
+  });
+
   function resetBaseline() {
     baselineForm = formSnapshot();
     baselineTags = tagsEditor.snapshot();
@@ -280,7 +308,12 @@ export function createExperienceEditor({
       title: trimmedOrNull(fields.title.value),
       role: trimmedOrNull(fields.role.value),
       location: trimmedOrNull(fields.location.value),
-      description: trimmedOrNull(fields.description.value)
+      description: trimmedOrNull(fields.description.value),
+      translations: mergeTranslationPatch({
+        existingTranslations: record ? record.translations : null,
+        ownKeys: TRANSLATABLE_KEYS,
+        values: translationSection.getValues()
+      })
     };
   }
 

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 
 <head>
 
@@ -35,6 +35,12 @@
     <!-- Classic script, loaded before any module, so window.portfolioReady
          exists by the time the CMS modules run and no early mark is missed. -->
     <script src="js/initial-loader.js?v=2"></script>
+
+    <!-- Public i18n core, loaded before every other script (module or
+         classic): both categories run in document order once parsing
+         finishes, so window.portfolioI18n is guaranteed to exist by the
+         time any of them run. -->
+    <script src="js/core/i18n.js?v=1" type="module"></script>
 
     <!-- MAIN CSS -->
     <link
@@ -108,29 +114,32 @@
         <!-- MENU -->
         <div class="portfolio-nav-links">
 
-            <a href="#home">
-                Beranda
+            <a href="#home" data-i18n="nav.home">
+                Home
             </a>
 
-            <a href="#about">
-                Tentang Saya
+            <a href="#about" data-i18n="nav.about">
+                About
             </a>
 
-            <a href="#experience">
-                Pengalaman
+            <a href="#experience" data-i18n="nav.experience">
+                Experience
             </a>
 
-            <a href="#education">
-                Pendidikan
+            <a href="#education" data-i18n="nav.education">
+                Education
             </a>
 
-            <a href="#certificates">
-                Sertifikat
+            <a href="#certificates" data-i18n="nav.certificates">
+                Certificates
             </a>
 
             <a href="#portfolio">
                 Portfolio
             </a>
+
+            <!-- LANGUAGE SWITCH -->
+            <div id="navLanguageSwitch" class="nav-lang-slot"></div>
 
         </div>
 
@@ -140,7 +149,8 @@
             class="mobile-nav-toggle"
             id="mobileNavToggle"
             type="button"
-            aria-label="Buka menu navigasi"
+            data-i18n-aria-label="nav.toggleAriaLabel"
+            aria-label="Open navigation menu"
             aria-expanded="false"
         >
             <span></span>
@@ -154,9 +164,9 @@
             href="#contact"
             class="portfolio-nav-contact"
         >
-            Kontak
+            <span class="nav-item-label" data-i18n="nav.contact">Contact</span>
 
-            <span>
+            <span class="nav-arrow">
                 ↗
             </span>
         </a>
@@ -174,32 +184,32 @@
     >
 
         <a href="#home">
-            <span>01</span>
-            Beranda
+            <span class="nav-index">01</span>
+            <span class="nav-item-label" data-i18n="nav.home">Home</span>
         </a>
 
         <a href="#about">
-            <span>02</span>
-            Tentang Saya
+            <span class="nav-index">02</span>
+            <span class="nav-item-label" data-i18n="nav.about">About</span>
         </a>
 
         <a href="#experience">
-            <span>03</span>
-            Pengalaman
+            <span class="nav-index">03</span>
+            <span class="nav-item-label" data-i18n="nav.experience">Experience</span>
         </a>
 
         <a href="#education">
-            <span>04</span>
-            Pendidikan
+            <span class="nav-index">04</span>
+            <span class="nav-item-label" data-i18n="nav.education">Education</span>
         </a>
 
         <a href="#certificates">
-            <span>05</span>
-            Sertifikat
+            <span class="nav-index">05</span>
+            <span class="nav-item-label" data-i18n="nav.certificates">Certificates</span>
         </a>
 
         <a href="#portfolio">
-            <span>06</span>
+            <span class="nav-index">06</span>
             Portfolio
         </a>
 
@@ -207,9 +217,11 @@
             href="#contact"
             class="mobile-nav-contact"
         >
-            Kontak
-            <span>↗</span>
+            <span class="nav-item-label" data-i18n="nav.contact">Contact</span>
+            <span class="nav-arrow">↗</span>
         </a>
+
+        <div id="mobileNavLanguageSwitch" class="nav-lang-slot nav-lang-slot-mobile"></div>
 
     </div>
 
@@ -472,8 +484,8 @@
 
                 <span></span>
 
-                <p>
-                    TENTANG SAYA
+                <p data-i18n="about.label">
+                    ABOUT ME
                 </p>
 
             </div>
@@ -729,7 +741,8 @@
                                 class="about-org-button"
                                 id="aboutOrgPrev"
                                 type="button"
-                                aria-label="Dokumentasi sebelumnya"
+                                data-i18n-aria-label="about.orgPrevAriaLabel"
+                                aria-label="Previous documentation"
                             >
                                 ←
                             </button>
@@ -739,7 +752,8 @@
                                 class="about-org-button"
                                 id="aboutOrgNext"
                                 type="button"
-                                aria-label="Dokumentasi berikutnya"
+                                data-i18n-aria-label="about.orgNextAriaLabel"
+                                aria-label="Next documentation"
                             >
                                 →
                             </button>
@@ -763,7 +777,7 @@
 
                             <span></span>
 
-                            <p>
+                            <p data-i18n="about.orgLabel">
                                 ORGANIZATION & ACTIVITIES
                             </p>
 
@@ -867,9 +881,9 @@
                 <span>Work With..</span>
             </h2>
 
-            <p class="about-tech-description">
-                A selection of tools and technologies 
-                I use across software development, AI, 
+            <p class="about-tech-description" data-i18n="about.techDescription">
+                A selection of tools and technologies
+                I use across software development, AI,
                 embedded systems, and digital product development.
             </p>
 
@@ -1212,18 +1226,18 @@
             <!-- LEFT: STICKY INTRO -->
             <div class="experience-intro">
 
-                <p class="experience-label">
-                    PENGALAMAN
+                <p class="experience-label" data-i18n="experience.label">
+                    EXPERIENCE
                 </p>
 
-                <h2>
-                    Pengalaman yang Membentuk Saya
+                <h2 data-i18n="experience.heading">
+                    Experience That Shaped Me
                 </h2>
 
-                <p class="experience-description">
-                    Berbagai pengalaman teknis, profesional, dan organisasi
-                    yang membantu saya mengembangkan kemampuan di bidang teknologi,
-                    komunikasi, kerja sama tim, dan problem solving.
+                <p class="experience-description" data-i18n="experience.description">
+                    Various technical, professional, and organizational experiences
+                    that helped me grow my skills in technology, communication,
+                    teamwork, and problem solving.
                 </p>
 
             </div>
@@ -1259,16 +1273,16 @@
 
         <div class="education-modern-heading">
 
-            <p class="education-modern-label">
-                PENDIDIKAN
+            <p class="education-modern-label" data-i18n="education.label">
+                EDUCATION
             </p>
 
-            <h2>
-                Riwayat Pendidikan
+            <h2 data-i18n="education.heading">
+                Education History
             </h2>
 
-            <p class="education-modern-description">
-                Pendidikan yang telah dan sedang saya tempuh.
+            <p class="education-modern-description" data-i18n="education.description">
+                Education I have completed or am currently pursuing.
             </p>
 
         </div>
@@ -1370,24 +1384,24 @@
 
         <div class="certificates-heading">
 
-            <p class="certificates-label">
-                SERTIFIKAT
+            <p class="certificates-label" data-i18n="certificates.label">
+                CERTIFICATES
             </p>
 
-            <h2>
-                Sertifikat &amp; Penghargaan
+            <h2 data-i18n="certificates.heading">
+                Certificates &amp; Awards
             </h2>
 
-            <p class="certificates-description">
-                Sertifikat, hak cipta, dan pencapaian akademik yang
-                pernah saya raih.
+            <p class="certificates-description" data-i18n="certificates.description">
+                Certificates, copyrights, and academic achievements
+                I have earned.
             </p>
 
         </div>
 
 
-        <p class="certificates-hint">
-            (Geser untuk memutar &middot; klik kartu depan untuk detail)
+        <p class="certificates-hint" data-i18n="certificates.hint">
+            (Swipe to rotate &middot; click the front card for details)
         </p>
 
 
@@ -1407,7 +1421,8 @@
             id="certificatesCarousel"
             role="group"
             aria-roledescription="carousel"
-            aria-label="Daftar sertifikat dan penghargaan"
+            data-i18n-aria-label="certificates.carouselAriaLabel"
+            aria-label="List of certificates and awards"
         >
 
             <div
@@ -1433,7 +1448,8 @@
                     class="cert-nav cert-nav-prev"
                     id="certPrev"
                     type="button"
-                    aria-label="Sertifikat sebelumnya"
+                    data-i18n-aria-label="certificates.prevAriaLabel"
+                    aria-label="Previous certificate"
                 >
                     <iconify-icon
                         icon="tabler:chevron-left"
@@ -1445,7 +1461,8 @@
                 <div
                     class="cert-dots"
                     id="certDots"
-                    aria-label="Pilih sertifikat"
+                    data-i18n-aria-label="certificates.dotsAriaLabel"
+                    aria-label="Select certificate"
                 ></div>
 
 
@@ -1453,7 +1470,8 @@
                     class="cert-nav cert-nav-next"
                     id="certNext"
                     type="button"
-                    aria-label="Sertifikat berikutnya"
+                    data-i18n-aria-label="certificates.nextAriaLabel"
+                    aria-label="Next certificate"
                 >
                     <iconify-icon
                         icon="tabler:chevron-right"
@@ -1483,18 +1501,17 @@
 
         <div class="portfolio-heading">
 
-            <p class="portfolio-label">
+            <p class="portfolio-label" data-i18n="portfolio.label">
                 PORTFOLIO
             </p>
 
-            <h2>
-                Project yang Pernah Saya Kerjakan
+            <h2 data-i18n="portfolio.heading">
+                Projects I Have Worked On
             </h2>
 
-            <p class="portfolio-description">
-                Beberapa project yang saya kerjakan dalam bidang
-                Artificial Intelligence, Computer Vision,
-                Embedded Systems, dan UI/UX Design.
+            <p class="portfolio-description" data-i18n="portfolio.description">
+                Some projects I have worked on in Artificial Intelligence,
+                Computer Vision, Embedded Systems, and UI/UX Design.
             </p>
 
         </div>
@@ -1998,18 +2015,17 @@
 
                     <span class="contact-guestbook-accent"></span>
 
-                    <p class="contact-guestbook-label">
-                        KONTAK
+                    <p class="contact-guestbook-label" data-i18n="contact.label">
+                        CONTACT
                     </p>
 
-                    <h2>
-                        Hubungi Saya.
+                    <h2 data-i18n="contact.heading">
+                        Contact Me.
                     </h2>
 
-                    <p class="contact-guestbook-description">
-                        Punya pertanyaan, ingin berdiskusi,
-                        atau tertarik untuk berkolaborasi?
-                        Jangan ragu untuk menghubungi saya.
+                    <p class="contact-guestbook-description" data-i18n="contact.description">
+                        Have a question, want to discuss, or interested
+                        in collaborating? Feel free to reach out.
                     </p>
 
                 </div>
@@ -2127,9 +2143,9 @@
 
                     <span class="contact-guestbook-note-dot"></span>
 
-                    <p>
-                        Terbuka untuk diskusi,
-                        kolaborasi, dan kesempatan baru.
+                    <p data-i18n="contact.note">
+                        Open to discussion, collaboration,
+                        and new opportunities.
                     </p>
 
                 </div>
@@ -2156,18 +2172,17 @@
 
                 <div class="contact-guestbook-right-heading">
 
-                    <p class="contact-guestbook-label">
+                    <p class="contact-guestbook-label" data-i18n="guestbook.label">
                         GUESTBOOK
                     </p>
 
-                    <h2>
-                        Tinggalkan Pesan.
+                    <h2 data-i18n="guestbook.heading">
+                        Leave a Message.
                     </h2>
 
-                    <p>
-                        Punya feedback, pesan,
-                        atau sekadar ingin menyapa?
-                        Tulis pesan kamu di sini.
+                    <p data-i18n="guestbook.description">
+                        Got feedback, a message, or just want to say hi?
+                        Write it here.
                     </p>
 
                 </div>
@@ -2195,7 +2210,8 @@
                                 type="text"
                                 id="guestbookName"
                                 name="name"
-                                placeholder="Nama kamu"
+                                data-i18n-placeholder="guestbook.namePlaceholder"
+                                placeholder="Your name"
                                 minlength="2"
                                 maxlength="30"
                                 autocomplete="name"
@@ -2209,7 +2225,7 @@
                                 class="guestbook-v2-submit"
                             >
 
-                                Kirim
+                                <span class="nav-item-label" data-i18n="guestbook.submit">Send</span>
 
                                 <span>
                                     →
@@ -2228,7 +2244,8 @@
                             <textarea
                                 id="guestbookMessage"
                                 name="message"
-                                placeholder="Tulis pesan atau komentar..."
+                                data-i18n-placeholder="guestbook.messagePlaceholder"
+                                placeholder="Write a message or comment..."
                                 minlength="3"
                                 maxlength="500"
                                 rows="5"
@@ -2283,12 +2300,12 @@
                 ✦
             </div>
 
-            <h4>
-                Belum ada pesan.
+            <h4 data-i18n="guestbook.emptyTitle">
+                No messages yet.
             </h4>
 
-            <p>
-                Jadilah orang pertama yang meninggalkan pesan.
+            <p data-i18n="guestbook.emptyText">
+                Be the first to leave a message.
             </p>
 
         </div>
@@ -2301,7 +2318,8 @@
     <div
         class="guestbook-slider-dots"
         id="guestbookSliderDots"
-        aria-label="Navigasi komentar"
+        data-i18n-aria-label="guestbook.sliderAriaLabel"
+        aria-label="Comment navigation"
     ></div>
 
 </div>
@@ -2340,11 +2358,11 @@
                 </a>
 
 
-                <p class="footer-description">
-                    Computer Engineering graduate yang tertarik pada
+                <p class="footer-description" data-i18n="footer.description">
+                    Computer Engineering graduate interested in
                     embedded systems, artificial intelligence,
                     computer vision, software development,
-                    dan UI/UX design.
+                    and UI/UX design.
                 </p>
 
 

@@ -42,6 +42,7 @@ import {
 import { createMediaField } from "./media-field.js";
 import { createOrderedList } from "./ordered-list.js";
 import { t } from "../../core/i18n.js";
+import { createTranslationSection, mergeTranslationPatch } from "../../core/translation-fields.js";
 
 const LIMITS = {
   heading: 160,
@@ -105,6 +106,21 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
   const grid = el("div", "form-grid");
   append(grid, fields.heading.node, fields.highlight.node);
   append(textSection, grid, fields.paragraph1.node, fields.paragraph2.node);
+
+  const TRANSLATABLE_KEYS = ["heading_main", "heading_highlight", "paragraph_1", "paragraph_2"];
+
+  const translationSection = createTranslationSection({
+    fields: [
+      { key: "heading_main", label: t("about.fieldHeading"), maxLength: LIMITS.heading },
+      { key: "heading_highlight", label: t("about.fieldHighlight"), maxLength: LIMITS.highlight },
+      { key: "paragraph_1", label: t("org.fieldParagraph1"), multiline: true },
+      { key: "paragraph_2", label: t("org.fieldParagraph2"), multiline: true }
+    ],
+    translations: organization.translations
+  });
+
+  const translationsGroup = group("common.translationsTitle", "common.translationsHelp");
+  append(translationsGroup, translationSection.element);
 
   const actions = el("div", "form-actions");
 
@@ -589,7 +605,7 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
     }
   }
 
-  append(root, textSection, actions, skills.element, gallery.element);
+  append(root, textSection, translationsGroup, actions, skills.element, gallery.element);
 
   /* ---------------- dirty tracking ---------------- */
 
@@ -598,7 +614,8 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
       heading: trimmed(fields.heading.value),
       highlight: trimmed(fields.highlight.value),
       paragraph1: trimmed(fields.paragraph1.value),
-      paragraph2: trimmed(fields.paragraph2.value)
+      paragraph2: trimmed(fields.paragraph2.value),
+      translations: translationSection.getValues()
     });
   }
 
@@ -622,6 +639,11 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
   Object.values(fields).forEach(field =>
     field.control.addEventListener("input", markDirty)
   );
+
+  Object.values(translationSection.fields).forEach(field => {
+    field.control.addEventListener("input", markDirty);
+    field.control.addEventListener("change", markDirty);
+  });
 
   function resetDirtyBaseline() {
     baseline = snapshot();
@@ -669,7 +691,12 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
         heading_main: trimmedOrNull(fields.heading.value),
         heading_highlight: trimmedOrNull(fields.highlight.value),
         paragraph_1: trimmedOrNull(fields.paragraph1.value),
-        paragraph_2: trimmedOrNull(fields.paragraph2.value)
+        paragraph_2: trimmedOrNull(fields.paragraph2.value),
+        translations: mergeTranslationPatch({
+          existingTranslations: organization.translations,
+          ownKeys: TRANSLATABLE_KEYS,
+          values: translationSection.getValues()
+        })
       })
       .eq("singleton_key", 1)
       .select("id");

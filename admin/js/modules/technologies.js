@@ -38,6 +38,7 @@ import {
 import { openModal, confirmDialog, closeAllModals } from "../core/modal.js";
 import { toast } from "../core/toast.js";
 import { t } from "../core/i18n.js";
+import { openRowMenu, closeRowMenu } from "../core/row-menu.js";
 
 /*
   Group keys are the contract with public_group's check constraint; the labels
@@ -156,35 +157,9 @@ async function render(container, { signal }) {
     status: "loading"
   };
 
-  let closeOpenMenu = null;
-
   function closeMenu() {
-    if (closeOpenMenu) {
-      closeOpenMenu();
-      closeOpenMenu = null;
-    }
+    closeRowMenu();
   }
-
-  function handleDocumentPointerDown(event) {
-    if (!closeOpenMenu) {
-      return;
-    }
-
-    const menu = container.querySelector(".row-actions.is-open");
-
-    if (menu && !menu.contains(event.target)) {
-      closeMenu();
-    }
-  }
-
-  function handleDocumentKeydown(event) {
-    if (event.key === "Escape" && closeOpenMenu) {
-      closeMenu();
-    }
-  }
-
-  document.addEventListener("pointerdown", handleDocumentPointerDown);
-  document.addEventListener("keydown", handleDocumentKeydown);
 
   append(
     container,
@@ -210,8 +185,6 @@ async function render(container, { signal }) {
   await load();
 
   return () => {
-    document.removeEventListener("pointerdown", handleDocumentPointerDown);
-    document.removeEventListener("keydown", handleDocumentKeydown);
     closeMenu();
     closeAllModals();
   };
@@ -656,25 +629,8 @@ async function render(container, { signal }) {
     trigger.setAttribute("aria-label", t("tech.actionsFor", { name: item.name }));
 
     trigger.addEventListener("click", () => {
-      const isOpen = wrap.classList.contains("is-open");
-
-      closeMenu();
-
-      if (isOpen) {
-        return;
-      }
-
-      openMenu();
-    });
-
-    append(wrap, trigger);
-
-    function openMenu() {
       const index = state.items.findIndex(entry => entry.id === item.id);
       const canReorder = !filtersActive();
-
-      const menu = el("div", "row-menu");
-      menu.setAttribute("role", "menu");
 
       const entries = [
         {
@@ -699,76 +655,10 @@ async function render(container, { signal }) {
         }
       ];
 
-      const buttons = [];
+      openRowMenu({ trigger, entries });
+    });
 
-      entries.forEach(entry => {
-        const button = el("button", "row-menu-item", entry.label);
-        button.type = "button";
-        button.setAttribute("role", "menuitem");
-
-        if (entry.disabled) {
-          button.disabled = true;
-
-          if (entry.hint) {
-            button.title = entry.hint;
-          }
-        } else {
-          button.addEventListener("click", () => {
-            closeMenu();
-            entry.onSelect();
-          });
-        }
-
-        buttons.push(button);
-        append(menu, button);
-      });
-
-      menu.addEventListener("keydown", event => {
-        if (event.key !== "ArrowDown" && event.key !== "ArrowUp") {
-          return;
-        }
-
-        event.preventDefault();
-
-        const enabled = buttons.filter(button => !button.disabled);
-
-        if (enabled.length === 0) {
-          return;
-        }
-
-        const current = enabled.indexOf(document.activeElement);
-        const step = event.key === "ArrowDown" ? 1 : -1;
-        const next =
-          (current + step + enabled.length) % enabled.length;
-
-        enabled[next].focus();
-      });
-
-      append(wrap, menu);
-      wrap.classList.add("is-open");
-      trigger.setAttribute("aria-expanded", "true");
-
-      const firstEnabled = buttons.find(button => !button.disabled);
-
-      if (firstEnabled) {
-        firstEnabled.focus();
-      }
-
-      closeOpenMenu = () => {
-        // Only pull focus back to the trigger when focus is actually inside
-        // the menu; otherwise typing in the search box would lose focus every
-        // time the list re-renders.
-        const focusWasInMenu = menu.contains(document.activeElement);
-
-        menu.remove();
-        wrap.classList.remove("is-open");
-        trigger.setAttribute("aria-expanded", "false");
-
-        if (focusWasInMenu && document.contains(trigger)) {
-          trigger.focus();
-        }
-      };
-    }
+    append(wrap, trigger);
 
     return wrap;
   }

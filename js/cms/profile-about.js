@@ -34,6 +34,9 @@ import {
     IS_LOCAL_CMS
 } from "./client.js";
 
+import { localizeField } from "./localize.js";
+import { getLanguage, onLanguageChange } from "../core/i18n.js";
+
 
 /* ---------------------------------------------------------
    MOBILE BREAKPOINT
@@ -236,7 +239,7 @@ function warn(message, error) {
    HERO
 --------------------------------------------------------- */
 
-function renderHeroText(profile) {
+function renderHeroText(profile, language) {
 
     const content = document.querySelector(".simple-hero-content");
 
@@ -248,7 +251,8 @@ function renderHeroText(profile) {
         V1 shows "Rajendra Aria" + accented "Nismara.". The CMS
         stores one name field, so the last word keeps the accent and
         the rest becomes the plain part. A single-word name leaves
-        the accent span empty rather than removing it.
+        the accent span empty rather than removing it. The name is a
+        proper noun and is never localized.
     */
 
     if (filled(profile.name)) {
@@ -264,10 +268,13 @@ function renderHeroText(profile) {
 
     }
 
-    setText(content.querySelector("h2"), profile.professional_title);
+    setText(
+        content.querySelector("h2"),
+        localizeField(profile, "professional_title", language)
+    );
     setText(
         content.querySelector(".simple-hero-description"),
-        profile.hero_description
+        localizeField(profile, "hero_description", language)
     );
 
 }
@@ -293,7 +300,7 @@ function heroSlotIsUsable(row) {
 
 }
 
-function renderHeroMedia(heroRows) {
+function renderHeroMedia(heroRows, language) {
 
     const stack = document.getElementById("heroPhotoStack");
 
@@ -373,15 +380,17 @@ function renderHeroMedia(heroRows) {
             return;
         }
 
+        const localizedRow = { ...row, alt_text: localizeField(row, "alt_text", language) };
+
         const existing = card.querySelector("picture");
 
         if (existing) {
-            patchPicture(existing, row);
+            patchPicture(existing, localizedRow);
         }
 
         else {
 
-            const picture = buildPicture(row, referenceQuery);
+            const picture = buildPicture(localizedRow, referenceQuery);
 
             if (!picture) {
                 card.remove();
@@ -432,7 +441,7 @@ function aboutIsConfigured(profile) {
 
 }
 
-function renderAbout(profile) {
+function renderAbout(profile, language) {
 
     const slide = document.querySelector(".about-slide-one");
 
@@ -446,18 +455,18 @@ function renderAbout(profile) {
 
         setHeading(
             content.querySelector("h2"),
-            profile.about_heading_main,
-            profile.about_heading_highlight
+            localizeField(profile, "about_heading_main", language),
+            localizeField(profile, "about_heading_highlight", language)
         );
 
         setText(
             content.querySelector(".simple-about-lead"),
-            profile.about_lead
+            localizeField(profile, "about_lead", language)
         );
 
         setText(
             content.querySelector(".simple-about-description"),
-            profile.about_description
+            localizeField(profile, "about_description", language)
         );
 
     }
@@ -469,13 +478,13 @@ function renderAbout(profile) {
             bucket_name: profile.about_photo_bucket,
             desktop_path: profile.about_photo_desktop_path,
             mobile_path: profile.about_photo_mobile_path,
-            alt_text: profile.about_photo_alt
+            alt_text: localizeField(profile, "about_photo_alt", language)
         });
     }
 
 }
 
-function renderInterests(interests) {
+function renderInterests(interests, language) {
 
     const list = document.querySelector(".simple-about-interest-list");
 
@@ -492,7 +501,7 @@ function renderInterests(interests) {
     const nodes = interests.map(interest => {
 
         const span = document.createElement("span");
-        span.textContent = interest.label;
+        span.textContent = localizeField(interest, "label", language);
         return span;
 
     });
@@ -521,7 +530,7 @@ function organizationIsConfigured(organization) {
 
 }
 
-function renderOrganizationText(organization) {
+function renderOrganizationText(organization, language) {
 
     const content = document.querySelector(".about-org-content");
 
@@ -531,18 +540,18 @@ function renderOrganizationText(organization) {
 
     setHeading(
         content.querySelector("h2"),
-        organization.heading_main,
-        organization.heading_highlight
+        localizeField(organization, "heading_main", language),
+        localizeField(organization, "heading_highlight", language)
     );
 
     const paragraphs = content.querySelectorAll(".about-description");
 
-    setText(paragraphs[0], organization.paragraph_1);
-    setText(paragraphs[1], organization.paragraph_2);
+    setText(paragraphs[0], localizeField(organization, "paragraph_1", language));
+    setText(paragraphs[1], localizeField(organization, "paragraph_2", language));
 
 }
 
-function renderOrganizationSkills(skills) {
+function renderOrganizationSkills(skills, language) {
 
     const container = document.querySelector(".about-org-skills");
 
@@ -560,10 +569,10 @@ function renderOrganizationSkills(skills) {
         const item = document.createElement("div");
 
         const title = document.createElement("strong");
-        title.textContent = skill.title;
+        title.textContent = localizeField(skill, "title", language);
 
         const description = document.createElement("span");
-        description.textContent = skill.description;
+        description.textContent = localizeField(skill, "description", language);
 
         item.appendChild(title);
         item.appendChild(description);
@@ -576,7 +585,7 @@ function renderOrganizationSkills(skills) {
 
 }
 
-function renderOrganizationGallery(gallery) {
+function renderOrganizationGallery(gallery, language) {
 
     const track = document.getElementById("aboutOrgTrack");
 
@@ -590,7 +599,10 @@ function renderOrganizationGallery(gallery) {
 
     gallery.forEach(row => {
 
-        const picture = buildPicture(row, referenceQuery);
+        const picture = buildPicture(
+            { ...row, alt_text: localizeField(row, "alt_text", language) },
+            referenceQuery
+        );
 
         // A row pointing outside the public bucket is skipped rather
         // than rendered as a broken frame.
@@ -648,47 +660,14 @@ function renderOrganizationGallery(gallery) {
 
 const ORDER = "order=sort_order.asc,created_at.asc";
 
-async function load() {
+/*
+    The last Promise.allSettled results, so a language switch can re-run
+    the same render dispatch against already-fetched data instead of
+    firing six more requests.
+*/
+let cachedResults = null;
 
-    const results = await Promise.allSettled([
-        readTable(
-            "profile_content",
-            "select=name,professional_title,hero_description," +
-            "about_heading_main,about_heading_highlight,about_lead," +
-            "about_description,about_photo_bucket,about_photo_desktop_path," +
-            "about_photo_mobile_path,about_photo_alt&limit=1"
-        ),
-        /*
-            RLS is the authority on which slots are public; the
-            is_visible filter and the column it selects are defence in
-            depth, so a future policy change cannot quietly start
-            publishing hidden photos. Same belt-and-braces the
-            published-project read uses.
-        */
-        readTable(
-            "hero_media",
-            "select=slot_number,bucket_name,desktop_path,mobile_path," +
-            "alt_text,is_visible" +
-            "&is_visible=is.true&order=slot_number.asc"
-        ),
-        readTable(
-            "about_interests",
-            `select=label,sort_order&is_active=eq.true&${ORDER}`
-        ),
-        readTable(
-            "about_organization",
-            "select=heading_main,heading_highlight,paragraph_1,paragraph_2&limit=1"
-        ),
-        readTable(
-            "about_organization_skills",
-            `select=title,description,sort_order&is_active=eq.true&${ORDER}`
-        ),
-        readTable(
-            "about_gallery",
-            "select=bucket_name,desktop_path,mobile_path,alt_text,sort_order" +
-            `&is_active=eq.true&${ORDER}`
-        )
-    ]);
+function renderFromResults(results, language) {
 
     const [
         profileResult,
@@ -707,17 +686,17 @@ async function load() {
 
         if (profile) {
 
-            renderHeroText(profile);
+            renderHeroText(profile, language);
 
             if (aboutIsConfigured(profile)) {
 
-                renderAbout(profile);
+                renderAbout(profile, language);
 
                 // The About section owns the interests list, so its
                 // configured state decides whether an empty list is
                 // real CMS state or simply "not set up yet".
                 if (interestsResult.status === "fulfilled") {
-                    renderInterests(interestsResult.value);
+                    renderInterests(interestsResult.value, language);
                 }
 
                 else {
@@ -732,8 +711,9 @@ async function load() {
                     about_photo_bucket: profile.about_photo_bucket,
                     about_photo_desktop_path: profile.about_photo_desktop_path,
                     about_photo_mobile_path: profile.about_photo_mobile_path,
-                    about_photo_alt: profile.about_photo_alt
-                });
+                    about_photo_alt: profile.about_photo_alt,
+                    translations: profile.translations
+                }, language);
             }
 
         }
@@ -747,7 +727,7 @@ async function load() {
     /* ---- hero media ---- */
 
     if (heroResult.status === "fulfilled") {
-        renderHeroMedia(heroResult.value);
+        renderHeroMedia(heroResult.value, language);
     }
 
     else {
@@ -762,10 +742,10 @@ async function load() {
 
         if (organizationIsConfigured(organization)) {
 
-            renderOrganizationText(organization);
+            renderOrganizationText(organization, language);
 
             if (skillsResult.status === "fulfilled") {
-                renderOrganizationSkills(skillsResult.value);
+                renderOrganizationSkills(skillsResult.value, language);
             }
 
             else {
@@ -773,7 +753,7 @@ async function load() {
             }
 
             if (galleryResult.status === "fulfilled") {
-                renderOrganizationGallery(galleryResult.value);
+                renderOrganizationGallery(galleryResult.value, language);
             }
 
             else {
@@ -789,6 +769,64 @@ async function load() {
     }
 
 }
+
+async function load() {
+
+    const results = await Promise.allSettled([
+        readTable(
+            "profile_content",
+            "select=name,professional_title,hero_description," +
+            "about_heading_main,about_heading_highlight,about_lead," +
+            "about_description,about_photo_bucket,about_photo_desktop_path," +
+            "about_photo_mobile_path,about_photo_alt,translations&limit=1"
+        ),
+        /*
+            RLS is the authority on which slots are public; the
+            is_visible filter and the column it selects are defence in
+            depth, so a future policy change cannot quietly start
+            publishing hidden photos. Same belt-and-braces the
+            published-project read uses.
+        */
+        readTable(
+            "hero_media",
+            "select=slot_number,bucket_name,desktop_path,mobile_path," +
+            "alt_text,is_visible,translations" +
+            "&is_visible=is.true&order=slot_number.asc"
+        ),
+        readTable(
+            "about_interests",
+            `select=label,sort_order,translations&is_active=eq.true&${ORDER}`
+        ),
+        readTable(
+            "about_organization",
+            "select=heading_main,heading_highlight,paragraph_1,paragraph_2,translations&limit=1"
+        ),
+        readTable(
+            "about_organization_skills",
+            `select=title,description,sort_order,translations&is_active=eq.true&${ORDER}`
+        ),
+        readTable(
+            "about_gallery",
+            "select=bucket_name,desktop_path,mobile_path,alt_text,sort_order,translations" +
+            `&is_active=eq.true&${ORDER}`
+        )
+    ]);
+
+    cachedResults = results;
+
+    renderFromResults(results, getLanguage());
+
+}
+
+onLanguageChange(language => {
+
+    if (!cachedResults) {
+        return;
+    }
+
+    renderFromResults(cachedResults, language);
+
+});
 
 
 /* ---------------------------------------------------------

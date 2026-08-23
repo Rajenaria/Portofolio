@@ -160,6 +160,65 @@ a {
 }
 
 
+.project-owner-group {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+
+/* =========================================
+   LANGUAGE SWITCH (EN | ID)
+   Same compact control as the public homepage navbar
+   (css/style.css) — duplicated here rather than pulling in the
+   whole homepage stylesheet for one small component.
+========================================= */
+
+.nav-lang-slot {
+    display: flex;
+    align-items: center;
+}
+
+.lang-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 3px;
+    border: 1px solid rgba(29, 29, 31, 0.12);
+    border-radius: 999px;
+    background: rgba(29, 29, 31, 0.03);
+}
+
+.lang-switch-option {
+    min-width: 30px;
+    padding: 4px 9px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: #6e6e73;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    line-height: 1;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.lang-switch-option:hover {
+    color: #1d1d1f;
+}
+
+.lang-switch-option.is-active {
+    background: #1d1d1f;
+    color: #ffffff;
+}
+
+.lang-switch-option:focus-visible {
+    outline: 2px solid #0071e3;
+    outline-offset: 2px;
+}
+
+
 .project-back {
     display:
         inline-flex;

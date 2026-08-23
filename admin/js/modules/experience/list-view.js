@@ -35,6 +35,7 @@ import { openModal, confirmDialog } from "../../core/modal.js";
 import { toast } from "../../core/toast.js";
 import { textField, trimmed } from "../../core/form.js";
 import { t } from "../../core/i18n.js";
+import { openRowMenu, closeRowMenu } from "../../core/row-menu.js";
 
 /* Resolved at call time so a language switch mid-list relabels everything. */
 function rowTitle(row) {
@@ -56,35 +57,9 @@ export function createExperienceList({ onEdit, onCreate, onChanged }) {
     busy: false
   };
 
-  let closeOpenMenu = null;
-
   function closeMenu() {
-    if (closeOpenMenu) {
-      closeOpenMenu();
-      closeOpenMenu = null;
-    }
+    closeRowMenu();
   }
-
-  function handlePointerDown(event) {
-    if (!closeOpenMenu) {
-      return;
-    }
-
-    const menu = root.querySelector(".row-actions.is-open");
-
-    if (menu && !menu.contains(event.target)) {
-      closeMenu();
-    }
-  }
-
-  function handleKeydown(event) {
-    if (event.key === "Escape" && closeOpenMenu) {
-      closeMenu();
-    }
-  }
-
-  document.addEventListener("pointerdown", handlePointerDown);
-  document.addEventListener("keydown", handleKeydown);
 
   /* ---------------- toolbar ---------------- */
 
@@ -434,91 +409,14 @@ export function createExperienceList({ onEdit, onCreate, onChanged }) {
     );
 
     trigger.addEventListener("click", () => {
-      const isOpen = wrap.classList.contains("is-open");
-      closeMenu();
-
-      if (!isOpen) {
-        openMenu();
-      }
-    });
-
-    append(wrap, trigger);
-
-    function openMenu() {
-      const menu = el("div", "row-menu");
-      menu.setAttribute("role", "menu");
-
       const entries = isTrashView()
         ? trashEntries(row)
         : normalEntries(row, index, visible);
 
-      const buttons = [];
+      openRowMenu({ trigger, entries });
+    });
 
-      entries.forEach(entry => {
-        const button = el("button", "row-menu-item", entry.label);
-        button.type = "button";
-        button.setAttribute("role", "menuitem");
-
-        if (entry.danger) {
-          button.classList.add("is-danger");
-        }
-
-        if (entry.disabled) {
-          button.disabled = true;
-
-          if (entry.hint) {
-            button.title = entry.hint;
-          }
-        } else {
-          button.addEventListener("click", () => {
-            closeMenu();
-            entry.onSelect();
-          });
-        }
-
-        buttons.push(button);
-        append(menu, button);
-      });
-
-      menu.addEventListener("keydown", event => {
-        if (event.key !== "ArrowDown" && event.key !== "ArrowUp") {
-          return;
-        }
-
-        event.preventDefault();
-
-        const enabled = buttons.filter(button => !button.disabled);
-
-        if (enabled.length === 0) {
-          return;
-        }
-
-        const current = enabled.indexOf(document.activeElement);
-        const step = event.key === "ArrowDown" ? 1 : -1;
-        enabled[(current + step + enabled.length) % enabled.length].focus();
-      });
-
-      append(wrap, menu);
-      wrap.classList.add("is-open");
-      trigger.setAttribute("aria-expanded", "true");
-
-      const first = buttons.find(button => !button.disabled);
-
-      if (first) {
-        first.focus();
-      }
-
-      closeOpenMenu = () => {
-        const focusWasInMenu = menu.contains(document.activeElement);
-        menu.remove();
-        wrap.classList.remove("is-open");
-        trigger.setAttribute("aria-expanded", "false");
-
-        if (focusWasInMenu && document.contains(trigger)) {
-          trigger.focus();
-        }
-      };
-    }
+    append(wrap, trigger);
 
     return wrap;
   }
@@ -902,8 +800,6 @@ export function createExperienceList({ onEdit, onCreate, onChanged }) {
     element: root,
     load,
     destroy() {
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeydown);
       closeMenu();
     }
   };

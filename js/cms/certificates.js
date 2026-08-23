@@ -39,6 +39,9 @@ import {
     IS_LOCAL_CMS
 } from "./client.js";
 
+import { localizeField } from "./localize.js";
+import { getLanguage, onLanguageChange } from "../core/i18n.js";
+
 
 /* ---------------------------------------------------------
    CATEGORY -> TRUSTED ICON
@@ -132,17 +135,21 @@ function certificateLink(row) {
    when they are blank.
 --------------------------------------------------------- */
 
-function toCard(row) {
+function toCard(row, language) {
+
+    const subtitle = localizeField(row, "issuer_line", language);
+    const badge = localizeField(row, "badge_text", language);
+    const description = localizeField(row, "description", language);
 
     return {
         id: row.id,
         icon: iconFor(row.category),
         year: filled(row.period) ? row.period.trim() : "",
-        title: row.title.trim(),
+        title: localizeField(row, "title", language).trim(),
         publisher: filled(row.publisher) ? row.publisher.trim() : "",
-        subtitle: filled(row.issuer_line) ? row.issuer_line.trim() : "",
-        badge: filled(row.badge_text) ? row.badge_text.trim() : "",
-        description: filled(row.description) ? row.description.trim() : "",
+        subtitle: filled(subtitle) ? subtitle.trim() : "",
+        badge: filled(badge) ? badge.trim() : "",
+        description: filled(description) ? description.trim() : "",
         link: certificateLink(row)
     };
 
@@ -157,13 +164,19 @@ function toCard(row) {
    so the second check reads real values rather than undefined.
 --------------------------------------------------------- */
 
+/*
+    The last published rows fetched, so a language switch can re-render the
+    carousel from them instead of firing a second request.
+*/
+let cachedPublished = null;
+
 async function load() {
 
     const rows = await readTable(
         "certificates",
         "select=id,title,publisher,period,category,issuer_line,badge_text," +
         "description,document_bucket,document_path,document_type,external_url," +
-        "status,deleted_at,sort_order,created_at" +
+        "status,deleted_at,sort_order,created_at,translations" +
         "&status=eq.published&deleted_at=is.null" +
         "&order=sort_order.asc,created_at.asc"
     );
@@ -198,6 +211,8 @@ async function load() {
         return;
     }
 
+    cachedPublished = published;
+
     /*
         rebuild() validates the list before it destroys anything,
         so a rejected payload leaves the existing carousel intact.
@@ -206,9 +221,22 @@ async function load() {
         which is what keeps repeated calls from accumulating.
     */
 
-    controller.rebuild(published.map(toCard));
+    controller.rebuild(published.map(row => toCard(row, getLanguage())));
 
 }
+
+
+onLanguageChange(language => {
+
+    const controller = window.certificatesCarousel;
+
+    if (!cachedPublished || !controller || typeof controller.rebuild !== "function") {
+        return;
+    }
+
+    controller.rebuild(cachedPublished.map(row => toCard(row, language)));
+
+});
 
 
 /* ---------------------------------------------------------

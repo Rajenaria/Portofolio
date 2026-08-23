@@ -63,6 +63,48 @@ window.addEventListener(
 /* INITIAL */
 
 updateMainNavbar();
+
+
+/* =========================================
+   LANGUAGE SWITCH MOUNT
+   Two instances, same createLanguageSwitch() factory: one in the
+   desktop nav-links row, one inside the mobile menu. Both stay in
+   sync through js/core/i18n.js's own listener set.
+
+   Deferred to DOMContentLoaded rather than run at top level: module
+   scripts (js/core/i18n.js) and classic deferred scripts both execute
+   before DOMContentLoaded, but their relative order with each other is
+   not something to depend on — DOMContentLoaded is the one point the
+   spec guarantees comes after both.
+========================================= */
+
+document.addEventListener("DOMContentLoaded", () => {
+
+    const desktopSlot =
+        document.querySelector(
+            "#navLanguageSwitch"
+        );
+
+    const mobileSlot =
+        document.querySelector(
+            "#mobileNavLanguageSwitch"
+        );
+
+    if (desktopSlot) {
+        desktopSlot.appendChild(
+            window.portfolioI18n.createLanguageSwitch()
+        );
+    }
+
+    if (mobileSlot) {
+        mobileSlot.appendChild(
+            window.portfolioI18n.createLanguageSwitch()
+        );
+    }
+
+});
+
+
 /* =========================================
    MOBILE NAVIGATION
 ========================================= */
@@ -116,7 +158,7 @@ updateMainNavbar();
 
         toggle.setAttribute(
             "aria-label",
-            "Tutup menu navigasi"
+            window.portfolioI18n.t("nav.toggleCloseAriaLabel")
         );
 
     }
@@ -142,7 +184,7 @@ updateMainNavbar();
 
         toggle.setAttribute(
             "aria-label",
-            "Buka menu navigasi"
+            window.portfolioI18n.t("nav.toggleAriaLabel")
         );
 
     }

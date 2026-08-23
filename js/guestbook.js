@@ -289,7 +289,7 @@ document.addEventListener("DOMContentLoaded", () => {
             messageInput.value.length;
 
         counter.textContent =
-            `${length} / 500`;
+            window.portfolioI18n.t("guestbook.counter", { count: length, max: 500 });
 
     }
 
@@ -349,7 +349,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (name.length < 2) {
 
             showStatus(
-                "Nama minimal 2 karakter.",
+                window.portfolioI18n.t("guestbook.errNameShort"),
                 "error"
             );
 
@@ -362,7 +362,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (name.length > 30) {
 
             showStatus(
-                "Nama maksimal 30 karakter.",
+                window.portfolioI18n.t("guestbook.errNameLong"),
                 "error"
             );
 
@@ -379,7 +379,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (message.length < 3) {
 
             showStatus(
-                "Pesan minimal 3 karakter.",
+                window.portfolioI18n.t("guestbook.errMessageShort"),
                 "error"
             );
 
@@ -392,7 +392,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (message.length > 500) {
 
             showStatus(
-                "Pesan maksimal 500 karakter.",
+                window.portfolioI18n.t("guestbook.errMessageLong"),
                 "error"
             );
 
@@ -579,11 +579,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
 
                 <h4>
-                    Belum ada pesan.
+                    ${window.portfolioI18n.t("guestbook.emptyTitle")}
                 </h4>
 
                 <p>
-                    Jadilah orang pertama yang meninggalkan pesan.
+                    ${window.portfolioI18n.t("guestbook.emptyText")}
                 </p>
 
             </div>
@@ -691,7 +691,7 @@ function setupCommentSlider() {
 
             dot.setAttribute(
                 "aria-label",
-                `Lihat komentar ${index + 1}`
+                window.portfolioI18n.t("guestbook.sliderCommentAriaLabel", { n: index + 1 })
             );
 
 
@@ -964,7 +964,7 @@ function setupCommentSlider() {
 
             pinButton.setAttribute(
                 "aria-label",
-                "Sematkan komentar ini"
+                window.portfolioI18n.t("guestbook.pinAriaLabel")
             );
 
 
@@ -1105,11 +1105,11 @@ setupCommentSlider();
                     </div>
 
                     <h4>
-                        Pesan gagal dimuat.
+                        ${window.portfolioI18n.t("guestbook.errLoad")}
                     </h4>
 
                     <p>
-                        Silakan refresh halaman.
+                        ${window.portfolioI18n.t("guestbook.errLoadRefresh")}
                     </p>
 
                 </div>
@@ -1195,12 +1195,12 @@ setupCommentSlider();
 
 
             submitButton.innerHTML = `
-                <span>Mengirim...</span>
+                <span>${window.portfolioI18n.t("guestbook.sending")}</span>
             `;
 
 
             showStatus(
-                "Sedang mengirim pesan..."
+                window.portfolioI18n.t("guestbook.sendingStatus")
             );
 
 
@@ -1269,7 +1269,7 @@ setupCommentSlider();
 
                     throw new Error(
                         result.message ||
-                        "Pesan gagal dikirim."
+                        window.portfolioI18n.t("guestbook.errSubmit")
                     );
 
                 }
@@ -1279,7 +1279,7 @@ setupCommentSlider();
 
                     throw new Error(
                         result.message ||
-                        "Pesan gagal dikirim."
+                        window.portfolioI18n.t("guestbook.errSubmit")
                     );
 
                 }
@@ -1300,7 +1300,7 @@ setupCommentSlider();
                 ) {
 
                     showStatus(
-                        "Pesan berhasil terkirim. Terima kasih!",
+                        window.portfolioI18n.t("guestbook.successSent"),
                         "success"
                     );
 
@@ -1352,7 +1352,7 @@ setupCommentSlider();
                 ) {
 
                     showStatus(
-                        "Pesan terpending. akan di check dulu yaa",
+                        window.portfolioI18n.t("guestbook.pending"),
                         "success"
                     );
 
@@ -1433,7 +1433,7 @@ setupCommentSlider();
 
 
                 submitButton.innerHTML = `
-                    Kirim
+                    ${window.portfolioI18n.t("guestbook.submit")}
                     <span>→</span>
                 `;
 

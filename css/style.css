@@ -253,7 +253,7 @@ section {
 }
 
 
-.portfolio-nav-contact span {
+.portfolio-nav-contact .nav-arrow {
     transition:
         transform 0.3s ease;
 }
@@ -271,12 +271,70 @@ section {
 }
 
 
-.portfolio-nav-contact:hover span {
+.portfolio-nav-contact:hover .nav-arrow {
     transform:
         translate(
             2px,
             -2px
         );
+}
+
+
+/* =========================================
+   LANGUAGE SWITCH (EN | ID)
+   Compact, text-only control — no card, no pill, no extra navbar
+   height. Sits between the desktop links and the mobile toggle;
+   a second instance (same markup, via createLanguageSwitch) lives
+   inside the mobile menu.
+========================================= */
+
+.nav-lang-slot {
+    display: flex;
+    align-items: center;
+}
+
+.lang-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 3px;
+    border: 1px solid rgba(29, 29, 31, 0.12);
+    border-radius: 999px;
+    background: rgba(29, 29, 31, 0.03);
+}
+
+.lang-switch-option {
+    min-width: 30px;
+    padding: 4px 9px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: #6e6e73;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    line-height: 1;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.lang-switch-option:hover {
+    color: #1d1d1f;
+}
+
+.lang-switch-option.is-active {
+    background: #1d1d1f;
+    color: #ffffff;
+}
+
+.lang-switch-option:focus-visible {
+    outline: 2px solid #0071e3;
+    outline-offset: 2px;
+}
+
+.nav-lang-slot-mobile {
+    justify-content: center;
+    margin-top: 12px;
 }
 
 
@@ -9202,7 +9260,7 @@ a.footer-contact-item:hover {
         transition: color 0.25s ease, padding-left 0.25s ease;
     }
 
-    .mobile-nav-menu > a > span {
+    .mobile-nav-menu > a > .nav-index {
         min-width: 20px;
         font-size: 8px;
         font-weight: 700;
@@ -9232,7 +9290,7 @@ a.footer-contact-item:hover {
         color: #ffffff;
     }
 
-    .mobile-nav-menu .mobile-nav-contact span {
+    .mobile-nav-menu .mobile-nav-contact .nav-arrow {
         min-width: auto;
         font-size: 14px;
         color: #ffffff;
@@ -9710,7 +9768,7 @@ a.footer-contact-item:hover {
     }
 
 
-    .mobile-nav-menu > a > span {
+    .mobile-nav-menu > a > .nav-index {
         min-width: 20px;
 
         font-size: 8px;
@@ -9769,7 +9827,7 @@ a.footer-contact-item:hover {
 
 
     .mobile-nav-menu
-    .mobile-nav-contact span {
+    .mobile-nav-contact .nav-arrow {
 
         min-width: auto;
 

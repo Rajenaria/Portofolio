@@ -38,7 +38,7 @@ export const projectsRoute = {
 // The cover columns must be selected here: the editor rebuilds the cover field
 // from them, so leaving them out would make a saved cover disappear on reopen.
 const PROJECT_COLUMNS =
-  "id, slug, title, card_category, short_description, detail_title_main, detail_title_highlight, detail_intro, role, project_date, project_type, about_heading, cover_bucket, cover_desktop_path, cover_mobile_path, cover_alt, github_url, demo_url, featured, sort_order, status, published_at, archived_at, deleted_at, created_at, updated_at";
+  "id, slug, title, card_category, short_description, detail_title_main, detail_title_highlight, detail_intro, role, project_date, project_type, about_heading, cover_bucket, cover_desktop_path, cover_mobile_path, cover_alt, github_url, demo_url, featured, sort_order, status, published_at, archived_at, deleted_at, created_at, updated_at, translations";
 
 async function render(container, { signal }) {
   const headerSlot = el("div", "route-header-slot");

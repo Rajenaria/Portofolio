@@ -69,6 +69,7 @@ import { createTechnologySelector } from "./technology-selector.js";
 import { createProjectMediaField } from "./media-field.js";
 import { createDocumentationManager } from "./media-manager.js";
 import { openProjectPreview } from "./preview.js";
+import { createTranslationSection, mergeTranslationPatch } from "../../core/translation-fields.js";
 
 export const LIMITS = {
   title: 180,
@@ -371,6 +372,51 @@ export function createProjectEditor({
   );
   append(detailSection, detailGrid, fields.detailIntro.node);
 
+  const TRANSLATABLE_KEYS = [
+    "title",
+    "card_category",
+    "short_description",
+    "detail_title_main",
+    "detail_title_highlight",
+    "detail_intro",
+    "role",
+    "project_type",
+    "about_heading",
+    "cover_alt"
+  ];
+
+  const translationSection = createTranslationSection({
+    fields: [
+      { key: "title", label: t("projEditor.fieldTitle"), maxLength: LIMITS.title },
+      { key: "card_category", label: t("projEditor.fieldCategory"), maxLength: LIMITS.cardCategory },
+      {
+        key: "short_description",
+        label: t("projEditor.fieldShort"),
+        maxLength: LIMITS.shortDescription,
+        multiline: true
+      },
+      {
+        key: "detail_title_main",
+        label: t("projEditor.fieldDetailTitle"),
+        maxLength: LIMITS.detailTitleMain
+      },
+      {
+        key: "detail_title_highlight",
+        label: t("projEditor.fieldDetailHighlight"),
+        maxLength: LIMITS.detailTitleHighlight
+      },
+      { key: "detail_intro", label: t("projEditor.fieldIntro"), multiline: true },
+      { key: "role", label: t("common.role"), maxLength: LIMITS.role },
+      { key: "project_type", label: t("projEditor.fieldType"), maxLength: LIMITS.projectType },
+      { key: "about_heading", label: t("projEditor.fieldAbout"), maxLength: LIMITS.aboutHeading },
+      { key: "cover_alt", label: t("projEditor.fieldCoverAlt"), maxLength: LIMITS.coverAlt }
+    ],
+    translations: record ? record.translations : null
+  });
+
+  const translationsGroup = group("common.translationsTitle", "common.translationsHelp");
+  append(translationsGroup, translationSection.element);
+
   const paragraphsEditor = createParagraphsEditor({
     initialParagraphs,
     onChange: markDirty
@@ -402,6 +448,7 @@ export function createProjectEditor({
     root,
     cardSection,
     detailSection,
+    translationsGroup,
     paragraphsEditor.element,
     coverSection,
     documentationManager.element,
@@ -511,7 +558,8 @@ export function createProjectEditor({
       githubUrl: trimmed(fields.githubUrl.value),
       demoUrl: trimmed(fields.demoUrl.value),
       coverAlt: trimmed(fields.coverAlt.value),
-      featured: featured.value
+      featured: featured.value,
+      translations: translationSection.getValues()
     });
   }
 
@@ -549,6 +597,10 @@ export function createProjectEditor({
   Object.values(fields).forEach(field =>
     field.control.addEventListener("input", markDirty)
   );
+  Object.values(translationSection.fields).forEach(field => {
+    field.control.addEventListener("input", markDirty);
+    field.control.addEventListener("change", markDirty);
+  });
   dateInput.addEventListener("input", markDirty);
   featured.control.addEventListener("change", markDirty);
 
@@ -688,7 +740,12 @@ export function createProjectEditor({
       github_url: trimmedOrNull(fields.githubUrl.value),
       demo_url: trimmedOrNull(fields.demoUrl.value),
       cover_alt: trimmedOrNull(fields.coverAlt.value),
-      featured: featured.value
+      featured: featured.value,
+      translations: mergeTranslationPatch({
+        existingTranslations: record ? record.translations : null,
+        ownKeys: TRANSLATABLE_KEYS,
+        values: translationSection.getValues()
+      })
     };
   }
 

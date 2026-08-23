@@ -28,6 +28,12 @@
     >
 
 
+    <!-- Public i18n core — same module used by index.html. Loaded before
+         every other script so window.portfolioI18n is ready when
+         js/cms/project-detail.js (a module too) needs it. -->
+    <script src="js/core/i18n.js?v=1" type="module"></script>
+
+
     <!-- ICONIFY -->
 
     <!--
@@ -59,16 +65,22 @@
                 href="index.html#portfolio"
                 class="project-back"
             >
-                ← Back to Portfolio
+                ← <span data-i18n="projectDetail.backToPortfolio">Back to Portfolio</span>
             </a>
 
 
-            <a
-                href="index.html"
-                class="project-owner"
-            >
-                Rajendra Aria Nismara.
-            </a>
+            <div class="project-owner-group">
+
+                <a
+                    href="index.html"
+                    class="project-owner"
+                >
+                    Rajendra Aria Nismara.
+                </a>
+
+                <div id="navLanguageSwitch" class="nav-lang-slot"></div>
+
+            </div>
 
         </div>
 
@@ -99,20 +111,21 @@
                     PROJECT
                 </p>
 
-                <h1 id="projectStateTitle">
+                <h1 id="projectStateTitle" data-i18n="projectDetail.notFoundTitle">
                     Project not found.
                 </h1>
 
                 <p
                     class="project-intro"
                     id="projectStateMessage"
+                    data-i18n="projectDetail.notFoundMessage"
                 >
                     The project you are looking for is not available.
                 </p>
 
                 <div class="project-links">
 
-                    <a href="index.html#portfolio">
+                    <a href="index.html#portfolio" data-i18n="projectDetail.backToProjects">
                         ← Back to Projects
                     </a>
 
@@ -209,7 +222,7 @@
                         id="projectAboutText"
                     >
 
-                        <p class="project-small-label">
+                        <p class="project-small-label" data-i18n="projectDetail.aboutLabel">
                             ABOUT THE PROJECT
                         </p>
 
@@ -238,12 +251,12 @@
                         hidden
                     >
 
-                        <p class="project-small-label">
+                        <p class="project-small-label" data-i18n="projectDetail.toolsLabel">
                             TOOLS &amp; TECHNOLOGY
                         </p>
 
 
-                        <h3>
+                        <h3 data-i18n="projectDetail.techStack">
                             Tech Stack
                         </h3>
 
@@ -275,12 +288,12 @@
 
                     <div class="project-documentation-heading">
 
-                        <p class="project-small-label">
+                        <p class="project-small-label" data-i18n="projectDetail.documentationLabel">
                             DOCUMENTATION
                         </p>
 
 
-                        <h2>
+                        <h2 data-i18n="projectDetail.previewHeading">
                             Project Preview.
                         </h2>
 
@@ -317,11 +330,11 @@
                         class="project-bottom-link"
                     >
 
-                        <small>
+                        <small data-i18n="projectDetail.back">
                             BACK
                         </small>
 
-                        <span>
+                        <span data-i18n="projectDetail.allProjects">
                             ← All Projects
                         </span>
 
@@ -335,7 +348,7 @@
                         hidden
                     >
 
-                        <small>
+                        <small data-i18n="projectDetail.nextProject">
                             NEXT PROJECT
                         </small>
 
@@ -368,7 +381,7 @@
                 © 2026 Rajendra Aria Nismara
             </span>
 
-            <span>
+            <span data-i18n="projectDetail.footerTagline">
                 Portfolio Project Documentation
             </span>
 

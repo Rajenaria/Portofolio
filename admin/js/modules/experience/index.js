@@ -165,7 +165,7 @@ async function render(container, { signal }) {
         supabaseClient
           .from("experiences")
           .select(
-            "id, type, title, role, location, description, status, sort_order, published_at, archived_at, deleted_at, created_at, updated_at"
+            "id, type, title, role, location, description, status, sort_order, published_at, archived_at, deleted_at, created_at, updated_at, translations"
           )
           .eq("id", id)
           .maybeSingle(),

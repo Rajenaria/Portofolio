@@ -31,6 +31,7 @@ import { replaceMedia, MEDIA_BUCKET } from "../../core/media-storage.js";
 import { createMediaField } from "./media-field.js";
 import { createOrderedList } from "./ordered-list.js";
 import { t } from "../../core/i18n.js";
+import { createTranslationSection, mergeTranslationPatch } from "../../core/translation-fields.js";
 
 const LIMITS = {
   heading: 160,
@@ -125,6 +126,32 @@ export function createAboutTab({ profile, onDirtyChange }) {
   append(grid, fields.heading.node, fields.highlight.node);
   append(textSection, grid, fields.lead.node, fields.description.node);
 
+  const TRANSLATABLE_KEYS = [
+    "about_heading_main",
+    "about_heading_highlight",
+    "about_lead",
+    "about_description",
+    "about_photo_alt"
+  ];
+
+  const translationSection = createTranslationSection({
+    fields: [
+      { key: "about_heading_main", label: t("about.fieldHeading"), maxLength: LIMITS.heading },
+      {
+        key: "about_heading_highlight",
+        label: t("about.fieldHighlight"),
+        maxLength: LIMITS.highlight
+      },
+      { key: "about_lead", label: t("about.fieldLead"), maxLength: LIMITS.lead, multiline: true },
+      { key: "about_description", label: t("about.fieldDescription"), multiline: true },
+      { key: "about_photo_alt", label: t("about.fieldPhotoAlt"), maxLength: LIMITS.photoAlt }
+    ],
+    translations: profile.translations
+  });
+
+  const translationsGroup = group("common.translationsTitle", "common.translationsHelp");
+  append(translationsGroup, translationSection.element);
+
   const actions = el("div", "form-actions");
 
   const previewButton = el(
@@ -176,7 +203,7 @@ export function createAboutTab({ profile, onDirtyChange }) {
     onEdit: (row, api) => openInterestEditor(row, api)
   });
 
-  append(root, photoSection, textSection, actions, interests.element);
+  append(root, photoSection, textSection, translationsGroup, actions, interests.element);
 
   function openInterestEditor(existing, api) {
     const isNew = !existing;
@@ -306,7 +333,8 @@ export function createAboutTab({ profile, onDirtyChange }) {
       highlight: trimmed(fields.highlight.value),
       lead: trimmed(fields.lead.value),
       description: trimmed(fields.description.value),
-      photoAlt: trimmed(fields.photoAlt.value)
+      photoAlt: trimmed(fields.photoAlt.value),
+      translations: translationSection.getValues()
     });
   }
 
@@ -329,6 +357,11 @@ export function createAboutTab({ profile, onDirtyChange }) {
 
   [fields.heading, fields.highlight, fields.lead, fields.description, fields.photoAlt]
     .forEach(field => field.control.addEventListener("input", markDirty));
+
+  Object.values(translationSection.fields).forEach(field => {
+    field.control.addEventListener("input", markDirty);
+    field.control.addEventListener("change", markDirty);
+  });
 
   function resetDirtyBaseline() {
     baseline = snapshot();
@@ -376,7 +409,12 @@ export function createAboutTab({ profile, onDirtyChange }) {
       about_heading_highlight: trimmedOrNull(fields.highlight.value),
       about_lead: trimmedOrNull(fields.lead.value),
       about_description: trimmedOrNull(fields.description.value),
-      about_photo_alt: trimmedOrNull(fields.photoAlt.value)
+      about_photo_alt: trimmedOrNull(fields.photoAlt.value),
+      translations: mergeTranslationPatch({
+        existingTranslations: profile.translations,
+        ownKeys: TRANSLATABLE_KEYS,
+        values: translationSection.getValues()
+      })
     };
 
     const files = media.getPendingFiles();

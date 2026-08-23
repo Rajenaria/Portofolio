@@ -1286,11 +1286,17 @@ svg {
   background: var(--admin-surface-subtle);
 }
 
+/*
+  Portalled into #admin-menu-root (a body-level sibling of the table, see
+  admin/js/core/row-menu.js) so .admin-table-wrap's overflow:hidden can never
+  clip it. top/left are computed and set inline per open; this rule only
+  supplies the box's own geometry and stacking order. z-index sits below the
+  modal overlay (100) since the two never open together, but above the
+  sidebar drawer (50).
+*/
 .row-menu {
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
-  z-index: 30;
+  position: fixed;
+  z-index: 90;
   display: flex;
   flex-direction: column;
   min-width: 168px;
@@ -1605,6 +1611,56 @@ body.has-modal-open {
 }
 
 .admin-subsection .form-grid .form-field {
+  margin-bottom: 0;
+}
+
+/* --------------------------------------------------------------------------
+   13g. TRANSLATION PANEL (EN | ID content-language toggle)
+   -------------------------------------------------------------------------- */
+
+.translation-section {
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px dashed var(--admin-border-soft);
+}
+
+.translation-tabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  margin-bottom: 14px;
+  background: var(--admin-surface-subtle);
+  border: 1px solid var(--admin-border-soft);
+  border-radius: var(--radius-md);
+}
+
+.translation-tab {
+  padding: 6px 14px;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--admin-text-secondary);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.translation-tab.is-active {
+  background: var(--admin-surface);
+  color: var(--admin-text-primary);
+  box-shadow: var(--shadow-card);
+}
+
+.translation-en-panel {
+  margin: 0;
+}
+
+.translation-id-panel .form-field {
+  margin-bottom: 16px;
+}
+
+.translation-id-panel .form-field:last-child {
   margin-bottom: 0;
 }
 

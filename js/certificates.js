@@ -318,8 +318,10 @@
         slot.setAttribute("aria-pressed", "false");
         slot.setAttribute(
             "aria-label",
-            "Sertifikat: " + cert.title + " — " + cert.publisher +
-            ". Buka detail."
+            window.portfolioI18n.t("certificates.cardAriaLabel", {
+                title: cert.title,
+                publisher: cert.publisher
+            })
         );
 
         /* ---- FLIP: hanya rotateY(0/180deg). ---- */
@@ -450,7 +452,7 @@
             link.tabIndex = -1;
             link.setAttribute(
                 "aria-label",
-                "Lihat sertifikat " + cert.title + " (tab baru)"
+                window.portfolioI18n.t("certificates.linkAriaLabel", { title: cert.title })
             );
 
         } else {
@@ -463,7 +465,7 @@
                kembali walau tombol kosong ini yang tersentuh. */
             link.classList.add("is-empty");
             link.setAttribute("aria-hidden", "true");
-            link.title = "Link sertifikat belum diisi";
+            link.title = window.portfolioI18n.t("certificates.linkEmptyTitle");
         }
 
         backInner.appendChild(link);
@@ -491,7 +493,7 @@
         dot.dataset.index = String(index);
         dot.setAttribute(
             "aria-label",
-            "Tampilkan sertifikat: " + cert.title
+            window.portfolioI18n.t("certificates.dotAriaLabel", { title: cert.title })
         );
 
         return dot;

@@ -56,6 +56,7 @@ import { categoryOptions, DEFAULT_CATEGORY, isKnownCategory } from "./categories
 import { buildCertificatePreview } from "./preview.js";
 import { createDocumentField } from "./document-field.js";
 import { replaceDocument, removeDocument, documentUrl } from "../../core/document-storage.js";
+import { createTranslationSection, mergeTranslationPatch } from "../../core/translation-fields.js";
 
 /* Mirrors the column widths in 20260818110000_certificates_schema.sql. */
 const LIMITS = {
@@ -205,6 +206,26 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
   append(detailsGrid, fields.issuerLine.node, fields.badgeText.node);
   append(detailsSection, detailsGrid, fields.description.node);
 
+  const TRANSLATABLE_KEYS = ["title", "issuer_line", "badge_text", "description"];
+
+  const translationSection = createTranslationSection({
+    fields: [
+      { key: "title", label: t("certEditor.fieldTitle"), maxLength: LIMITS.title },
+      { key: "issuer_line", label: t("certEditor.fieldIssuer"), maxLength: LIMITS.issuerLine },
+      { key: "badge_text", label: t("certEditor.fieldBadge"), maxLength: LIMITS.badgeText },
+      {
+        key: "description",
+        label: t("certEditor.fieldDescription"),
+        maxLength: LIMITS.description,
+        multiline: true
+      }
+    ],
+    translations: record ? record.translations : null
+  });
+
+  const translationsGroup = group("common.translationsTitle", "common.translationsHelp");
+  append(translationsGroup, translationSection.element);
+
   const documentSection = group("certEditor.document", "certEditor.documentHelp");
   append(documentSection, documentField.element, fields.externalUrl.node);
 
@@ -250,6 +271,7 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
     root,
     basicSection,
     detailsSection,
+    translationsGroup,
     documentSection,
     visibilitySection,
     previewSection,
@@ -287,7 +309,7 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
   /* ---------------- dirty tracking ---------------- */
 
   function snapshot() {
-    return JSON.stringify(currentData());
+    return JSON.stringify({ ...currentData(), translations: translationSection.getValues() });
   }
 
   let baseline = snapshot();
@@ -310,6 +332,11 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
   }
 
   Object.values(fields).forEach(field => {
+    field.control.addEventListener("input", markDirty);
+    field.control.addEventListener("change", markDirty);
+  });
+
+  Object.values(translationSection.fields).forEach(field => {
     field.control.addEventListener("input", markDirty);
     field.control.addEventListener("change", markDirty);
   });
@@ -388,7 +415,12 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
       issuer_line: trimmedOrNull(fields.issuerLine.value),
       badge_text: trimmedOrNull(fields.badgeText.value),
       description: trimmedOrNull(fields.description.value),
-      external_url: trimmedOrNull(fields.externalUrl.value)
+      external_url: trimmedOrNull(fields.externalUrl.value),
+      translations: mergeTranslationPatch({
+        existingTranslations: record ? record.translations : null,
+        ownKeys: TRANSLATABLE_KEYS,
+        values: translationSection.getValues()
+      })
     };
 
     setSaving(true);

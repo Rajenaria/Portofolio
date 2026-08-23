@@ -45,6 +45,7 @@ import {
 import { replaceMedia, MEDIA_BUCKET } from "../../core/media-storage.js";
 import { createMediaField } from "./media-field.js";
 import { t } from "../../core/i18n.js";
+import { createTranslationSection, mergeTranslationPatch } from "../../core/translation-fields.js";
 
 const LIMITS = {
   name: 100,
@@ -101,6 +102,28 @@ export function createHeroTab({ profile, heroSlots, onDirtyChange }) {
   const grid = el("div", "form-grid");
   append(grid, fields.name.node, fields.professionalTitle.node);
   append(textSection, grid, fields.heroDescription.node);
+
+  const TRANSLATABLE_KEYS = ["professional_title", "hero_description"];
+
+  const translationSection = createTranslationSection({
+    fields: [
+      {
+        key: "professional_title",
+        label: t("hero.fieldTitle"),
+        maxLength: LIMITS.professionalTitle
+      },
+      {
+        key: "hero_description",
+        label: t("hero.fieldDescription"),
+        maxLength: LIMITS.heroDescription,
+        multiline: true
+      }
+    ],
+    translations: profile.translations
+  });
+
+  const translationsGroup = group("common.translationsTitle", "common.translationsHelp");
+  append(translationsGroup, translationSection.element);
 
   const photosSection = group("hero.photosTitle", "hero.photosHelp");
 
@@ -254,7 +277,7 @@ export function createHeroTab({ profile, heroSlots, onDirtyChange }) {
   saveButton.type = "button";
 
   append(actions, previewButton, saveButton);
-  append(root, textSection, photosSection, actions);
+  append(root, textSection, translationsGroup, photosSection, actions);
 
   /* ---------------- dirty tracking ---------------- */
 
@@ -262,7 +285,8 @@ export function createHeroTab({ profile, heroSlots, onDirtyChange }) {
     return JSON.stringify({
       name: trimmed(fields.name.value),
       title: trimmed(fields.professionalTitle.value),
-      description: trimmed(fields.heroDescription.value)
+      description: trimmed(fields.heroDescription.value),
+      translations: translationSection.getValues()
     });
   }
 
@@ -304,6 +328,11 @@ export function createHeroTab({ profile, heroSlots, onDirtyChange }) {
 
   [fields.name, fields.professionalTitle, fields.heroDescription].forEach(field => {
     field.control.addEventListener("input", markDirty);
+  });
+
+  Object.values(translationSection.fields).forEach(field => {
+    field.control.addEventListener("input", markDirty);
+    field.control.addEventListener("change", markDirty);
   });
 
   /* ---------------- save ---------------- */
@@ -361,7 +390,12 @@ export function createHeroTab({ profile, heroSlots, onDirtyChange }) {
       .update({
         name: trimmedOrNull(fields.name.value),
         professional_title: trimmedOrNull(fields.professionalTitle.value),
-        hero_description: trimmedOrNull(fields.heroDescription.value)
+        hero_description: trimmedOrNull(fields.heroDescription.value),
+        translations: mergeTranslationPatch({
+          existingTranslations: profile.translations,
+          ownKeys: TRANSLATABLE_KEYS,
+          values: translationSection.getValues()
+        })
       })
       .eq("singleton_key", 1)
       .select("id");
