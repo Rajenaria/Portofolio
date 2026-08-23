@@ -58,16 +58,50 @@ import { createDocumentField } from "./document-field.js";
 import { replaceDocument, removeDocument, documentUrl } from "../../core/document-storage.js";
 import { createTranslationSection, mergeTranslationPatch } from "../../core/translation-fields.js";
 
-/* Mirrors the column widths in 20260818110000_certificates_schema.sql. */
+/* Mirrors the column widths in 20260818110000_certificates_schema.sql, except
+   description — see WORD_LIMITS below for why that one is tighter. */
 const LIMITS = {
   title: 180,
   publisher: 140,
   period: 60,
   issuerLine: 180,
   badgeText: 60,
-  description: 400,
+  description: 160,
   externalUrl: 500
 };
+
+/*
+  Word caps, not just character caps.
+
+  The public card back (js/certificates.js) now uses a FIXED height per
+  breakpoint instead of growing to fit whatever the longest certificate's
+  text needs — see the long comment in css/style.css's .certificates-section
+  block for why (unbounded growth turned the whole globe into elongated
+  rectangles on narrow screens once one certificate had a much longer
+  description than the others).
+
+  These word limits are what keep that fixed height honest: they are the
+  actual measured combination (title + issuer line + badge + description,
+  all near their cap, on the narrowest supported card) that still fits
+  --cert-h-base at every breakpoint without clipping. Keeping every
+  certificate within the same rough word count is also what makes the
+  carousel look consistent card to card, not just individually safe.
+
+  LIMITS above still bounds raw character count too (defence in depth
+  against a single very long "word" with no spaces, which a word count
+  alone would not catch).
+*/
+const WORD_LIMITS = {
+  title: 12,
+  issuerLine: 10,
+  badgeText: 4,
+  description: 20
+};
+
+function countWords(value) {
+  const trimmedValue = String(value || "").trim();
+  return trimmedValue === "" ? 0 : trimmedValue.split(/\s+/).length;
+}
 
 const HTTP_URL = /^https?:\/\/[^\s]+$/i;
 
@@ -387,6 +421,36 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
     });
 
     if (!valid) {
+      toast(t("certEditor.errFields"), "error");
+      return false;
+    }
+
+    /* Word caps — see WORD_LIMITS above for why these exist alongside the
+       character maxLength checks applyValidation already ran. Both the
+       English fields and their Indonesian counterparts in the translation
+       panel render on the same fixed-height card, so both are held to the
+       same limits. */
+    const wordChecks = [
+      [fields.title, WORD_LIMITS.title],
+      [fields.issuerLine, WORD_LIMITS.issuerLine],
+      [fields.badgeText, WORD_LIMITS.badgeText],
+      [fields.description, WORD_LIMITS.description],
+      [translationSection.fields.title, WORD_LIMITS.title],
+      [translationSection.fields.issuer_line, WORD_LIMITS.issuerLine],
+      [translationSection.fields.badge_text, WORD_LIMITS.badgeText],
+      [translationSection.fields.description, WORD_LIMITS.description]
+    ];
+
+    let overWordLimit = false;
+
+    wordChecks.forEach(([field, max]) => {
+      if (countWords(field.value) > max) {
+        field.setError(t("certEditor.errWordLimit", { max }));
+        overWordLimit = true;
+      }
+    });
+
+    if (overWordLimit) {
       toast(t("certEditor.errFields"), "error");
       return false;
     }

@@ -12564,9 +12564,28 @@ a.footer-contact-item:hover {
    Radius, lebar/tinggi kartu, dan perspective semuanya
    custom property di .certificates-section, sehingga tiap
    breakpoint tinggal menimpanya. js/certificates.js MEMBACA
-   --cert-radius lewat getComputedStyle (tidak hardcode) dan
-   menaikkan --cert-h bila ada sisi belakang yang lebih tinggi
-   dari --cert-h-base.
+   --cert-radius lewat getComputedStyle (tidak hardcode).
+
+   TINGGI KARTU TETAP, TIDAK LAGI MENYESUAIKAN ISI
+   --cert-h-base adalah tinggi kartu yang SEBENARNYA dipakai —
+   bukan lagi tinggi minimum yang dinaikkan JS mengikuti sisi
+   belakang terpanjang. Pendekatan lama itu membuat satu
+   deskripsi yang jauh lebih panjang dari yang lain menaikkan
+   --cert-h untuk SELURUH kartu di globe (geometrinya menuntut
+   kartu seragam), dan di HP yang sempit itu bisa meledak jauh
+   melewati lebar kartu — globe berubah jadi susunan persegi
+   panjang menjulang, bukan kartu.
+
+   Sekarang batas atasnya dijaga dari SISI SEBALIKNYA: setiap
+   breakpoint punya tinggi tetap yang sudah diukur cukup untuk
+   kombinasi terpanjang yang Admin CMS masih izinkan — judul,
+   penerbit sisi belakang, badge, dan deskripsi masing-masing
+   dibatasi jumlah katanya di admin/js/modules/certificates/
+   editor-view.js (lihat WORD_LIMITS di sana). Selama Admin
+   menegakkan batas itu, kartu tidak akan pernah butuh mengukur
+   ulang atau men-scroll. .cert-back-desc tetap punya line-clamp
+   sebagai jaring pengaman terakhir untuk data lama yang ditulis
+   sebelum batas kata ini ada.
 ========================================================= */
 
 .certificates-section {
@@ -12593,10 +12612,8 @@ a.footer-contact-item:hover {
        jari jadi derajat.
 
          --cert-w           lebar kartu
-         --cert-h-base      tinggi minimum kartu
-                            (JS menaikkannya otomatis kalau
-                            sisi belakang ada yang lebih
-                            panjang — lihat measure())
+         --cert-h-base      tinggi kartu — TETAP, lihat catatan
+                            "TINGGI KARTU TETAP" di atas
          --cert-radius      jari-jari lingkaran = rapat /
                             renggangnya jarak antar kartu
          --cert-perspective kedalaman efek 3D
@@ -12608,13 +12625,16 @@ a.footer-contact-item:hover {
        yang dinaikkan, kartu akan saling mepet karena radius
        lingkarannya tidak ikut melebar.
 
-       Contoh: semua ×1.2 -> 372 / 514 / 328 / 2088.
-
-       Rasio kartu dijaga 1 : 1.38 di semua breakpoint.
+       Rasio lebar:tinggi TIDAK lagi 1:1.38 yang sama persis di
+       setiap breakpoint (dulu begitu). Di layar sempit, kata yang
+       sama membungkus jadi lebih banyak baris, jadi kartu di sana
+       perlu proporsi lebih tinggi supaya batas kata di Admin CMS
+       (lihat catatan di atas) tetap muat tanpa scroll maupun
+       kartu yang meledak.
     ========================================= */
 
     --cert-w: 310px;
-    --cert-h-base: 428px;
+    --cert-h-base: 500px;
     --cert-h: var(--cert-h-base);
     --cert-radius: 273px;
     --cert-perspective: 1740px;
@@ -12938,15 +12958,6 @@ a.footer-contact-item:hover {
     transform: rotateY(180deg);
 
     padding: 28px 24px;
-
-    /* js/certificates.js membatasi seberapa tinggi --cert-h boleh
-       tumbuh (MAX_GROWTH_RATIO) supaya kartu tidak berubah jadi
-       persegi panjang menjulang saat satu deskripsi jauh lebih
-       panjang dari yang lain. Kalau isinya masih lebih tinggi dari
-       batas itu, ini yang menjaga teksnya tetap utuh dan bisa
-       di-scroll alih-alih terpotong diam-diam. */
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
 }
 
 
@@ -13115,6 +13126,19 @@ a.footer-contact-item:hover {
     line-height: 1.55;
 
     color: rgba(255, 255, 255, 0.62);
+
+    /* Jaring pengaman, bukan jalan utama: Admin CMS membatasi
+       deskripsi ke WORD_LIMITS.description kata (lihat
+       admin/js/modules/certificates/editor-view.js), yang sudah
+       diukur muat di --cert-h-base setiap breakpoint. Baris ini
+       hanya menjaga entri LAMA yang ditulis sebelum batas kata
+       itu ada — dipotong rapi dengan "…", bukan meluber diam-diam
+       atau butuh scroll di dalam kartu. */
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 7;
+    line-clamp: 7;
+    overflow: hidden;
 }
 
 
@@ -13316,7 +13340,7 @@ a.footer-contact-item:hover {
        (×0.85) — lihat "ATURAN MEMPERBESAR" di atas. */
     .certificates-section {
         --cert-w: 264px;
-        --cert-h-base: 365px;
+        --cert-h-base: 460px;
         --cert-radius: 234px;
         --cert-perspective: 1920px;
     }
@@ -13350,6 +13374,8 @@ a.footer-contact-item:hover {
 
     .cert-back-desc {
         font-size: 14px;
+        -webkit-line-clamp: 6;
+        line-clamp: 6;
     }
 
 }
@@ -13372,7 +13398,7 @@ a.footer-contact-item:hover {
        kartu samping mulai tersentuh tepi layar di HP 360px. */
     .certificates-section {
         --cert-w: 200px;
-        --cert-h-base: 276px;
+        --cert-h-base: 480px;
         --cert-radius: 175px;
         --cert-perspective: 2660px;
 
@@ -13433,11 +13459,6 @@ a.footer-contact-item:hover {
 
     .cert-face-back {
         padding: 21px 17px;
-
-        /* overflow-y: auto sudah dipasang di aturan dasar
-           .cert-face-back — di sinilah paling sering benar-benar
-           aktif, karena kartu di HP paling sempit dan MAX_GROWTH_RATIO
-           di js/certificates.js paling cepat kena batasnya. */
     }
 
 
@@ -13465,6 +13486,8 @@ a.footer-contact-item:hover {
 
     .cert-back-desc {
         font-size: 12.5px;
+        -webkit-line-clamp: 5;
+        line-clamp: 5;
     }
 
 

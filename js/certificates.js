@@ -1103,68 +1103,26 @@
            tiap breakpoint bisa menentukan sendiri seberapa
            besar lingkarannya.
 
-           Tinggi kartu: --cert-h-base adalah tinggi minimum
-           per breakpoint, tapi kalau ada sisi BELAKANG yang
-           isinya lebih tinggi, --cert-h dinaikkan mengikuti
-           yang paling panjang — supaya teks belakang tidak
-           kepotong diam-diam di layar kecil.
-
-           BATAS ATAS PERTUMBUHAN
-
-           Tanpa batas, satu deskripsi yang jauh lebih panjang
-           dari yang lain membuat --cert-h (dipakai bersama oleh
-           SELURUH kartu di globe, karena geometrinya menuntut
-           kartu seragam) melonjak jauh melewati lebar kartu —
-           globe-nya berubah jadi susunan persegi panjang
-           menjulang alih-alih kartu yang proporsinya konsisten.
-
-           MAX_GROWTH_RATIO mengunci pertumbuhan itu ke rasio yang
-           sama dengan yang sudah dipakai antar breakpoint sendiri
-           (~1.35× dari tinggi dasarnya). Kartu tetap boleh sedikit
-           lebih tinggi untuk menampung deskripsi yang agak panjang,
-           tapi tidak pernah menjulang di luar proporsi kartu. Sisi
-           belakang yang isinya masih lebih panjang dari batas ini
-           tetap utuh dan bisa di-scroll — lihat overflow-y pada
-           .cert-face-back — bukan terpotong atau dihapus.
+           TINGGI KARTU: TETAP, TIDAK DIUKUR DARI ISI
+           --cert-h-base (dan --cert-h, yang sama dengannya) adalah
+           tinggi kartu yang sebenarnya dipakai di setiap breakpoint
+           — lihat catatan panjang di css/style.css bagian
+           .certificates-section. JS di sini tidak lagi menaikkan
+           --cert-h mengikuti sisi belakang mana pun: batas atas
+           tinggi kartu sudah dijaga dari sisi Admin CMS (jumlah kata
+           judul/penerbit/badge/deskripsi dibatasi supaya kombinasi
+           terpanjang yang masih boleh disimpan tetap muat di
+           --cert-h-base). Itu artinya globe tidak pernah butuh
+           mengukur ulang tinggi kartu — hanya jari-jari lingkaran
+           yang dibaca di sini, dan itu murni soal jarak antar
+           kartu, bukan tinggi kartu.
         ================================================= */
-
-        const MAX_GROWTH_RATIO = 1.35;
 
         function measure() {
 
             const styles = getComputedStyle(section);
 
             radius = readNumber(styles, "--cert-radius", radius);
-
-            const baseHeight = readNumber(styles, "--cert-h-base", 262);
-            const maxHeight = baseHeight * MAX_GROWTH_RATIO;
-
-            /* Kembalikan ke tinggi dasar dulu, supaya pengukuran
-               tidak menumpuk dari hasil pengukuran sebelumnya. */
-            section.style.setProperty("--cert-h", baseHeight + "px");
-
-            let tallest = 0;
-
-            cards.forEach(function (card) {
-
-                const backStyles = getComputedStyle(card.back);
-
-                const padding =
-                    parseFloat(backStyles.paddingTop) +
-                    parseFloat(backStyles.paddingBottom);
-
-                tallest = Math.max(
-                    tallest,
-                    card.backInner.scrollHeight + padding
-                );
-            });
-
-            const target = Math.min(
-                maxHeight,
-                Math.max(baseHeight, Math.ceil(tallest))
-            );
-
-            section.style.setProperty("--cert-h", target + "px");
 
             render();
         }
