@@ -12938,6 +12938,15 @@ a.footer-contact-item:hover {
     transform: rotateY(180deg);
 
     padding: 28px 24px;
+
+    /* js/certificates.js membatasi seberapa tinggi --cert-h boleh
+       tumbuh (MAX_GROWTH_RATIO) supaya kartu tidak berubah jadi
+       persegi panjang menjulang saat satu deskripsi jauh lebih
+       panjang dari yang lain. Kalau isinya masih lebih tinggi dari
+       batas itu, ini yang menjaga teksnya tetap utuh dan bisa
+       di-scroll alih-alih terpotong diam-diam. */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 
@@ -13425,14 +13434,10 @@ a.footer-contact-item:hover {
     .cert-face-back {
         padding: 21px 17px;
 
-        /* Pengaman terakhir. Tinggi kartu sudah dinaikkan JS
-           mengikuti sisi belakang yang paling panjang, jadi
-           ini praktis tidak terpakai — tapi kalau isi datanya
-           jauh lebih panjang dari dugaan, teks bisa di-scroll
-           alih-alih terpotong diam-diam. */
-        overflow-y: auto;
-
-        -webkit-overflow-scrolling: touch;
+        /* overflow-y: auto sudah dipasang di aturan dasar
+           .cert-face-back — di sinilah paling sering benar-benar
+           aktif, karena kartu di HP paling sempit dan MAX_GROWTH_RATIO
+           di js/certificates.js paling cepat kena batasnya. */
     }
 
 

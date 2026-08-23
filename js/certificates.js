@@ -1108,7 +1108,27 @@
            isinya lebih tinggi, --cert-h dinaikkan mengikuti
            yang paling panjang — supaya teks belakang tidak
            kepotong diam-diam di layar kecil.
+
+           BATAS ATAS PERTUMBUHAN
+
+           Tanpa batas, satu deskripsi yang jauh lebih panjang
+           dari yang lain membuat --cert-h (dipakai bersama oleh
+           SELURUH kartu di globe, karena geometrinya menuntut
+           kartu seragam) melonjak jauh melewati lebar kartu —
+           globe-nya berubah jadi susunan persegi panjang
+           menjulang alih-alih kartu yang proporsinya konsisten.
+
+           MAX_GROWTH_RATIO mengunci pertumbuhan itu ke rasio yang
+           sama dengan yang sudah dipakai antar breakpoint sendiri
+           (~1.35× dari tinggi dasarnya). Kartu tetap boleh sedikit
+           lebih tinggi untuk menampung deskripsi yang agak panjang,
+           tapi tidak pernah menjulang di luar proporsi kartu. Sisi
+           belakang yang isinya masih lebih panjang dari batas ini
+           tetap utuh dan bisa di-scroll — lihat overflow-y pada
+           .cert-face-back — bukan terpotong atau dihapus.
         ================================================= */
+
+        const MAX_GROWTH_RATIO = 1.35;
 
         function measure() {
 
@@ -1117,6 +1137,7 @@
             radius = readNumber(styles, "--cert-radius", radius);
 
             const baseHeight = readNumber(styles, "--cert-h-base", 262);
+            const maxHeight = baseHeight * MAX_GROWTH_RATIO;
 
             /* Kembalikan ke tinggi dasar dulu, supaya pengukuran
                tidak menumpuk dari hasil pengukuran sebelumnya. */
@@ -1138,10 +1159,12 @@
                 );
             });
 
-            section.style.setProperty(
-                "--cert-h",
-                Math.max(baseHeight, Math.ceil(tallest)) + "px"
+            const target = Math.min(
+                maxHeight,
+                Math.max(baseHeight, Math.ceil(tallest))
             );
+
+            section.style.setProperty("--cert-h", target + "px");
 
             render();
         }
