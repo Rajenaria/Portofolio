@@ -146,6 +146,12 @@ section {
 ========================================= */
 
 .portfolio-nav-links {
+    /* Without this, the grid track under it (1fr) refuses to shrink below
+       the flex row's natural content width and the whole navbar overflows
+       its fixed pill width — invisibly, since .portfolio-nav clips with
+       overflow:hidden instead of visibly wrapping. */
+    min-width: 0;
+
     display: flex;
 
     justify-content: center;
@@ -9238,7 +9244,7 @@ a.footer-contact-item:hover {
     }
 
     .portfolio-nav.is-mobile-open .mobile-nav-menu {
-        max-height: 420px;
+        max-height: 500px;
         padding: 10px 16px 17px;
         opacity: 1;
         visibility: visible;
@@ -9717,7 +9723,7 @@ a.footer-contact-item:hover {
     .portfolio-nav.is-mobile-open
     .mobile-nav-menu {
 
-        max-height: 420px;
+        max-height: 500px;
 
         padding:
             10px 16px
