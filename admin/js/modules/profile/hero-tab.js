@@ -46,6 +46,8 @@ import { replaceMedia, MEDIA_BUCKET } from "../../core/media-storage.js";
 import { createMediaField } from "./media-field.js";
 import { t } from "../../core/i18n.js";
 import { createTranslationSection, mergeTranslationPatch } from "../../core/translation-fields.js";
+import { createCvField } from "./cv-field.js";
+import { replaceDocument, removeDocument } from "../../core/document-storage.js";
 
 const LIMITS = {
   name: 100,
@@ -124,6 +126,29 @@ export function createHeroTab({ profile, heroSlots, onDirtyChange }) {
 
   const translationsGroup = group("common.translationsTitle", "common.translationsHelp");
   append(translationsGroup, translationSection.element);
+
+  /*
+    The download filename is generated, never stored: whatever the owner names
+    the uploaded file, a visitor gets "CV-<name>.pdf". Read as a function so it
+    follows the Name field live instead of freezing at construction time.
+  */
+  const cvField = createCvField({
+    current: profile.cv_path
+      ? {
+          bucket: profile.cv_bucket,
+          path: profile.cv_path,
+          updatedAt: profile.cv_updated_at
+        }
+      : null,
+    downloadName: () => {
+      const owner = trimmed(fields.name.value);
+      return owner === "" ? "CV.pdf" : `CV-${owner}.pdf`;
+    },
+    onChange: markDirty
+  });
+
+  const cvSection = group("cv.title", "cv.help");
+  append(cvSection, cvField.element);
 
   const photosSection = group("hero.photosTitle", "hero.photosHelp");
 
@@ -277,7 +302,7 @@ export function createHeroTab({ profile, heroSlots, onDirtyChange }) {
   saveButton.type = "button";
 
   append(actions, previewButton, saveButton);
-  append(root, textSection, translationsGroup, photosSection, actions);
+  append(root, textSection, translationsGroup, cvSection, photosSection, actions);
 
   /* ---------------- dirty tracking ---------------- */
 
@@ -295,7 +320,7 @@ export function createHeroTab({ profile, heroSlots, onDirtyChange }) {
   let saving = false;
 
   function computeDirty() {
-    if (snapshot() !== baseline) {
+    if (snapshot() !== baseline || cvField.isDirty()) {
       return true;
     }
 
@@ -384,30 +409,97 @@ export function createHeroTab({ profile, heroSlots, onDirtyChange }) {
 
     setSaving(true, t("common.saving"));
 
-    // 1. Hero text on the profile singleton.
-    const profileUpdate = await supabaseClient
-      .from("profile_content")
-      .update({
-        name: trimmedOrNull(fields.name.value),
-        professional_title: trimmedOrNull(fields.professionalTitle.value),
-        hero_description: trimmedOrNull(fields.heroDescription.value),
-        translations: mergeTranslationPatch({
-          existingTranslations: profile.translations,
-          ownKeys: TRANSLATABLE_KEYS,
-          values: translationSection.getValues()
-        })
+    // 1. Hero text on the profile singleton, plus the CV reference.
+    const textPatch = {
+      name: trimmedOrNull(fields.name.value),
+      professional_title: trimmedOrNull(fields.professionalTitle.value),
+      hero_description: trimmedOrNull(fields.heroDescription.value),
+      translations: mergeTranslationPatch({
+        existingTranslations: profile.translations,
+        ownKeys: TRANSLATABLE_KEYS,
+        values: translationSection.getValues()
       })
-      .eq("singleton_key", 1)
-      .select("id");
+    };
 
-    if (profileUpdate.error || !profileUpdate.data || profileUpdate.data.length === 0) {
-      if (profileUpdate.error) {
-        console.error(profileUpdate.error);
+    /* One writer for all three cases so the CV reference is always set in the
+       same statement as the text it belongs to. Throws on a no-op update,
+       which is how a failed RLS check surfaces. */
+    async function persistProfile(extra) {
+      const { data, error } = await supabaseClient
+        .from("profile_content")
+        .update({ ...textPatch, ...extra })
+        .eq("singleton_key", 1)
+        .select("id");
+
+      if (error || !data || data.length === 0) {
+        throw error || new Error("profile_content update did not apply");
       }
+    }
 
+    const pendingCv = cvField.getPending();
+    const storedCv = cvField.getStored();
+    const removingCv = cvField.isRemoving();
+
+    let committedCv = storedCv;
+    let cvWarning = null;
+
+    try {
+      if (pendingCv) {
+        setSaving(true, t("common.uploading"));
+
+        /*
+          replaceDocument uploads, verifies, commits, and only then deletes the
+          old object — so every failure below leaves the previous CV referenced
+          and downloadable.
+        */
+        const outcome = await replaceDocument({
+          directory: "cv",
+          file: pendingCv.file,
+          type: "pdf",
+          previous: storedCv,
+          commit: async paths => {
+            await persistProfile({
+              cv_bucket: paths.bucket,
+              cv_path: paths.path,
+              cv_updated_at: new Date().toISOString()
+            });
+          }
+        });
+
+        committedCv = {
+          bucket: outcome.bucket,
+          path: outcome.path,
+          updatedAt: new Date().toISOString()
+        };
+        cvWarning = outcome.cleanupWarning;
+      } else if (removingCv) {
+        /* Row first, object second: an object nothing points at is recoverable
+           noise, a row pointing at a deleted object is a dead public link. */
+        await persistProfile({ cv_bucket: null, cv_path: null, cv_updated_at: null });
+
+        if (storedCv) {
+          const removed = await removeDocument(storedCv.bucket, storedCv.path);
+
+          if (removed.failed.length > 0) {
+            cvWarning = t("cv.cleanupWarning");
+          }
+        }
+
+        committedCv = null;
+      } else {
+        await persistProfile({});
+      }
+    } catch (error) {
+      console.error(error);
       setSaving(false);
       toast(t("hero.errSave"), "error");
       return false;
+    }
+
+    cvField.commit(committedCv);
+
+    if (cvWarning) {
+      toast(cvWarning, "error");
     }
 
     // 2. Per-slot media and alt text. Untouched slots are never rewritten.
@@ -638,6 +730,7 @@ export function createHeroTab({ profile, heroSlots, onDirtyChange }) {
     resetDirty: resetDirtyBaseline,
     destroy() {
       slots.forEach(slot => slot.media.destroy());
+      cvField.destroy();
       clear(root);
     }
   };

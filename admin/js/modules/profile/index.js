@@ -252,7 +252,7 @@ async function render(container, { signal }) {
       supabaseClient
         .from("profile_content")
         .select(
-          "id, name, professional_title, hero_description, about_heading_main, about_heading_highlight, about_lead, about_description, about_photo_bucket, about_photo_desktop_path, about_photo_mobile_path, about_photo_alt, translations"
+          "id, name, professional_title, hero_description, about_heading_main, about_heading_highlight, about_lead, about_description, about_photo_bucket, about_photo_desktop_path, about_photo_mobile_path, about_photo_alt, translations, cv_bucket, cv_path, cv_updated_at"
         )
         .eq("singleton_key", 1)
         .maybeSingle(),
