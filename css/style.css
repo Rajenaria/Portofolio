@@ -9154,7 +9154,17 @@ a.footer-contact-item:hover {
 }
 
 
-@media (min-width: 768px) and (max-width: 1024px) {
+/*
+  Batas bawahnya 651px, bukan 768px.
+
+  Aturan hamburger yang satunya berhenti di max-width:650px, sementara
+  .portfolio-nav-links sudah disembunyikan sejak max-width:900px. Dulu
+  itu meninggalkan celah 651-767px: menu desktop sudah hilang, tapi
+  tombol hamburger belum muncul — jadi di lebar itu navigasi tidak bisa
+  diakses sama sekali (dan sejak switch EN|ID ikut tinggal di dalam
+  .portfolio-nav-links, pemilih bahasa ikut hilang di sana juga).
+*/
+@media (min-width: 651px) and (max-width: 1024px) {
 
     .portfolio-nav-links,
     .portfolio-nav-contact {

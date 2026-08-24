@@ -667,7 +667,20 @@ const ORDER = "order=sort_order.asc,created_at.asc";
 */
 let cachedResults = null;
 
-function renderFromResults(results, language) {
+/*
+    `reportProblems` is true only for the first render, straight after the
+    fetch. A language switch re-runs this function against the SAME cached
+    results, so without the flag every failed request would be logged again
+    on every switch — twenty switches turned one real failure into twenty
+    identical console warnings, which buries anything genuinely new.
+*/
+function renderFromResults(results, language, reportProblems) {
+
+    const warnOnce = (message, reason) => {
+        if (reportProblems) {
+            warn(message, reason);
+        }
+    };
 
     const [
         profileResult,
@@ -700,7 +713,7 @@ function renderFromResults(results, language) {
                 }
 
                 else {
-                    warn("interests unavailable", interestsResult.reason);
+                    warnOnce("interests unavailable", interestsResult.reason);
                 }
 
             }
@@ -721,7 +734,7 @@ function renderFromResults(results, language) {
     }
 
     else {
-        warn("profile_content unavailable", profileResult.reason);
+        warnOnce("profile_content unavailable", profileResult.reason);
     }
 
     /* ---- hero media ---- */
@@ -731,7 +744,7 @@ function renderFromResults(results, language) {
     }
 
     else {
-        warn("hero_media unavailable", heroResult.reason);
+        warnOnce("hero_media unavailable", heroResult.reason);
     }
 
     /* ---- organization ---- */
@@ -749,7 +762,7 @@ function renderFromResults(results, language) {
             }
 
             else {
-                warn("organization skills unavailable", skillsResult.reason);
+                warnOnce("organization skills unavailable", skillsResult.reason);
             }
 
             if (galleryResult.status === "fulfilled") {
@@ -757,7 +770,7 @@ function renderFromResults(results, language) {
             }
 
             else {
-                warn("about gallery unavailable", galleryResult.reason);
+                warnOnce("about gallery unavailable", galleryResult.reason);
             }
 
         }
@@ -765,7 +778,7 @@ function renderFromResults(results, language) {
     }
 
     else {
-        warn("about_organization unavailable", organizationResult.reason);
+        warnOnce("about_organization unavailable", organizationResult.reason);
     }
 
 }
@@ -814,7 +827,7 @@ async function load() {
 
     cachedResults = results;
 
-    renderFromResults(results, getLanguage());
+    renderFromResults(results, getLanguage(), true);
 
 }
 
@@ -824,7 +837,7 @@ onLanguageChange(language => {
         return;
     }
 
-    renderFromResults(cachedResults, language);
+    renderFromResults(cachedResults, language, false);
 
 });
 
