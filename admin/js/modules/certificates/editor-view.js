@@ -66,7 +66,7 @@ const LIMITS = {
   period: 60,
   issuerLine: 180,
   badgeText: 60,
-  description: 160,
+  description: 120,
   externalUrl: 500
 };
 
@@ -82,20 +82,26 @@ const LIMITS = {
 
   These word limits are what keep that fixed height honest: they are the
   actual measured combination (title + issuer line + badge + description,
-  all near their cap, on the narrowest supported card) that still fits
-  --cert-h-base at every breakpoint without clipping. Keeping every
-  certificate within the same rough word count is also what makes the
-  carousel look consistent card to card, not just individually safe.
+  all at their cap at once) that still fits the SMALLEST card —
+  --cert-h-base 310px at the mobile breakpoint, measured at ~301px used —
+  without clipping. Tablet and desktop have well over 50px of slack at
+  the same limits. Keeping every certificate within the same rough word
+  count is also what makes the carousel look consistent card to card,
+  not just individually safe.
+
+  Raising any of these means re-measuring the mobile card and raising
+  --cert-h-base with it; the card no longer grows on its own to cover a
+  longer entry.
 
   LIMITS above still bounds raw character count too (defence in depth
   against a single very long "word" with no spaces, which a word count
   alone would not catch).
 */
 const WORD_LIMITS = {
-  title: 12,
-  issuerLine: 10,
-  badgeText: 4,
-  description: 20
+  title: 10,
+  issuerLine: 6,
+  badgeText: 3,
+  description: 14
 };
 
 function countWords(value) {

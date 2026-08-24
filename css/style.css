@@ -12625,16 +12625,17 @@ a.footer-contact-item:hover {
        yang dinaikkan, kartu akan saling mepet karena radius
        lingkarannya tidak ikut melebar.
 
-       Rasio lebar:tinggi TIDAK lagi 1:1.38 yang sama persis di
-       setiap breakpoint (dulu begitu). Di layar sempit, kata yang
-       sama membungkus jadi lebih banyak baris, jadi kartu di sana
-       perlu proporsi lebih tinggi supaya batas kata di Admin CMS
-       (lihat catatan di atas) tetap muat tanpa scroll maupun
-       kartu yang meledak.
+       Tablet dan desktop memakai rasio asli 1 : 1.38 (365/264 dan
+       428/310) — dua breakpoint itu tidak pernah bermasalah dan
+       ruangnya sudah lebih dari cukup untuk batas kata di Admin.
+       Mobile sedikit lebih tinggi, 1 : 1.55 (310/200), karena di
+       lebar 200px teks yang sama membungkus jadi lebih banyak
+       baris; jarak internalnya ikut dirapatkan di blok media query
+       mobile supaya angkanya tidak perlu lebih besar dari itu.
     ========================================= */
 
     --cert-w: 310px;
-    --cert-h-base: 500px;
+    --cert-h-base: 428px;
     --cert-h: var(--cert-h-base);
     --cert-radius: 273px;
     --cert-perspective: 1740px;
@@ -13340,7 +13341,7 @@ a.footer-contact-item:hover {
        (×0.85) — lihat "ATURAN MEMPERBESAR" di atas. */
     .certificates-section {
         --cert-w: 264px;
-        --cert-h-base: 460px;
+        --cert-h-base: 365px;
         --cert-radius: 234px;
         --cert-perspective: 1920px;
     }
@@ -13398,7 +13399,7 @@ a.footer-contact-item:hover {
        kartu samping mulai tersentuh tepi layar di HP 360px. */
     .certificates-section {
         --cert-w: 200px;
-        --cert-h-base: 480px;
+        --cert-h-base: 310px;
         --cert-radius: 175px;
         --cert-perspective: 2660px;
 
@@ -13452,13 +13453,31 @@ a.footer-contact-item:hover {
     }
 
 
+    /*
+      Jarak internal dirapatkan KHUSUS di sini.
+
+      Kartu mobile hanya 200px lebar, jadi teks yang sama membungkus
+      jadi jauh lebih banyak baris daripada di tablet/desktop —
+      breakpoint inilah satu-satunya yang tingginya pernah bermasalah.
+      Padding, gap antar blok, line-height, dan tombol dipadatkan
+      secukupnya supaya kombinasi terpanjang yang masih diizinkan
+      Admin CMS (WORD_LIMITS) muat di --cert-h-base 310px — kartu
+      tetap terbaca nyaman, tapi proporsinya kembali seperti kartu,
+      bukan persegi panjang menjulang.
+    */
+
     .cert-face-front {
-        padding: 26px 18px 20px;
+        padding: 22px 16px 18px;
     }
 
 
     .cert-face-back {
-        padding: 21px 17px;
+        padding: 18px 16px;
+    }
+
+
+    .cert-back-inner {
+        gap: 7px;
     }
 
 
@@ -13475,6 +13494,7 @@ a.footer-contact-item:hover {
     .cert-title,
     .cert-back-title {
         font-size: 15.5px;
+        line-height: 1.28;
     }
 
 
@@ -13486,6 +13506,7 @@ a.footer-contact-item:hover {
 
     .cert-back-desc {
         font-size: 12.5px;
+        line-height: 1.45;
         -webkit-line-clamp: 5;
         line-clamp: 5;
     }
@@ -13494,6 +13515,16 @@ a.footer-contact-item:hover {
     .cert-badge,
     .cert-link {
         font-size: 11px;
+    }
+
+
+    .cert-badge {
+        padding: 4px 11px;
+    }
+
+
+    .cert-link {
+        padding: 8px 14px;
     }
 
 
