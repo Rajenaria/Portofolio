@@ -45,6 +45,7 @@ export const DEFAULT_LANGUAGE = "en";
 const DICTIONARY = {
 
   en: {
+    "nav.brand": "Rajendra Portfolio",
     "nav.home": "Home",
     "nav.about": "About",
     "nav.experience": "Experience",
@@ -63,6 +64,7 @@ const DICTIONARY = {
     "about.label": "ABOUT ME",
     "about.interestLabel": "AREA OF INTEREST",
     "about.orgLabel": "ORGANIZATION & ACTIVITIES",
+    "about.techLabel": "TECH STACK",
     "about.orgPrevAriaLabel": "Previous documentation",
     "about.orgNextAriaLabel": "Next documentation",
     "about.techDescription":
@@ -155,6 +157,7 @@ const DICTIONARY = {
   },
 
   id: {
+    "nav.brand": "Portofolio Rajendra",
     "nav.home": "Beranda",
     "nav.about": "Tentang Saya",
     "nav.experience": "Pengalaman",
@@ -173,6 +176,7 @@ const DICTIONARY = {
     "about.label": "TENTANG SAYA",
     "about.interestLabel": "BIDANG MINAT",
     "about.orgLabel": "ORGANISASI & KEGIATAN",
+    "about.techLabel": "TECH STACK",
     "about.orgPrevAriaLabel": "Dokumentasi sebelumnya",
     "about.orgNextAriaLabel": "Dokumentasi berikutnya",
     "about.techDescription":
@@ -394,6 +398,12 @@ applyStaticTranslations();
 
 document.addEventListener("DOMContentLoaded", () => {
   applyStaticTranslations();
+
+  document.querySelectorAll(".nav-lang-slot").forEach(slot => {
+    if (!slot.hasChildNodes()) {
+      slot.appendChild(createLanguageSwitch());
+    }
+  });
 });
 
 /* Bridge for the classic (non-module) scripts — see header note. */

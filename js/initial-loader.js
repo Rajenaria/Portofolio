@@ -295,6 +295,7 @@
 
         document.documentElement.classList.remove("is-loading");
         document.documentElement.classList.add("is-loaded");
+        window.dispatchEvent(new Event("portfolio:ready"));
 
         if (!overlay) {
             return;

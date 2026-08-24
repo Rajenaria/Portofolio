@@ -103,11 +103,11 @@ section {
     display: grid;
 
     grid-template-columns:
-        auto 1fr auto;
+        auto minmax(0, 1fr) auto auto;
 
     align-items: center;
 
-    gap: 30px;
+    gap: 18px;
 
     padding: 7px 10px 7px 20px;
 
@@ -157,7 +157,7 @@ section {
     justify-content: center;
     align-items: center;
 
-    gap: 30px;
+    gap: 22px;
 }
 
 
@@ -5012,6 +5012,138 @@ nav.nav-scrolled {
 }
 
 
+/* HERO TEXT REVEAL */
+
+.simple-hero-content.hero-is-animating .simple-hero-label,
+.simple-hero-content.hero-is-animating h2,
+.simple-hero-content.hero-is-animating .simple-hero-description,
+.simple-hero-content.hero-is-animating .simple-hero-buttons {
+    opacity: 0;
+}
+
+
+.simple-hero-content.hero-is-animating .simple-hero-label {
+    animation: heroLabelReveal 0.45s ease 0.15s forwards;
+}
+
+
+.simple-hero-content.hero-is-animating h1 {
+    width: max-content;
+    max-width: 100%;
+    position: relative;
+    opacity: 1;
+}
+
+
+.hero-type-cursor {
+    display: inline-block;
+    width: 3px;
+    height: 0.8em;
+    margin-left: 0.12em;
+    vertical-align: baseline;
+    background-color: #0071e3;
+    animation: heroCursorBlink 0.75s steps(2, end) infinite;
+}
+
+
+.simple-hero-content h1 .hero-type-cursor {
+    display: inline-block;
+}
+
+
+.hero-name-highlight {
+    display: inline-block;
+    white-space: nowrap;
+}
+
+
+.simple-hero-content h1 span.hero-name-highlight {
+    display: inline-block;
+    white-space: nowrap;
+}
+
+
+.simple-hero-content.hero-is-animating h2 {
+    animation: heroContentReveal 0.65s ease var(--hero-content-delay, 2.15s) forwards;
+}
+
+
+.simple-hero-content.hero-is-animating .simple-hero-description {
+    animation: heroContentReveal 0.65s ease calc(var(--hero-content-delay, 2.15s) + 0.4s) forwards;
+}
+
+
+.simple-hero-content.hero-is-animating .simple-hero-buttons {
+    animation: heroContentReveal 0.65s ease calc(var(--hero-content-delay, 2.15s) + 0.75s) forwards;
+}
+
+
+@keyframes heroLabelReveal {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+@keyframes heroContentReveal {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+@keyframes heroCursorBlink {
+    0% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+
+    .simple-hero-content.hero-is-animating .simple-hero-label,
+    .simple-hero-content.hero-is-animating h1,
+    .simple-hero-content.hero-is-animating h2,
+    .simple-hero-content.hero-is-animating .simple-hero-description,
+    .simple-hero-content.hero-is-animating .simple-hero-buttons {
+        opacity: 1;
+        animation: none;
+        transform: none;
+    }
+
+    .hero-type-cursor {
+        animation: none;
+    }
+
+}
+
+
+.hero-photo-card-placeholder {
+    visibility: hidden;
+    pointer-events: none;
+}
+
+
 /* LABEL */
 
 .simple-hero-label {
@@ -6204,6 +6336,11 @@ nav.nav-scrolled {
     }
 
 
+    .simple-hero-content.hero-is-animating h1 {
+        width: 100%;
+    }
+
+
     .simple-hero-visual {
         min-height: 450px;
     }
@@ -6293,6 +6430,11 @@ nav.nav-scrolled {
             );
 
         letter-spacing: -1.5px;
+    }
+
+
+    .simple-hero-content.hero-is-animating h1 {
+        width: 100%;
     }
 
 
@@ -8808,7 +8950,7 @@ a.footer-contact-item:hover {
     }
 
 
-    .simple-hero-content h1 span {
+    .simple-hero-content h1 > span {
         display: inline;
 
         color:
@@ -8966,6 +9108,7 @@ a.footer-contact-item:hover {
     }
 
     .portfolio-nav-links,
+    .portfolio-nav-inner > .nav-lang-slot,
     .portfolio-nav-contact {
         display: none;
     }
@@ -9070,7 +9213,7 @@ a.footer-contact-item:hover {
         text-align: center;
     }
 
-    .simple-hero-content h1 span {
+    .simple-hero-content h1 > span {
         display: block;
         margin-top: 6px;
         color: #0071e3;
@@ -9167,6 +9310,7 @@ a.footer-contact-item:hover {
 @media (min-width: 651px) and (max-width: 1024px) {
 
     .portfolio-nav-links,
+    .portfolio-nav-inner > .nav-lang-slot,
     .portfolio-nav-contact {
         display: none;
     }

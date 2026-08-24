@@ -29,11 +29,11 @@
 
     <!-- Classic script, loaded before any module, so window.portfolioReady
          exists by the time the CMS modules run and no early mark is missed. -->
-    <script src="js/initial-loader.js?v=2"></script>
+    <script src="js/initial-loader.js?v=3"></script>
 
     <!-- MAIN CSS -->
     <link
-        rel="stylesheet"href="css/style.css?v=28">
+        rel="stylesheet"href="css/style.css?v=33">
     <!-- DEVICON -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/devicon.min.css">
     <!-- ICONIFY -->
@@ -89,38 +89,41 @@ src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"
 
         <!-- LOGO -->
         <a href="#home" class="portfolio-nav-logo">
-            Portofolio Rajendra
+            <span data-i18n="nav.brand">Portofolio Rajendra</span>
         </a>
 
 
         <!-- MENU -->
         <div class="portfolio-nav-links">
 
-            <a href="#home">
+            <a href="#home" data-i18n="nav.home">
                 Beranda
             </a>
 
-            <a href="#about">
+            <a href="#about" data-i18n="nav.about">
                 Tentang Saya
             </a>
 
-            <a href="#experience">
+            <a href="#experience" data-i18n="nav.experience">
                 Pengalaman
             </a>
 
-            <a href="#education">
+            <a href="#education" data-i18n="nav.education">
                 Pendidikan
             </a>
 
-            <a href="#certificates">
+            <a href="#certificates" data-i18n="nav.certificates">
                 Sertifikat
             </a>
 
-            <a href="#portfolio">
+            <a href="#portfolio" data-i18n="nav.portfolio">
                 Portfolio
             </a>
 
         </div>
+
+
+        <div class="nav-lang-slot" id="navLangSlot"></div>
 
 
         <!-- MOBILE NAV TOGGLE -->
@@ -129,6 +132,7 @@ src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"
             id="mobileNavToggle"
             type="button"
             aria-label="Buka menu navigasi"
+            data-i18n-aria-label="nav.toggleAriaLabel"
             aria-expanded="false"
         >
             <span></span>
@@ -142,7 +146,7 @@ src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"
             href="#contact"
             class="portfolio-nav-contact"
         >
-            Kontak
+            <span data-i18n="nav.contact">Kontak</span>
 
             <span>
                 ↗
@@ -163,41 +167,43 @@ src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"
 
         <a href="#home">
             <span>01</span>
-            Beranda
+            <span data-i18n="nav.home">Beranda</span>
         </a>
 
         <a href="#about">
             <span>02</span>
-            Tentang Saya
+            <span data-i18n="nav.about">Tentang Saya</span>
         </a>
 
         <a href="#experience">
             <span>03</span>
-            Pengalaman
+            <span data-i18n="nav.experience">Pengalaman</span>
         </a>
 
         <a href="#education">
             <span>04</span>
-            Pendidikan
+            <span data-i18n="nav.education">Pendidikan</span>
         </a>
 
         <a href="#certificates">
             <span>05</span>
-            Sertifikat
+            <span data-i18n="nav.certificates">Sertifikat</span>
         </a>
 
         <a href="#portfolio">
             <span>06</span>
-            Portfolio
+            <span data-i18n="nav.portfolio">Portfolio</span>
         </a>
 
         <a
             href="#contact"
             class="mobile-nav-contact"
         >
-            Kontak
+            <span data-i18n="nav.contact">Kontak</span>
             <span>↗</span>
         </a>
+
+        <div class="nav-lang-slot nav-lang-slot-mobile" id="mobileNavLangSlot"></div>
 
     </div>
 
@@ -222,7 +228,7 @@ src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"
 
                 <span></span>
 
-                <p>
+                <p data-i18n="hero.greeting">
                     HELLO, I'M
                 </p>
 
@@ -258,7 +264,7 @@ src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"
                     class="simple-hero-button simple-project-button"
                 >
 
-                    View My Work
+                    <span data-i18n="hero.viewWork">View My Work</span>
 
                     <span>
                         →
@@ -273,7 +279,7 @@ src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"
                     download
                 >
 
-                    Download CV
+                    <span data-i18n="hero.downloadCV">Download CV</span>
 
                     <span>
                         ↓
@@ -301,7 +307,7 @@ src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"
                 >
 
                     <div
-                        class="hero-photo-stack"
+                        class="hero-photo-stack hero-media-pending"
                         id="heroPhotoStack"
                     >
 
@@ -460,7 +466,7 @@ src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"
 
                 <span></span>
 
-                <p>
+                <p data-i18n="about.label">
                     TENTANG SAYA
                 </p>
 
@@ -515,7 +521,7 @@ src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"
 
             <div class="simple-about-interest">
 
-                <p class="simple-about-small-title">
+                <p class="simple-about-small-title" data-i18n="about.interestLabel">
                     AREA OF INTEREST
                 </p>
 
@@ -751,7 +757,7 @@ src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"
 
                             <span></span>
 
-                            <p>
+                            <p data-i18n="about.orgLabel">
                                 ORGANIZATION & ACTIVITIES
                             </p>
 
@@ -846,7 +852,7 @@ src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"
 
                 <span></span>
 
-                <p>TECH STACK</p>
+                            <p data-i18n="about.techLabel">TECH STACK</p>
 
             </div>
 
@@ -855,7 +861,7 @@ src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"
                 <span>Work With..</span>
             </h2>
 
-            <p class="about-tech-description">
+            <p class="about-tech-description" data-i18n="about.techDescription">
                 A selection of tools and technologies 
                 I use across software development, AI, 
                 embedded systems, and digital product development.
@@ -1200,15 +1206,15 @@ src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"
             <!-- LEFT: STICKY INTRO -->
             <div class="experience-intro">
 
-                <p class="experience-label">
+                <p class="experience-label" data-i18n="experience.label">
                     PENGALAMAN
                 </p>
 
-                <h2>
+                <h2 data-i18n="experience.heading">
                     Pengalaman yang Membentuk Saya
                 </h2>
 
-                <p class="experience-description">
+                <p class="experience-description" data-i18n="experience.description">
                     Berbagai pengalaman teknis, profesional, dan organisasi
                     yang membantu saya mengembangkan kemampuan di bidang teknologi,
                     komunikasi, kerja sama tim, dan problem solving.
@@ -1247,15 +1253,15 @@ src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"
 
         <div class="education-modern-heading">
 
-            <p class="education-modern-label">
+            <p class="education-modern-label" data-i18n="education.label">
                 PENDIDIKAN
             </p>
 
-            <h2>
+            <h2 data-i18n="education.heading">
                 Riwayat Pendidikan
             </h2>
 
-            <p class="education-modern-description">
+            <p class="education-modern-description" data-i18n="education.description">
                 Pendidikan yang telah dan sedang saya tempuh.
             </p>
 
@@ -1358,15 +1364,15 @@ src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"
 
         <div class="certificates-heading">
 
-            <p class="certificates-label">
+            <p class="certificates-label" data-i18n="certificates.label">
                 SERTIFIKAT
             </p>
 
-            <h2>
+            <h2 data-i18n="certificates.heading">
                 Sertifikat &amp; Penghargaan
             </h2>
 
-            <p class="certificates-description">
+            <p class="certificates-description" data-i18n="certificates.description">
                 Sertifikat, hak cipta, dan pencapaian akademik yang
                 pernah saya raih.
             </p>
@@ -1374,7 +1380,7 @@ src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"
         </div>
 
 
-        <p class="certificates-hint">
+        <p class="certificates-hint" data-i18n="certificates.hint">
             (Geser untuk memutar &middot; klik kartu depan untuk detail)
         </p>
 
@@ -1471,15 +1477,15 @@ src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"
 
         <div class="portfolio-heading">
 
-            <p class="portfolio-label">
+            <p class="portfolio-label" data-i18n="portfolio.label">
                 PORTFOLIO
             </p>
 
-            <h2>
+            <h2 data-i18n="portfolio.heading">
                 Project yang Pernah Saya Kerjakan
             </h2>
 
-            <p class="portfolio-description">
+            <p class="portfolio-description" data-i18n="portfolio.description">
                 Beberapa project yang saya kerjakan dalam bidang
                 Artificial Intelligence, Computer Vision,
                 Embedded Systems, dan UI/UX Design.
@@ -1986,15 +1992,15 @@ src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"
 
                     <span class="contact-guestbook-accent"></span>
 
-                    <p class="contact-guestbook-label">
+                    <p class="contact-guestbook-label" data-i18n="contact.label">
                         KONTAK
                     </p>
 
-                    <h2>
+                    <h2 data-i18n="contact.heading">
                         Hubungi Saya.
                     </h2>
 
-                    <p class="contact-guestbook-description">
+                    <p class="contact-guestbook-description" data-i18n="contact.description">
                         Punya pertanyaan, ingin berdiskusi,
                         atau tertarik untuk berkolaborasi?
                         Jangan ragu untuk menghubungi saya.
@@ -2115,7 +2121,7 @@ src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"
 
                     <span class="contact-guestbook-note-dot"></span>
 
-                    <p>
+                    <p data-i18n="contact.note">
                         Terbuka untuk diskusi,
                         kolaborasi, dan kesempatan baru.
                     </p>
@@ -2144,15 +2150,15 @@ src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"
 
                 <div class="contact-guestbook-right-heading">
 
-                    <p class="contact-guestbook-label">
+                    <p class="contact-guestbook-label" data-i18n="guestbook.label">
                         GUESTBOOK
                     </p>
 
-                    <h2>
+                    <h2 data-i18n="guestbook.heading">
                         Tinggalkan Pesan.
                     </h2>
 
-                    <p>
+                    <p data-i18n="guestbook.description">
                         Punya feedback, pesan,
                         atau sekadar ingin menyapa?
                         Tulis pesan kamu di sini.
@@ -2184,6 +2190,7 @@ src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"
                                 id="guestbookName"
                                 name="name"
                                 placeholder="Nama kamu"
+                                data-i18n-placeholder="guestbook.namePlaceholder"
                                 minlength="2"
                                 maxlength="30"
                                 autocomplete="name"
@@ -2197,7 +2204,7 @@ src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"
                                 class="guestbook-v2-submit"
                             >
 
-                                Kirim
+                                <span data-i18n="guestbook.submit">Kirim</span>
 
                                 <span>
                                     →
@@ -2217,6 +2224,7 @@ src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"
                                 id="guestbookMessage"
                                 name="message"
                                 placeholder="Tulis pesan atau komentar..."
+                                data-i18n-placeholder="guestbook.messagePlaceholder"
                                 minlength="3"
                                 maxlength="500"
                                 rows="5"
@@ -2271,11 +2279,11 @@ src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"
                 ✦
             </div>
 
-            <h4>
+                <h4 data-i18n="guestbook.emptyTitle">
                 Belum ada pesan.
             </h4>
 
-            <p>
+            <p data-i18n="guestbook.emptyText">
                 Jadilah orang pertama yang meninggalkan pesan.
             </p>
 
@@ -2290,6 +2298,7 @@ src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"
         class="guestbook-slider-dots"
         id="guestbookSliderDots"
         aria-label="Navigasi komentar"
+        data-i18n-aria-label="guestbook.sliderAriaLabel"
     ></div>
 
 </div>
@@ -2328,7 +2337,7 @@ src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"
                 </a>
 
 
-                <p class="footer-description">
+                <p class="footer-description" data-i18n="footer.description">
                     Computer Engineering graduate yang tertarik pada
                     embedded systems, artificial intelligence,
                     computer vision, software development,
@@ -2638,9 +2647,10 @@ src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"
     <script src="js/hero-photo-stack.js?v=2" defer></script>
     <script src="js/experience-stack.js?v=2" type="module"></script>
     <script src="js/certificates.js?v=15" defer></script>
+    <script src="js/core/i18n.js?v=2" type="module"></script>
 
     <!-- PUBLIC CMS INTEGRATION (read-only, patches the static content above) -->
-    <script src="js/cms/profile-about.js?v=3" type="module"></script>
+                    <script src="js/cms/profile-about.js?v=5" type="module"></script>
     <script src="js/cms/technologies.js?v=2" type="module"></script>
     <script src="js/cms/projects.js?v=2" type="module"></script>
     <script src="js/cms/certificates.js?v=2" type="module"></script>

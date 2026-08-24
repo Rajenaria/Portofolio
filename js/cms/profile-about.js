@@ -197,6 +197,96 @@ function setHeading(heading, main, highlight) {
 
 }
 
+let heroReady = false;
+let heroAnimationTimer = 0;
+
+function animateHeroContent(content) {
+
+    if (!content || !heroReady) {
+        return;
+    }
+
+    const heading = content.querySelector("h1");
+
+    if (!heading) {
+        return;
+    }
+
+    const highlight = heading.querySelector("span");
+    const mainText = Array.from(heading.childNodes)
+        .filter(node => node !== highlight)
+        .map(node => node.textContent || "")
+        .join("")
+        .trim();
+    const highlightText = highlight?.textContent.trim() || "";
+    const headingText = `${mainText} ${highlightText}`.trim();
+    const characterDelay = 85;
+    const duration = Math.max(900, Math.min(2200, headingText.length * characterDelay));
+
+    window.clearTimeout(heroAnimationTimer);
+    content.classList.remove("hero-is-animating");
+    heading.classList.remove("hero-name-typing");
+    content.style.setProperty("--hero-name-duration", `${duration}ms`);
+    content.style.setProperty("--hero-content-delay", `${duration + 1000}ms`);
+
+    void content.offsetWidth;
+    content.classList.add("hero-is-animating");
+
+    const mainNode = document.createTextNode("");
+    const highlightNode = document.createTextNode("");
+    const typedHighlight = document.createElement("span");
+    const cursor = document.createElement("span");
+
+    typedHighlight.className = "hero-name-highlight";
+    cursor.className = "hero-type-cursor";
+    typedHighlight.append(highlightNode, cursor);
+    replaceChildren(heading, [mainNode, typedHighlight]);
+    heading.classList.add("hero-name-typing");
+
+    const characters = Array.from(headingText);
+    let characterIndex = 0;
+    const mainCharacterCount = mainText.length + (highlightText ? 1 : 0);
+    const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+    if (reducedMotion) {
+        mainNode.textContent = mainText + (highlightText ? " " : "");
+        highlightNode.textContent = highlightText;
+        heading.classList.add("hero-name-typing");
+        return;
+    }
+
+    function typeNextCharacter() {
+
+        if (characterIndex < mainCharacterCount) {
+            mainNode.textContent += characters[characterIndex];
+        }
+
+        else {
+            highlightNode.textContent += characters[characterIndex];
+        }
+
+        characterIndex += 1;
+
+        if (characterIndex < characters.length) {
+            heroAnimationTimer = window.setTimeout(typeNextCharacter, characterDelay);
+            return;
+        }
+
+        heading.classList.add("hero-name-typing");
+
+    }
+
+    if (characters.length > 0) {
+        heroAnimationTimer = window.setTimeout(typeNextCharacter, 650);
+    }
+
+    else {
+        heading.classList.remove("hero-name-typing");
+        cursor.remove();
+    }
+
+}
+
 /*
     Reads the breakpoint already used by a reference <picture> so
     new markup cannot introduce a second breakpoint.
@@ -277,6 +367,8 @@ function renderHeroText(profile, language) {
         content.querySelector(".simple-hero-description"),
         localizeField(profile, "hero_description", language)
     );
+
+    animateHeroContent(content);
 
 }
 
@@ -900,6 +992,11 @@ onLanguageChange(language => {
    it always patches an already initialised page.
 --------------------------------------------------------- */
 
+window.addEventListener("portfolio:ready", () => {
+    heroReady = true;
+    animateHeroContent(document.querySelector(".simple-hero-content"));
+}, { once: true });
+
 
 /*
     Tells the initial loader this section has SETTLED — rendered
@@ -911,6 +1008,7 @@ onLanguageChange(language => {
 load()
     .catch(error => warn("profile/about integration failed", error))
     .finally(() => {
+        document.getElementById("heroPhotoStack")?.classList.remove("hero-media-pending");
         window.portfolioReady?.mark("hero");
         window.portfolioReady?.mark("about");
     });
