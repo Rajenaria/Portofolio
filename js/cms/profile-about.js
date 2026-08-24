@@ -30,6 +30,7 @@
 import {
     readTable,
     publicMediaUrl,
+    publicDocumentUrl,
     filled,
     IS_LOCAL_CMS
 } from "./client.js";
@@ -427,6 +428,49 @@ function renderHeroMedia(heroRows, language) {
 
 
 /* ---------------------------------------------------------
+   CV DOWNLOAD
+
+   Both the Hero CTA and the footer button carry data-cv-link and ship with a
+   static href pointing at the repository copy. That static href is the
+   fallback and is left untouched unless the CMS has a usable CV, so the button
+   never breaks when Supabase is unreachable.
+
+   publicDocumentUrl rejects anything outside portfolio-documents, so a
+   tampered row cannot redirect the button somewhere else.
+
+   The filename is generated rather than stored: ?download=<name> is what makes
+   Storage send an attachment with a readable name, because the HTML download
+   attribute is ignored cross-origin.
+--------------------------------------------------------- */
+
+function renderCvLink(profile) {
+
+    const links = document.querySelectorAll("[data-cv-link]");
+
+    if (links.length === 0) {
+        return;
+    }
+
+    const url = publicDocumentUrl(profile.cv_bucket, profile.cv_path);
+
+    if (!url) {
+        return;
+    }
+
+    const owner = filled(profile.name) ? profile.name.trim() : "";
+    const filename = owner === "" ? "CV.pdf" : `CV-${owner}.pdf`;
+
+    links.forEach(link => {
+        link.setAttribute(
+            "href",
+            `${url}?download=${encodeURIComponent(filename)}`
+        );
+    });
+
+}
+
+
+/* ---------------------------------------------------------
    ABOUT ME
 --------------------------------------------------------- */
 
@@ -701,6 +745,11 @@ function renderFromResults(results, language, reportProblems) {
 
             renderHeroText(profile, language);
 
+            /* Outside the aboutIsConfigured branch on purpose: the CV belongs
+               to the Hero, not the About section, and must render even when
+               About has never been filled in. */
+            renderCvLink(profile);
+
             if (aboutIsConfigured(profile)) {
 
                 renderAbout(profile, language);
@@ -791,7 +840,8 @@ async function load() {
             "select=name,professional_title,hero_description," +
             "about_heading_main,about_heading_highlight,about_lead," +
             "about_description,about_photo_bucket,about_photo_desktop_path," +
-            "about_photo_mobile_path,about_photo_alt,translations&limit=1"
+            "about_photo_mobile_path,about_photo_alt,translations," +
+            "cv_bucket,cv_path&limit=1"
         ),
         /*
             RLS is the authority on which slots are public; the
