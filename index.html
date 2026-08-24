@@ -1,21 +1,16 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 
 <head>
 
     <meta charset="UTF-8">
-
     <meta
         name="viewport"
         content="width=device-width, initial-scale=1.0"
     >
 
     <title>Rajendra Aria Nismara</title>
-
-    <!-- INITIAL LOADER
-         The overlay styling is inlined so the very first paint already shows
-         the loader instead of a white page waiting on style.css. CSP for this
-         page already allows style-src 'unsafe-inline'; no script is inlined. -->
+    <link rel="icon" href="terminal.png">
     <style>
         html.is-loading, html.is-loading body { overflow: hidden; }
 
@@ -36,27 +31,14 @@
          exists by the time the CMS modules run and no early mark is missed. -->
     <script src="js/initial-loader.js?v=2"></script>
 
-    <!-- Public i18n core, loaded before every other script (module or
-         classic): both categories run in document order once parsing
-         finishes, so window.portfolioI18n is guaranteed to exist by the
-         time any of them run. -->
-    <script src="js/core/i18n.js?v=1" type="module"></script>
-
     <!-- MAIN CSS -->
     <link
-        rel="stylesheet"
-        href="css/style.css?v=31"
-    >
-
+        rel="stylesheet"href="css/style.css?v=28">
     <!-- DEVICON -->
-    <link
-        rel="stylesheet"
-        href="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/devicon.min.css"
-    >
-
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/devicon.min.css">
     <!-- ICONIFY -->
     <script
-        src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"
+src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"
     ></script>
 
 </head>
@@ -114,32 +96,29 @@
         <!-- MENU -->
         <div class="portfolio-nav-links">
 
-            <a href="#home" data-i18n="nav.home">
-                Home
+            <a href="#home">
+                Beranda
             </a>
 
-            <a href="#about" data-i18n="nav.about">
-                About
+            <a href="#about">
+                Tentang Saya
             </a>
 
-            <a href="#experience" data-i18n="nav.experience">
-                Experience
+            <a href="#experience">
+                Pengalaman
             </a>
 
-            <a href="#education" data-i18n="nav.education">
-                Education
+            <a href="#education">
+                Pendidikan
             </a>
 
-            <a href="#certificates" data-i18n="nav.certificates">
-                Certificates
+            <a href="#certificates">
+                Sertifikat
             </a>
 
             <a href="#portfolio">
                 Portfolio
             </a>
-
-            <!-- LANGUAGE SWITCH -->
-            <div id="navLanguageSwitch" class="nav-lang-slot"></div>
 
         </div>
 
@@ -149,8 +128,7 @@
             class="mobile-nav-toggle"
             id="mobileNavToggle"
             type="button"
-            data-i18n-aria-label="nav.toggleAriaLabel"
-            aria-label="Open navigation menu"
+            aria-label="Buka menu navigasi"
             aria-expanded="false"
         >
             <span></span>
@@ -164,9 +142,9 @@
             href="#contact"
             class="portfolio-nav-contact"
         >
-            <span class="nav-item-label" data-i18n="nav.contact">Contact</span>
+            Kontak
 
-            <span class="nav-arrow">
+            <span>
                 ↗
             </span>
         </a>
@@ -184,32 +162,32 @@
     >
 
         <a href="#home">
-            <span class="nav-index">01</span>
-            <span class="nav-item-label" data-i18n="nav.home">Home</span>
+            <span>01</span>
+            Beranda
         </a>
 
         <a href="#about">
-            <span class="nav-index">02</span>
-            <span class="nav-item-label" data-i18n="nav.about">About</span>
+            <span>02</span>
+            Tentang Saya
         </a>
 
         <a href="#experience">
-            <span class="nav-index">03</span>
-            <span class="nav-item-label" data-i18n="nav.experience">Experience</span>
+            <span>03</span>
+            Pengalaman
         </a>
 
         <a href="#education">
-            <span class="nav-index">04</span>
-            <span class="nav-item-label" data-i18n="nav.education">Education</span>
+            <span>04</span>
+            Pendidikan
         </a>
 
         <a href="#certificates">
-            <span class="nav-index">05</span>
-            <span class="nav-item-label" data-i18n="nav.certificates">Certificates</span>
+            <span>05</span>
+            Sertifikat
         </a>
 
         <a href="#portfolio">
-            <span class="nav-index">06</span>
+            <span>06</span>
             Portfolio
         </a>
 
@@ -217,11 +195,9 @@
             href="#contact"
             class="mobile-nav-contact"
         >
-            <span class="nav-item-label" data-i18n="nav.contact">Contact</span>
-            <span class="nav-arrow">↗</span>
+            Kontak
+            <span>↗</span>
         </a>
-
-        <div id="mobileNavLanguageSwitch" class="nav-lang-slot nav-lang-slot-mobile"></div>
 
     </div>
 
@@ -294,7 +270,6 @@
                 <a
                     href="assets/documents/CV-Rajendra Aria Nismara.pdf"
                     class="simple-hero-button simple-cv-button"
-                    data-cv-link
                     download
                 >
 
@@ -485,8 +460,8 @@
 
                 <span></span>
 
-                <p data-i18n="about.label">
-                    ABOUT ME
+                <p>
+                    TENTANG SAYA
                 </p>
 
             </div>
@@ -742,8 +717,7 @@
                                 class="about-org-button"
                                 id="aboutOrgPrev"
                                 type="button"
-                                data-i18n-aria-label="about.orgPrevAriaLabel"
-                                aria-label="Previous documentation"
+                                aria-label="Dokumentasi sebelumnya"
                             >
                                 ←
                             </button>
@@ -753,8 +727,7 @@
                                 class="about-org-button"
                                 id="aboutOrgNext"
                                 type="button"
-                                data-i18n-aria-label="about.orgNextAriaLabel"
-                                aria-label="Next documentation"
+                                aria-label="Dokumentasi berikutnya"
                             >
                                 →
                             </button>
@@ -778,7 +751,7 @@
 
                             <span></span>
 
-                            <p data-i18n="about.orgLabel">
+                            <p>
                                 ORGANIZATION & ACTIVITIES
                             </p>
 
@@ -882,9 +855,9 @@
                 <span>Work With..</span>
             </h2>
 
-            <p class="about-tech-description" data-i18n="about.techDescription">
-                A selection of tools and technologies
-                I use across software development, AI,
+            <p class="about-tech-description">
+                A selection of tools and technologies 
+                I use across software development, AI, 
                 embedded systems, and digital product development.
             </p>
 
@@ -1227,18 +1200,18 @@
             <!-- LEFT: STICKY INTRO -->
             <div class="experience-intro">
 
-                <p class="experience-label" data-i18n="experience.label">
-                    EXPERIENCE
+                <p class="experience-label">
+                    PENGALAMAN
                 </p>
 
-                <h2 data-i18n="experience.heading">
-                    Experience That Shaped Me
+                <h2>
+                    Pengalaman yang Membentuk Saya
                 </h2>
 
-                <p class="experience-description" data-i18n="experience.description">
-                    Various technical, professional, and organizational experiences
-                    that helped me grow my skills in technology, communication,
-                    teamwork, and problem solving.
+                <p class="experience-description">
+                    Berbagai pengalaman teknis, profesional, dan organisasi
+                    yang membantu saya mengembangkan kemampuan di bidang teknologi,
+                    komunikasi, kerja sama tim, dan problem solving.
                 </p>
 
             </div>
@@ -1274,16 +1247,16 @@
 
         <div class="education-modern-heading">
 
-            <p class="education-modern-label" data-i18n="education.label">
-                EDUCATION
+            <p class="education-modern-label">
+                PENDIDIKAN
             </p>
 
-            <h2 data-i18n="education.heading">
-                Education History
+            <h2>
+                Riwayat Pendidikan
             </h2>
 
-            <p class="education-modern-description" data-i18n="education.description">
-                Education I have completed or am currently pursuing.
+            <p class="education-modern-description">
+                Pendidikan yang telah dan sedang saya tempuh.
             </p>
 
         </div>
@@ -1385,24 +1358,24 @@
 
         <div class="certificates-heading">
 
-            <p class="certificates-label" data-i18n="certificates.label">
-                CERTIFICATES
+            <p class="certificates-label">
+                SERTIFIKAT
             </p>
 
-            <h2 data-i18n="certificates.heading">
-                Certificates &amp; Awards
+            <h2>
+                Sertifikat &amp; Penghargaan
             </h2>
 
-            <p class="certificates-description" data-i18n="certificates.description">
-                Certificates, copyrights, and academic achievements
-                I have earned.
+            <p class="certificates-description">
+                Sertifikat, hak cipta, dan pencapaian akademik yang
+                pernah saya raih.
             </p>
 
         </div>
 
 
-        <p class="certificates-hint" data-i18n="certificates.hint">
-            (Swipe to rotate &middot; click the front card for details)
+        <p class="certificates-hint">
+            (Geser untuk memutar &middot; klik kartu depan untuk detail)
         </p>
 
 
@@ -1422,8 +1395,7 @@
             id="certificatesCarousel"
             role="group"
             aria-roledescription="carousel"
-            data-i18n-aria-label="certificates.carouselAriaLabel"
-            aria-label="List of certificates and awards"
+            aria-label="Daftar sertifikat dan penghargaan"
         >
 
             <div
@@ -1449,8 +1421,7 @@
                     class="cert-nav cert-nav-prev"
                     id="certPrev"
                     type="button"
-                    data-i18n-aria-label="certificates.prevAriaLabel"
-                    aria-label="Previous certificate"
+                    aria-label="Sertifikat sebelumnya"
                 >
                     <iconify-icon
                         icon="tabler:chevron-left"
@@ -1462,8 +1433,7 @@
                 <div
                     class="cert-dots"
                     id="certDots"
-                    data-i18n-aria-label="certificates.dotsAriaLabel"
-                    aria-label="Select certificate"
+                    aria-label="Pilih sertifikat"
                 ></div>
 
 
@@ -1471,8 +1441,7 @@
                     class="cert-nav cert-nav-next"
                     id="certNext"
                     type="button"
-                    data-i18n-aria-label="certificates.nextAriaLabel"
-                    aria-label="Next certificate"
+                    aria-label="Sertifikat berikutnya"
                 >
                     <iconify-icon
                         icon="tabler:chevron-right"
@@ -1502,17 +1471,18 @@
 
         <div class="portfolio-heading">
 
-            <p class="portfolio-label" data-i18n="portfolio.label">
+            <p class="portfolio-label">
                 PORTFOLIO
             </p>
 
-            <h2 data-i18n="portfolio.heading">
-                Projects I Have Worked On
+            <h2>
+                Project yang Pernah Saya Kerjakan
             </h2>
 
-            <p class="portfolio-description" data-i18n="portfolio.description">
-                Some projects I have worked on in Artificial Intelligence,
-                Computer Vision, Embedded Systems, and UI/UX Design.
+            <p class="portfolio-description">
+                Beberapa project yang saya kerjakan dalam bidang
+                Artificial Intelligence, Computer Vision,
+                Embedded Systems, dan UI/UX Design.
             </p>
 
         </div>
@@ -2016,17 +1986,18 @@
 
                     <span class="contact-guestbook-accent"></span>
 
-                    <p class="contact-guestbook-label" data-i18n="contact.label">
-                        CONTACT
+                    <p class="contact-guestbook-label">
+                        KONTAK
                     </p>
 
-                    <h2 data-i18n="contact.heading">
-                        Contact Me.
+                    <h2>
+                        Hubungi Saya.
                     </h2>
 
-                    <p class="contact-guestbook-description" data-i18n="contact.description">
-                        Have a question, want to discuss, or interested
-                        in collaborating? Feel free to reach out.
+                    <p class="contact-guestbook-description">
+                        Punya pertanyaan, ingin berdiskusi,
+                        atau tertarik untuk berkolaborasi?
+                        Jangan ragu untuk menghubungi saya.
                     </p>
 
                 </div>
@@ -2144,9 +2115,9 @@
 
                     <span class="contact-guestbook-note-dot"></span>
 
-                    <p data-i18n="contact.note">
-                        Open to discussion, collaboration,
-                        and new opportunities.
+                    <p>
+                        Terbuka untuk diskusi,
+                        kolaborasi, dan kesempatan baru.
                     </p>
 
                 </div>
@@ -2173,17 +2144,18 @@
 
                 <div class="contact-guestbook-right-heading">
 
-                    <p class="contact-guestbook-label" data-i18n="guestbook.label">
+                    <p class="contact-guestbook-label">
                         GUESTBOOK
                     </p>
 
-                    <h2 data-i18n="guestbook.heading">
-                        Leave a Message.
+                    <h2>
+                        Tinggalkan Pesan.
                     </h2>
 
-                    <p data-i18n="guestbook.description">
-                        Got feedback, a message, or just want to say hi?
-                        Write it here.
+                    <p>
+                        Punya feedback, pesan,
+                        atau sekadar ingin menyapa?
+                        Tulis pesan kamu di sini.
                     </p>
 
                 </div>
@@ -2211,8 +2183,7 @@
                                 type="text"
                                 id="guestbookName"
                                 name="name"
-                                data-i18n-placeholder="guestbook.namePlaceholder"
-                                placeholder="Your name"
+                                placeholder="Nama kamu"
                                 minlength="2"
                                 maxlength="30"
                                 autocomplete="name"
@@ -2226,7 +2197,7 @@
                                 class="guestbook-v2-submit"
                             >
 
-                                <span class="nav-item-label" data-i18n="guestbook.submit">Send</span>
+                                Kirim
 
                                 <span>
                                     →
@@ -2245,8 +2216,7 @@
                             <textarea
                                 id="guestbookMessage"
                                 name="message"
-                                data-i18n-placeholder="guestbook.messagePlaceholder"
-                                placeholder="Write a message or comment..."
+                                placeholder="Tulis pesan atau komentar..."
                                 minlength="3"
                                 maxlength="500"
                                 rows="5"
@@ -2301,12 +2271,12 @@
                 ✦
             </div>
 
-            <h4 data-i18n="guestbook.emptyTitle">
-                No messages yet.
+            <h4>
+                Belum ada pesan.
             </h4>
 
-            <p data-i18n="guestbook.emptyText">
-                Be the first to leave a message.
+            <p>
+                Jadilah orang pertama yang meninggalkan pesan.
             </p>
 
         </div>
@@ -2319,8 +2289,7 @@
     <div
         class="guestbook-slider-dots"
         id="guestbookSliderDots"
-        data-i18n-aria-label="guestbook.sliderAriaLabel"
-        aria-label="Comment navigation"
+        aria-label="Navigasi komentar"
     ></div>
 
 </div>
@@ -2359,11 +2328,11 @@
                 </a>
 
 
-                <p class="footer-description" data-i18n="footer.description">
-                    Computer Engineering graduate interested in
+                <p class="footer-description">
+                    Computer Engineering graduate yang tertarik pada
                     embedded systems, artificial intelligence,
                     computer vision, software development,
-                    and UI/UX design.
+                    dan UI/UX design.
                 </p>
 
 
@@ -2520,7 +2489,6 @@
                     <a
                         href="assets/documents/CV-Rajendra Aria Nismara.pdf"
                         class="footer-secondary-button"
-                        data-cv-link
                         download
                     >
 
@@ -2672,7 +2640,7 @@
     <script src="js/certificates.js?v=15" defer></script>
 
     <!-- PUBLIC CMS INTEGRATION (read-only, patches the static content above) -->
-    <script src="js/cms/profile-about.js?v=5" type="module"></script>
+    <script src="js/cms/profile-about.js?v=3" type="module"></script>
     <script src="js/cms/technologies.js?v=2" type="module"></script>
     <script src="js/cms/projects.js?v=2" type="module"></script>
     <script src="js/cms/certificates.js?v=2" type="module"></script>

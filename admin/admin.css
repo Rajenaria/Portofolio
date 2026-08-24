@@ -223,6 +223,31 @@ svg {
   background: var(--admin-surface-subtle);
 }
 
+/*
+  Quiet third tier, below primary and secondary.
+
+  This variant was in use by the certificate document field, the certificate
+  editor's Back control and the Profile CV field, but had no rule at all — so
+  those buttons inherited only .admin-button, whose border is
+  1px solid transparent with no background. Next to a bordered secondary
+  button they read as loose text rather than controls.
+
+  It stays lighter than secondary: soft border and secondary text at rest,
+  filling in on hover, so "Download" and "Remove" sit beside "View" as
+  obviously clickable without competing with it.
+*/
+.admin-button-ghost {
+  background: transparent;
+  border-color: var(--admin-border-soft);
+  color: var(--admin-text-secondary);
+}
+
+.admin-button-ghost:hover:not(:disabled) {
+  background: var(--admin-surface-subtle);
+  border-color: var(--admin-border);
+  color: var(--admin-text-primary);
+}
+
 .admin-button:disabled {
   opacity: 0.55;
   cursor: default;
