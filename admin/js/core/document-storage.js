@@ -28,7 +28,9 @@ import { t } from "./i18n.js";
 
 export const DOCUMENT_BUCKET = "portfolio-documents";
 
-const DIRECTORY = "certificates";
+/* Default keeps every existing certificate call site working unchanged;
+   the Profile CV field passes "cv". */
+const DEFAULT_DIRECTORY = "certificates";
 
 const CONTENT_TYPES = {
   pdf: "application/pdf",
@@ -60,9 +62,18 @@ export function documentUrl(bucket, path) {
   into an attachment, which is what a Download action wants — the HTML
   `download` attribute is ignored cross-origin.
 */
-export function documentDownloadUrl(bucket, path) {
+export function documentDownloadUrl(bucket, path, filename) {
   const url = documentUrl(bucket, path);
-  return url ? `${url}?download` : null;
+
+  if (!url) {
+    return null;
+  }
+
+  /* A filename makes Storage send that name instead of the stored UUID, so a
+     visitor gets "CV-Name.pdf" rather than a random identifier. */
+  return filename
+    ? `${url}?download=${encodeURIComponent(filename)}`
+    : `${url}?download`;
 }
 
 async function uploadObject(path, file, type) {
@@ -87,12 +98,12 @@ async function uploadObject(path, file, type) {
 
 /* Confirms the object is really in the bucket listing, not merely that the
    upload call returned without an error. */
-async function verifyUpload(path) {
+async function verifyUpload(path, directory) {
   const name = path.split("/").pop();
 
   const { data, error } = await supabaseClient.storage
     .from(DOCUMENT_BUCKET)
-    .list(DIRECTORY, { limit: 100, search: name });
+    .list(directory, { limit: 100, search: name });
 
   if (error) {
     throw new MediaStorageError(
@@ -134,13 +145,19 @@ export async function removeDocument(bucket, path) {
 
   Resolves with { bucket, path, type, cleanupWarning }.
 */
-export async function replaceDocument({ file, type, previous, commit }) {
-  const path = `${DIRECTORY}/${uuid()}.${type}`;
+export async function replaceDocument({
+  file,
+  type,
+  previous,
+  commit,
+  directory = DEFAULT_DIRECTORY
+}) {
+  const path = `${directory}/${uuid()}.${type}`;
 
   await uploadObject(path, file, type);
 
   try {
-    await verifyUpload(path);
+    await verifyUpload(path, directory);
     await commit({ bucket: DOCUMENT_BUCKET, path, type });
   } catch (error) {
     // Database never accepted the new reference: do not leave an object
