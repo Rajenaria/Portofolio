@@ -304,7 +304,7 @@ export function t(key, params) {
 }
 
 export function setLanguage(code) {
-  if (!DICTIONARY[code] || code === current) {
+  if (!DICTIONARY[code]) {
     return;
   }
 

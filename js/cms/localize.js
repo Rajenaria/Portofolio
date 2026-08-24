@@ -30,7 +30,17 @@ export function localizeField(record, field, language) {
         return canonical;
     }
 
-    const translated = record.translations?.id?.[field];
+    let translations = record.translations;
+
+    if (typeof translations === "string") {
+        try {
+            translations = JSON.parse(translations);
+        } catch (error) {
+            translations = null;
+        }
+    }
+
+    const translated = translations?.id?.[field];
 
     return typeof translated === "string" && translated.trim() !== ""
         ? translated
