@@ -429,6 +429,9 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
 
     const controller = openModal({
       title: t(isNew ? "org.photoAddTitle" : "org.photoEditTitle"),
+      isDirty: () => media.hasPending() || trimmed(alt.value) !== trimmed(existing ? existing.alt_text : "") ||
+        trimmed(caption.value) !== trimmed(existing ? existing.caption : "") ||
+        active.value !== (existing ? existing.is_active : true),
       body: form,
       actions: [
         {
@@ -444,7 +447,8 @@ export function createOrganizationTab({ organization, onDirtyChange }) {
       ],
       onRequestClose: async () => {
         if (!media.hasPending() && trimmed(alt.value) === trimmed(existing ? existing.alt_text : "") &&
-            trimmed(caption.value) === trimmed(existing ? existing.caption : "")) {
+            trimmed(caption.value) === trimmed(existing ? existing.caption : "") &&
+              active.value === (existing ? existing.is_active : true)) {
           return true;
         }
 

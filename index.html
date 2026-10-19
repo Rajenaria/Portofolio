@@ -95,7 +95,9 @@
      FLOATING / EXPANDING NAVBAR
 ========================================= -->
 
-<nav class="portfolio-nav" id="mainNav">
+<a class="skip-link" href="#mainContent">Lewati navigasi ke konten utama</a>
+
+<nav class="portfolio-nav" id="mainNav" aria-label="Navigasi utama">
 
     <div class="portfolio-nav-inner">
 
@@ -139,6 +141,7 @@
         <button
             class="mobile-nav-toggle"
             id="mobileNavToggle"
+            aria-controls="mobileNavMenu"
             type="button"
             aria-label="Buka menu navigasi"
             aria-expanded="false"
@@ -219,6 +222,8 @@
      HERO
 ========================================= -->
 
+<main id="mainContent" tabindex="-1">
+
 <section id="home" class="simple-hero">
 
     <div class="simple-hero-container">
@@ -280,9 +285,8 @@
 
 
                 <a
-                    href="assets/documents/CV-Rajendra Aria Nismara.pdf"
+                    href="#cvStatus" data-cv-download aria-disabled="true" tabindex="-1" aria-describedby="cvStatus"
                     class="simple-hero-button simple-cv-button"
-                    download
                 >
 
                     Download CV
@@ -294,6 +298,10 @@
                 </a>
 
             </div>
+            <div id="cvStatus" class="cv-status" role="status" aria-live="polite" hidden></div>
+            <button id="cvRetry" class="simple-hero-button simple-project-button" type="button" hidden>Coba muat CV lagi</button>
+            <noscript><p>Aktifkan JavaScript untuk memeriksa CV terbaru.</p></noscript>
+
 
         </div>
 
@@ -395,7 +403,7 @@
 
 <section id="about" class="about-full">
 
-    <div class="about-full-slider" id="aboutFullSlider">
+    <div class="about-full-slider" id="aboutFullSlider" role="region" aria-roledescription="carousel" aria-label="Tentang saya">
 
         <div class="about-full-track" id="aboutFullTrack">
 
@@ -1170,21 +1178,21 @@
 
             <button
                 class="about-navigation-dot active"
-                data-about-index="0"
+                data-about-index="0" aria-label="Slide tentang saya 1 dari 3"
                 type="button"
             ></button>
 
 
             <button
                 class="about-navigation-dot"
-                data-about-index="1"
+                data-about-index="1" aria-label="Slide tentang saya 2 dari 3"
                 type="button"
             ></button>
 
 
             <button
                 class="about-navigation-dot"
-                data-about-index="2"
+                data-about-index="2" aria-label="Slide tentang saya 3 dari 3"
                 type="button"
             ></button>
 
@@ -2314,6 +2322,8 @@
      FOOTER
 ========================================= -->
 
+</main>
+
 <footer class="main-footer reveal">
 
     <div class="footer-container">
@@ -2500,9 +2510,8 @@
 
 
                     <a
-                        href="assets/documents/CV-Rajendra Aria Nismara.pdf"
+                        href="#cvStatus" data-cv-download aria-disabled="true" tabindex="-1" aria-describedby="cvStatus"
                         class="footer-secondary-button"
-                        download
                     >
 
                         <iconify-icon
@@ -2654,6 +2663,7 @@
 
     <!-- PUBLIC CMS INTEGRATION (read-only, patches the static content above) -->
     <script src="js/cms/profile-about.js?v=3" type="module"></script>
+    <script src="js/cms/cv.js?v=1" type="module"></script>
     <script src="js/cms/technologies.js?v=2" type="module"></script>
     <script src="js/cms/projects.js?v=2" type="module"></script>
     <script src="js/cms/certificates.js?v=2" type="module"></script>

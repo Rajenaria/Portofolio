@@ -66,8 +66,8 @@ export const IS_LOCAL_CMS = ENVIRONMENT === LOCAL;
 export const PUBLIC_BUCKET = "portfolio-media";
 
 /*
-    Certificate documents live in their own public bucket. It is the only
-    other bucket the public site may read from; portfolio-staging is private
+    Certificate documents live in a private bucket and are delivered by a
+    status-checking Edge Function; portfolio-staging remains private
     and must never be linked.
 */
 
@@ -120,10 +120,10 @@ export function publicMediaUrl(bucket, path) {
 
 }
 
-export function publicDocumentUrl(bucket, path) {
-
-    return buildPublicUrl(PUBLIC_DOCUMENT_BUCKET, bucket, path);
-
+export function publicDocumentUrl(bucket, path, certificateId) {
+    if (bucket !== PUBLIC_DOCUMENT_BUCKET || !path ||
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(certificateId || "")) return null;
+    return `${CMS_URL}/functions/v1/certificate-document?id=${encodeURIComponent(certificateId)}`;
 }
 
 /*
@@ -162,7 +162,7 @@ export function safeExternalUrl(value) {
 
 const REQUEST_TIMEOUT_MS = 8000;
 
-export async function readTable(table, query) {
+export async function readTable(table, query, { cache } = {}) {
 
     const controller = new AbortController();
 
@@ -177,6 +177,7 @@ export async function readTable(table, query) {
             `${CMS_URL}/rest/v1/${table}?${query}`,
             {
                 method: "GET",
+                ...(cache ? { cache } : {}),
                 headers: {
                     apikey: ENVIRONMENT.key,
                     Authorization: `Bearer ${ENVIRONMENT.key}`,
@@ -187,9 +188,20 @@ export async function readTable(table, query) {
         );
 
         if (!response.ok) {
-            throw new Error(
-                `${table}: ${response.status} ${response.statusText}`
-            );
+            const detail = await response.json().catch(() => ({}));
+            const error = new Error(`${table}: ${response.status} ${response.statusText}`);
+            // Only expose the compatibility signal; do not log backend payloads.
+            if (["42703", "PGRST204"].includes(detail?.code) &&
+                /\bcover_(?:fit|position_x|position_y)\b/.test(detail?.message || "")) {
+                error.code = detail.code;
+                error.message = "projects: missing cover_fit/cover_position_x/cover_position_y";
+            }
+            if (["42703", "PGRST204"].includes(detail?.code) &&
+                /cv_(version|filename|size_bytes|updated_at)/.test(detail?.message || "")) {
+                error.code = detail.code;
+                error.message = "profile: missing cv_version/cv_filename/cv_size_bytes/cv_updated_at";
+            }
+            throw error;
         }
 
         const rows = await response.json();

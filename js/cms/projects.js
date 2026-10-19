@@ -1,3 +1,5 @@
+import { COVER_COLUMNS, applyCover, missingCoverSchema } from "./project-cover.js";
+
 /* =========================================================
    PUBLIC PROJECT CARDS CMS INTEGRATION  (Phase 9C1)
 
@@ -43,9 +45,8 @@ import {
 /* ---------------------------------------------------------
    DETAIL ROUTE
 
-   The generic detail page does not exist yet (Phase 9C2), but
-   the published cards already have to point at their final
-   address rather than at the retired per-project files.
+   Published cards use the generic detail page and their stored slug.
+   Legacy static fallback links remain separate from this CMS route.
 --------------------------------------------------------- */
 
 const DETAIL_PAGE = "project.html";
@@ -163,6 +164,8 @@ function buildImage(project, mediaQuery) {
     image.setAttribute("draggable", "false");
     image.setAttribute("loading", "lazy");
     image.setAttribute("decoding", "async");
+
+    applyCover(image, project);
 
     picture.appendChild(source);
     picture.appendChild(image);
@@ -317,6 +320,7 @@ function hidePortfolio(grid) {
         .forEach(link => {
             link.hidden = true;
         });
+    window.refreshProjectCarousel?.();
 
 }
 
@@ -333,6 +337,9 @@ function renderProjects(projects) {
         return;
     }
 
+    const section = document.querySelector("#portfolio");
+    if (section) section.hidden = false;
+    document.querySelectorAll('a[href="#portfolio"]').forEach(link => { link.hidden = false; });
     const mediaQuery = mediaQueryFrom(grid.querySelector("picture"));
 
     const cards = projects.map(project => buildCard(project, mediaQuery));
@@ -376,15 +383,20 @@ function renderProjects(projects) {
 
 async function load() {
 
-    const projects = await readTable(
-        "projects",
+    const legacyQuery =
         "select=slug,title,card_category,short_description," +
         "cover_bucket,cover_desktop_path,cover_mobile_path,cover_alt," +
         "status,deleted_at,sort_order,created_at," +
         "project_technologies(sort_order,created_at,technologies(name))" +
         "&status=eq.published&deleted_at=is.null" +
-        "&order=sort_order.asc,created_at.asc"
-    );
+        "&order=sort_order.asc,created_at.asc";
+    let projects;
+    try {
+        projects = await readTable("projects", legacyQuery.replace("select=", `select=${COVER_COLUMNS},`));
+    } catch (error) {
+        if (!missingCoverSchema(error)) throw error;
+        projects = await readTable("projects", legacyQuery);
+    }
 
     const published = projects.filter(project =>
         project.status === "published" &&
