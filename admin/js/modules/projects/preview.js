@@ -1,3 +1,5 @@
+import { applyCover } from "../../../../js/cms/project-cover.js";
+
 /*
   Project preview (Phase 8A, media added in Phase 8B).
 
@@ -55,6 +57,7 @@ export function openProjectPreview(data) {
 
   if (data.coverUrl) {
     const img = el("img", "project-preview-cover");
+    applyCover(img, data);
     img.src = data.coverUrl;
     img.alt = data.coverAlt || t("projPreview.cover");
     append(mediaSlot, img);

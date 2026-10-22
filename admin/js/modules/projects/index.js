@@ -1,3 +1,5 @@
+import { COVER_COLUMNS, missingCoverSchema } from "../../../../js/cms/project-cover.js";
+
 /*
   Projects route (Phase 8A core, Phase 8B media).
 
@@ -25,9 +27,11 @@ import { el, append, clear, pageHeader } from "../../core/dom.js";
 import { confirmDialog, closeAllModals } from "../../core/modal.js";
 import { toast } from "../../core/toast.js";
 import { t } from "../../core/i18n.js";
+import { registerNavigationGuard } from "../../core/navigation-guard.js";
 
 import { createProjectList } from "./list-view.js";
-import { createProjectEditor } from "./editor-view.js";
+import { createCaseStudyEditor } from "./case-study-editor.js";
+import { projectCommand } from "../../core/project-client.js";
 
 export const projectsRoute = {
   name: "projects",
@@ -48,7 +52,6 @@ async function render(container, { signal }) {
 
   let listView = null;
   let editorView = null;
-  let bypassNavigationGuard = false;
 
   /* ---------------- unsaved-changes guards ---------------- */
 
@@ -56,41 +59,7 @@ async function render(container, { signal }) {
     return Boolean(editorView && editorView.isDirty());
   }
 
-  function handleBeforeUnload(event) {
-    if (!isDirty()) {
-      return;
-    }
-
-    event.preventDefault();
-    event.returnValue = "";
-  }
-
-  async function handleNavigationCapture(event) {
-    if (bypassNavigationGuard || !isDirty()) {
-      return;
-    }
-
-    const link = event.target.closest
-      ? event.target.closest(".sidebar-link[data-route]")
-      : null;
-
-    if (!link || link.dataset.route === "projects") {
-      return;
-    }
-
-    event.preventDefault();
-    event.stopPropagation();
-
-    if (!(await confirmUnsaved())) {
-      return;
-    }
-
-    bypassNavigationGuard = true;
-    link.click();
-  }
-
-  window.addEventListener("beforeunload", handleBeforeUnload);
-  document.addEventListener("click", handleNavigationCapture, true);
+  const releaseNavigationGuard = registerNavigationGuard(isDirty, confirmUnsaved);
 
   async function confirmUnsaved() {
     return await confirmDialog({
@@ -155,80 +124,28 @@ async function render(container, { signal }) {
     clear(viewSlot);
     append(viewSlot, el("p", "loading-text", t("proj.loading")));
 
-    // The technology library is always needed by the selector.
-    const requests = [
-      supabaseClient
-        .from("technologies")
-        .select("id, name, slug, is_active, show_in_public_stack, public_group, sort_order")
-        .order("sort_order", { ascending: true })
-        .order("name", { ascending: true })
-    ];
-
-    if (id) {
-      requests.push(
-        supabaseClient.from("projects").select(PROJECT_COLUMNS).eq("id", id).maybeSingle(),
-        supabaseClient
-          .from("project_paragraphs")
-          .select("id, content, sort_order")
-          .eq("project_id", id)
-          .order("sort_order", { ascending: true })
-          .order("created_at", { ascending: true }),
-        supabaseClient
-          .from("project_technologies")
-          .select("technology_id, sort_order")
-          .eq("project_id", id)
-          .order("sort_order", { ascending: true }),
-        supabaseClient
-          .from("project_media")
-          .select("id, bucket_name, desktop_path, mobile_path, alt_text, sort_order, is_active")
-          .eq("project_id", id)
-          .order("sort_order", { ascending: true })
-          .order("created_at", { ascending: true })
-      );
-    }
-
-    const results = await Promise.all(requests);
-
-    if (signal.aborted) {
-      return;
-    }
-
-    const failure = results.find(result => result.error);
-
-    if (failure || (id && !results[1].data)) {
-      console.error(failure ? failure.error : "project not found");
-      toast(t("proj.errOpen"), "error");
-      showList();
-      return;
-    }
-
-    const technologies = results[0].data || [];
-    const record = id ? results[1].data : null;
-    const paragraphs = id ? results[2].data || [] : [];
-    const selectedTechnologyIds = id
-      ? (results[3].data || []).map(row => row.technology_id)
-      : [];
-    const media = id ? results[4].data || [] : [];
-
-    teardownViews();
-    renderHeader({ inEditor: true });
-
-    editorView = createProjectEditor({
-      record,
-      paragraphs,
-      media,
-      technologies,
-      selectedTechnologyIds,
-      onDirtyChange: () => {},
-      onSaved: () => {},
-      onBack: async () => {
-        if (isDirty() && !(await confirmUnsaved())) {
-          return;
+    try {
+      const projectId = id || crypto.randomUUID();
+      const [data, technologyResult] = await Promise.all([
+        projectCommand({ action: id ? 'read' : 'create', id: projectId }),
+        supabaseClient.from('technologies').select('id,name,is_active').order('name')
+      ]);
+      if (signal.aborted) return;
+      if (technologyResult.error) throw technologyResult.error;
+      teardownViews();
+      renderHeader({ inEditor: true });
+      editorView = createCaseStudyEditor({
+        data, technologies: technologyResult.data || [],
+        onBack: async () => {
+          if (isDirty() && !(await confirmUnsaved())) return;
+          showList();
         }
-
-        showList();
-      }
-    });
+      });
+    } catch {
+      clear(viewSlot);
+      append(viewSlot, el('p', 'field-error', 'Project editor belum tersedia. Pastikan migration M09 dan Edge Functions telah diterapkan bersama pada lingkungan yang diotorisasi. Tidak ada fallback Save ke API lama.'));
+      return;
+    }
 
     append(viewSlot, editorView.element);
     viewSlot.scrollIntoView({ block: "start" });
@@ -237,8 +154,7 @@ async function render(container, { signal }) {
   showList();
 
   return () => {
-    window.removeEventListener("beforeunload", handleBeforeUnload);
-    document.removeEventListener("click", handleNavigationCapture, true);
+    releaseNavigationGuard();
     teardownViews();
     closeAllModals();
   };

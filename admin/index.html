@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data: blob: https://api.iconify.design; connect-src 'self' https://api.iconify.design; frame-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -12,7 +13,9 @@
     script-src  'self'  - the pinned, locally vendored supabase-js bundle and ./admin.js only.
                           No 'unsafe-inline' and no 'unsafe-eval': the vendored bundle was
                           checked and contains no eval() or new Function() call sites.
-    connect-src         - the Supabase project origin only (Auth, REST and Storage calls).
+    connect-src         - source checkout has no backend. The preparation script
+                          inserts only the explicitly selected backend into both
+                          this meta policy and the Vercel HTTP headers.
     img-src             - data: for the MFA enrolment QR code delivered by Supabase;
                           blob: for locally generated image previews produced by
                           js/core/image-processor.js;
@@ -30,30 +33,7 @@
     delivered via <meta>. Clickjacking protection must be added at the hosting layer as a
     real HTTP response header (frame-ancestors 'none' or X-Frame-Options: DENY).
   -->
-  <meta http-equiv="Content-Security-Policy" content="
-    default-src 'none';
-    script-src 'self';
-    connect-src
-    'self'
-    http://127.0.0.1:54321
-    http://localhost:54321
-    ws://127.0.0.1:54321
-    ws://localhost:54321
-    https://hldacuppejztqzqaejsi.supabase.co
-    https://api.iconify.design;
-    img-src
-    'self'
-    data:
-    blob:
-    http://127.0.0.1:54321
-    http://localhost:54321
-    https://hldacuppejztqzqaejsi.supabase.co
-    https://api.iconify.design;
-    style-src 'self';
-    base-uri 'none';
-    form-action 'none';
-    object-src 'none'
-  ">
+
 
   <meta name="robots" content="noindex,nofollow,noarchive">
 
@@ -67,6 +47,10 @@
     /admin/index.html alike.
   -->
   <link rel="stylesheet" href="/admin/admin.css">
+  <link rel="stylesheet" href="../css/project-case-study.css">
+  <!-- Explicit deployment input; unknown/missing input never selects production. -->
+  <script src="/js/environment-config.js"></script>
+  <script src="/js/environment.js"></script>
 </head>
 
 <body>

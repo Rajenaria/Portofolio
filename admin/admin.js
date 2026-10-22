@@ -1,3 +1,4 @@
+import { requestLeave } from "./js/core/navigation-guard.js";
 import {
   signIn,
   signOut,
@@ -10,7 +11,8 @@ import {
 } from "./js/core/auth.js";
 
 import {
-  supabaseClient
+  supabaseClient,
+  configurationStatus as environmentStatus
 } from "./js/core/supabase.js";
 
 import {
@@ -318,6 +320,7 @@ document
     async event => {
 
       event.preventDefault();
+      if (!environmentStatus.ok) return;
 
       const submit = document.getElementById("login-submit");
       const errorNode = document.getElementById("login-error");
@@ -380,6 +383,7 @@ document
   document
     .getElementById("mfa-signout")
     .addEventListener("click", async () => {
+      if (!await requestLeave()) return;
       await signOut();
       showScreen("login");
     });
@@ -390,7 +394,7 @@ document
     A language change re-renders the current route so every string the
     modules produced is regenerated. Nothing is translated in place.
   */
-  onLanguageChange(() => {
+  onLanguageChange((code, options) => {
     applyStaticTranslations();
 
     if (adminShell) {
@@ -398,7 +402,7 @@ document
     }
 
     if (adminRouter) {
-      adminRouter.reload();
+      adminRouter.reload(options);
     }
   });
 
@@ -408,11 +412,13 @@ document
     "click",
     async () => {
 
+      if (!await requestLeave()) return;
       await signOut();
 
       showScreen("login");
     }
   );
+  if (environmentStatus.ok) {
   supabaseClient.auth.onAuthStateChange(
   (event) => {
 
@@ -429,3 +435,8 @@ document
   }
 );
   await routeSession();
+  } else {
+    showScreen("login");
+    document.getElementById("login-submit").disabled = true;
+    document.getElementById("login-error").textContent = environmentStatus.message;
+  }

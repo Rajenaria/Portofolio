@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://code.iconify.design; style-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; font-src 'self' https://cdn.jsdelivr.net; img-src 'self' data: https://api.iconify.design; connect-src 'self' https://api.iconify.design; frame-src 'none'; base-uri 'none'; form-action 'self'; object-src 'none'">
 
     <meta charset="UTF-8">
 
@@ -42,6 +43,10 @@
         crossorigin="anonymous"
     ></script>
 
+    <link rel="stylesheet" href="css/project-case-study.css">
+  <!-- Explicit deployment input; unknown/missing input never selects production. -->
+  <script src="/js/environment-config.js"></script>
+  <script src="/js/environment.js"></script>
 </head>
 
 <body>

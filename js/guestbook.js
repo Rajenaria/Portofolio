@@ -269,14 +269,21 @@ document.addEventListener("DOMContentLoaded", () => {
        SUPABASE CONFIG
     ===================================================== */
 
-    const FUNCTION_URL =
-        "https://hldacuppejztqzqaejsi.supabase.co/functions/v1/submit-comment";
-
-    const SUPABASE_URL =
-        "https://hldacuppejztqzqaejsi.supabase.co";
-
-    const SUPABASE_PUBLISHABLE_KEY =
-        "sb_publishable_B_Fq0qQhLmbz_MtxI8rFqA_S8MY1OuO";
+    const environmentStatus = globalThis.PortfolioEnvironment?.status();
+    const environment = environmentStatus?.config;
+    const SUPABASE_URL = environment?.url || '';
+    const SUPABASE_PUBLISHABLE_KEY = environment?.key || '';
+    const FUNCTION_URL = environment ? environment.url + '/functions/v1/submit-comment' : '';
+    const configurationMessage = globalThis.PortfolioEnvironment?.message ||
+        'Konfigurasi layanan belum tersedia. Hubungi pemilik situs.';
+    function requireEnvironment() {
+        if (!environment) throw new Error(configurationMessage);
+        globalThis.PortfolioEnvironment.requireEnvironment(environment);
+    }
+    if (!environmentStatus?.ok) {
+        submitButton.disabled = true;
+        status.textContent = configurationMessage;
+    }
 
 
     /* =====================================================
@@ -1035,6 +1042,7 @@ setupCommentSlider();
     ===================================================== */
 
     async function loadApprovedComments() {
+        if (!environmentStatus?.ok) return;
 
         if (!commentsList) {
             return;
@@ -1043,6 +1051,7 @@ setupCommentSlider();
 
         try {
 
+            requireEnvironment();
             const endpoint =
                 `${SUPABASE_URL}/rest/v1/comments` +
                 `?select=id,name,message,created_at` +
@@ -1211,6 +1220,7 @@ setupCommentSlider();
                    SEND TO EDGE FUNCTION
                 ========================================= */
 
+                requireEnvironment();
                 const response =
                     await fetch(
                         FUNCTION_URL,
@@ -1429,7 +1439,7 @@ setupCommentSlider();
                 ========================================= */
 
                 submitButton.disabled =
-                    false;
+                    !environmentStatus?.ok;
 
 
                 submitButton.innerHTML = `

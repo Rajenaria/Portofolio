@@ -1,8 +1,5 @@
-import { createClient } from "npm:@supabase/supabase-js@2";
-/* =========================================================
-   CONFIG
-========================================================= */ const RATE_LIMIT_MAX = 3;
-const RATE_LIMIT_WINDOW_MINUTES = 10;
+import { createClient } from "npm:@supabase/supabase-js@2.112.3";
+import { requestIdentity, consumeBudget, readJsonBody, ClientRequestError } from "../_shared/request-security.js";
 /* =========================================================
    CORS
 ========================================================= */ const corsHeaders = {
@@ -484,7 +481,10 @@ const RATE_LIMIT_WINDOW_MINUTES = 10;
     status,
     headers: {
       ...corsHeaders,
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      ...(status === 429 ? { "Retry-After": "600" } : {})
     }
   });
 }
@@ -584,33 +584,6 @@ const spamKeywordPatterns = spamKeywords.map(createFlexibleTermPattern);
   return score;
 }
 /* =========================================================
-   GET VISITOR IDENTITY
-========================================================= */ function getVisitorIdentity(req) {
-  /*
-        Biasanya proxy mengirim alamat
-        pengunjung melalui forwarded header.
-
-        Kita ambil nilai pertama.
-    */ const forwardedFor = req.headers.get("x-forwarded-for");
-  const forwardedIp = forwardedFor?.split(",")[0]?.trim();
-  const ip = forwardedIp || req.headers.get("cf-connecting-ip") || req.headers.get("x-real-ip") || "unknown-ip";
-  /*
-        User-Agent dipakai sebagai
-        tambahan identitas.
-
-        Tidak disimpan langsung.
-    */ const userAgent = req.headers.get("user-agent") || "unknown-agent";
-  return `${ip}|${userAgent}`;
-}
-/* =========================================================
-   SHA-256 HASH
-========================================================= */ async function hashVisitor(value, pepper) {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(`${pepper}|${value}`);
-  const digest = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(digest)).map((byte)=>byte.toString(16).padStart(2, "0")).join("");
-}
-/* =========================================================
    MAIN FUNCTION
 ========================================================= */ Deno.serve(async (req)=>{
   /* =====================================================
@@ -631,7 +604,10 @@ const spamKeywordPatterns = spamKeywords.map(createFlexibleTermPattern);
   try {
     /* =================================================
            READ BODY
-        ================================================= */ const body = await req.json();
+        ================================================= */ const body = await readJsonBody(req);
+    if (typeof body.name !== "string" || typeof body.message !== "string") {
+      throw new ClientRequestError(400);
+    }
     const name = String(body.name ?? "").replace(/[\u0000-\u001F\u007F]/g, "").trim();
     const message = String(body.message ?? "").replace(/[\u0000-\u001F\u007F]/g, "").trim();
     /* =================================================
@@ -660,43 +636,10 @@ const spamKeywordPatterns = spamKeywords.map(createFlexibleTermPattern);
       throw new Error("RATE_LIMIT_PEPPER belum dibuat.");
     }
     const supabase = createClient(supabaseUrl, serviceRoleKey);
-    /* =================================================
-           RATE LIMIT IDENTITY
-        ================================================= */ const visitorIdentity = getVisitorIdentity(req);
-    const visitorHash = await hashVisitor(visitorIdentity, rateLimitPepper);
-    /* =================================================
-           RATE LIMIT WINDOW
-        ================================================= */ const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MINUTES * 60 * 1000).toISOString();
-    /* =================================================
-           COUNT RECENT REQUESTS
-        ================================================= */ const { count: recentAttempts, error: rateCountError } = await supabase.from("guestbook_rate_limits").select("id", {
-      count: "exact",
-      head: true
-    }).eq("visitor_hash", visitorHash).gte("created_at", windowStart);
-    if (rateCountError) {
-      console.error("Rate limit count error:", rateCountError);
-      throw new Error("Gagal memeriksa rate limit.");
-    }
-    /* =================================================
-           BLOCK IF LIMIT REACHED
-        ================================================= */ if ((recentAttempts ?? 0) >= RATE_LIMIT_MAX) {
-      return jsonResponse({
-        success: false,
-        status: "rate_limited",
-        message: "Terlalu banyak mengirim pesan. Silakan coba lagi dalam beberapa menit."
-      }, 429);
-    }
-    /* =================================================
-           RECORD ATTEMPT
-
-           Dicatat sebelum moderasi supaya
-           spam / kata kasar tetap dihitung.
-        ================================================= */ const { error: rateInsertError } = await supabase.from("guestbook_rate_limits").insert({
-      visitor_hash: visitorHash
-    });
-    if (rateInsertError) {
-      console.error("Rate limit insert error:", rateInsertError);
-      throw new Error("Gagal menyimpan rate limit.");
+    const visitorHash = await requestIdentity(req, name => Deno.env.get(name));
+    if (!await consumeBudget(supabase, "guestbook", visitorHash)) {
+      return jsonResponse({ success: false, status: "rate_limited",
+        message: "Terlalu banyak mengirim pesan. Silakan coba lagi dalam beberapa menit." }, 429);
     }
     /* =================================================
            MODERATION
@@ -756,7 +699,10 @@ const spamKeywordPatterns = spamKeywords.map(createFlexibleTermPattern);
       comment: data
     }, 201);
   } catch (error) {
-    console.error("submit-comment error:", error);
+    if (error instanceof ClientRequestError) {
+      return jsonResponse({ success: false, message: "Permintaan tidak valid." }, error.status);
+    }
+    console.error("submit-comment failed");
     return jsonResponse({
       success: false,
       message: "Terjadi kesalahan pada server."

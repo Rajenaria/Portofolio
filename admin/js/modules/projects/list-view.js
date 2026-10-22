@@ -1,23 +1,10 @@
 /*
-  Projects list (Phase 8A).
+  Project list: server gateway catalog and status actions, with legacy child
+  summaries for compatibility. Working Draft editing/preview owns content;
+  publication validation and revision checks remain on the server.
 
-  Non-deleted Projects ordered by sort_order ASC, created_at ASC, plus a
-  separate Trash view for rows with deleted_at set. Columns come only from
-  columns that exist in public.projects.
-
-  STATUS LIFECYCLE (matches projects_status_check)
-
-      draft  --Publish-->  published  --Unpublish-->  draft
-      draft/published  --Archive-->  archived  --Restore-->  draft
-      any  --Move to Trash-->  deleted_at = now()
-      trash  --Restore-->  deleted_at = null, status = draft
-
-  PERMANENT DELETE IS DEFERRED
-  ----------------------------
-  projects cascades to project_media, so a physical delete here would drop the
-  media rows while their Storage objects stayed behind as orphans. Media
-  management is Phase 8B, so Trash exposes Restore only and explains why
-  (brief section 23). Nothing in this module calls Supabase Storage.
+  Hide/Archive/Trash preserve media. Permanent deletion stays deferred until
+  draft/revision references have been audited. This module never deletes files.
 */
 
 import { supabaseClient } from "../../core/supabase.js";
@@ -31,22 +18,16 @@ import {
   emptyState
 } from "../../core/dom.js";
 
-import { confirmDialog, openModal } from "../../core/modal.js";
+import { confirmDialog } from "../../core/modal.js";
 import { toast } from "../../core/toast.js";
-import { textField, trimmed } from "../../core/form.js";
 import { t } from "../../core/i18n.js";
 
 /* Resolved at call time so a language switch mid-list relabels everything. */
 function rowTitle(row) {
   return row.title || t("proj.thisOne");
 }
-import { removeObjects, resolveMediaUrl } from "../../core/media-storage.js";
-import { openProjectPreview } from "./preview.js";
-
-// The cover columns are part of this list because Preview needs them to show
-// the image and Delete Permanently needs them to find the objects to remove.
-const SELECT_COLUMNS =
-  "id, slug, title, card_category, short_description, detail_title_main, detail_title_highlight, detail_intro, role, project_date, project_type, about_heading, cover_bucket, cover_desktop_path, cover_mobile_path, cover_alt, github_url, demo_url, featured, sort_order, status, published_at, archived_at, deleted_at, created_at, updated_at";
+import { projectCommand } from "../../core/project-client.js";
+import { openCaseStudyPreview } from "./case-study-preview.js";
 
 export function createProjectList({ onEdit, onChanged }) {
   const root = el("div", "experience-list-view project-list-view");
@@ -148,12 +129,20 @@ export function createProjectList({ onEdit, onChanged }) {
     state.status = "loading";
     renderList();
 
+    async function readProjects() {
+      try {
+        const data=[];let after=null;
+        for(let page=0;page<100;page++){
+          const batch=await projectCommand({action:'list',after});
+          if(!Array.isArray(batch))throw Error('Invalid catalog');
+          data.push(...batch);if(batch.length<100)return {data:data.sort((a,b)=>a.sort_order-b.sort_order)};
+          const cursor=batch.at(-1).id;if(cursor===after)throw Error('Invalid cursor');after=cursor;
+        }
+        throw Error('Catalog limit exceeded');
+      } catch { return {error:new Error('Project API unavailable; migration/function cutover required')}; }
+    }
     const [projects, paragraphs, relations, media] = await Promise.all([
-      supabaseClient
-        .from("projects")
-        .select(SELECT_COLUMNS)
-        .order("sort_order", { ascending: true })
-        .order("created_at", { ascending: true }),
+      readProjects(),
 
       supabaseClient
         .from("project_paragraphs")
@@ -320,7 +309,7 @@ export function createProjectList({ onEdit, onChanged }) {
     if (filtersActive()) {
       append(
         listSlot,
-        el("p", "table-note", t("list.reorderNote"))
+        el("p", "table-note", "Urutan project diubah lewat Sort order pada Working Draft, kemudian Publish.")
       );
     }
   }
@@ -551,25 +540,10 @@ export function createProjectList({ onEdit, onChanged }) {
   }
 
   function normalEntries(row) {
-    const canReorder = !filtersActive();
-    const ordered = activeRows();
-    const index = ordered.findIndex(entry => entry.id === row.id);
-
     const entries = [
       { label: t("common.edit"), onSelect: () => onEdit(row.id) },
       { label: t("common.preview"), onSelect: () => previewRow(row) },
-      {
-        label: t("action.moveUp"),
-        disabled: !canReorder || index <= 0,
-        hint: canReorder ? null : t("list.reorderHint"),
-        onSelect: () => move(index, -1)
-      },
-      {
-        label: t("action.moveDown"),
-        disabled: !canReorder || index === -1 || index >= ordered.length - 1,
-        hint: canReorder ? null : t("list.reorderHint"),
-        onSelect: () => move(index, 1)
-      }
+      { label: "Atur urutan pada Working Draft", onSelect: () => onEdit(row.id) }
     ];
 
     if (row.status === "draft") {
@@ -611,40 +585,8 @@ export function createProjectList({ onEdit, onChanged }) {
   }
 
   async function previewRow(row) {
-    const coverUrl = await resolveMediaUrl(row.cover_bucket, row.cover_desktop_path);
-
-    const documentation = await Promise.all(
-      (state.mediaByProject.get(row.id) || []).map(async media => ({
-        altText: media.alt_text || "",
-        isActive: media.is_active !== false,
-        pending: false,
-        url: await resolveMediaUrl(media.bucket_name, media.desktop_path)
-      }))
-    );
-
-    openProjectPreview({
-      coverUrl,
-      coverAlt: row.cover_alt,
-      coverPending: false,
-      documentation,
-      title: row.title,
-      slug: row.slug,
-      cardCategory: row.card_category,
-      shortDescription: row.short_description,
-      detailTitleMain: row.detail_title_main,
-      detailTitleHighlight: row.detail_title_highlight,
-      detailIntro: row.detail_intro,
-      role: row.role,
-      projectDate: row.project_date,
-      projectType: row.project_type,
-      aboutHeading: row.about_heading,
-      githubUrl: row.github_url,
-      demoUrl: row.demo_url,
-      featured: row.featured,
-      status: row.status,
-      paragraphs: state.paragraphsByProject.get(row.id) || [],
-      technologies: state.technologiesByProject.get(row.id) || []
-    });
+    try { const data = await projectCommand({action:'read',id:row.id}); openCaseStudyPreview(row.id,data.draft.payload); }
+    catch { toast('Draft preview unavailable. Tidak ada data private yang dipublikasikan.', 'error'); }
   }
 
   /* ---------------- mutations ---------------- */
@@ -661,63 +603,22 @@ export function createProjectList({ onEdit, onChanged }) {
 
     setBusy(true);
 
-    const { data, error } = await supabaseClient
-      .from("projects")
-      .update(patch)
-      .eq("id", row.id)
-      .select("id");
-
-    setBusy(false);
-
-    if (error || !data || data.length === 0) {
-      if (error) {
-        console.error(error);
-      }
-
-      toast(failureMessage, "error");
-      return false;
+    try {
+      const action = patch.deleted_at ? 'trash' : Object.hasOwn(patch,'deleted_at') ? 'restore' : patch.status === 'archived' ? 'archive' : patch.status === 'published' ? 'show' : 'hide';
+      const result=await projectCommand({action,id:row.id,publication:row.publication_version,expected:0,operation:crypto.randomUUID()});
+      if(result.state!=='committed')throw new Error('UNCONFIRMED');
+    } catch {
+      setBusy(false);toast(failureMessage+' Hasil belum dikonfirmasi; muat ulang sebelum mencoba lagi.', 'error');return false;
     }
-
+    setBusy(false);
     toast(successMessage);
     await load();
     return true;
   }
 
-  function publishBlockers(row) {
-    const missing = [];
-
-    /* Field names come from the same keys the editor labels them with, so the
-       two screens never call the same field by two different names. */
-    if (!row.card_category) missing.push(t("projEditor.fieldCategory"));
-    if (!row.short_description) missing.push(t("projEditor.fieldShort"));
-    if (!row.detail_intro) missing.push(t("projEditor.fieldIntro"));
-    if (!row.role) missing.push(t("common.role"));
-    if (!row.project_date) missing.push(t("projEditor.fieldDate"));
-    if (!row.project_type) missing.push(t("projEditor.fieldType"));
-    if (!row.about_heading) missing.push(t("projEditor.fieldAbout"));
-
-    if ((state.paragraphsByProject.get(row.id) || []).length === 0) {
-      missing.push(t("proj.missingParagraph"));
-    }
-
-    return missing;
-  }
-
   async function publish(row) {
-    const missing = publishBlockers(row);
-
-    if (missing.length > 0) {
-      toast(t("proj.incomplete", { missing: missing.join(", ") }), "error");
-      return;
-    }
-
-    const patch = { status: "published" };
-
-    if (!row.published_at) {
-      patch.published_at = new Date().toISOString();
-    }
-
-    await applyPatch(row, patch, t("proj.toastPublished"), t("proj.errPublish"));
+    if(!row.published_at){onEdit(row.id);toast('Review dan Publish melalui Working Draft editor.');return;}
+    await applyPatch(row,{status:'published'},t('proj.toastPublished'),t('proj.errPublish'));
   }
 
   async function unpublish(row) {
@@ -801,241 +702,12 @@ export function createProjectList({ onEdit, onChanged }) {
     );
   }
 
-  /*
-    Permanent delete (Trash only).
-
-    Order matters: the database row goes first and Storage objects follow. An
-    orphaned file is recoverable; a row pointing at an already-deleted image is
-    not. Only paths that this Project actually references are removed — never a
-    folder prefix, never anything bucket-wide.
-  */
-  async function permanentlyDelete(row) {
-    if (state.busy) {
-      return;
-    }
-
-    const mediaRows = await supabaseClient
-      .from("project_media")
-      .select("bucket_name, desktop_path, mobile_path")
-      .eq("project_id", row.id);
-
-    if (mediaRows.error) {
-      console.error(mediaRows.error);
-      toast(t("proj.errReadMedia"), "error");
-      return;
-    }
-
-    const documentationCount = (mediaRows.data || []).length;
-
-    const confirmed = await typedDeleteConfirm(row, documentationCount);
-
-    if (!confirmed) {
-      return;
-    }
-
-    setBusy(true);
-
-    // Collect known object paths BEFORE the cascade removes the child rows.
-    const objects = new Map();
-
-    function collect(bucket, paths) {
-      if (!bucket) {
-        return;
-      }
-
-      const list = objects.get(bucket) || [];
-      paths.filter(Boolean).forEach(path => list.push(path));
-      objects.set(bucket, list);
-    }
-
-    collect(row.cover_bucket, [row.cover_desktop_path, row.cover_mobile_path]);
-
-    (mediaRows.data || []).forEach(media => {
-      collect(media.bucket_name, [media.desktop_path, media.mobile_path]);
-    });
-
-    // project_paragraphs, project_technologies and project_media rows are
-    // removed by their ON DELETE CASCADE foreign keys.
-    const { data, error } = await supabaseClient
-      .from("projects")
-      .delete()
-      .eq("id", row.id)
-      .select("id");
-
-    if (error || !data || data.length === 0) {
-      if (error) {
-        console.error(error);
-      }
-
-      setBusy(false);
-      toast(t("proj.errDelete"), "error");
-      return;
-    }
-
-    const orphans = [];
-
-    for (const [bucket, paths] of objects.entries()) {
-      const cleanup = await removeObjects(bucket, paths);
-
-      if (cleanup.failed.length > 0) {
-        orphans.push(...cleanup.failed);
-      }
-    }
-
-    setBusy(false);
-
-    toast(
-      orphans.length > 0
-        ? t("proj.toastDeletedOrphans", { files: orphans.join(", ") })
-        : t("proj.toastDeleted"),
-      orphans.length > 0 ? "error" : "success"
-    );
-
-    await load();
+  // Keep the existing deferred action visible without suggesting cleanup is safe.
+  async function permanentlyDelete() {
+    toast('Permanent delete ditunda. Asset dan seluruh referensi draft/revision harus diaudit terlebih dahulu.', 'error');
   }
 
-  function typedDeleteConfirm(row, documentationCount) {
-    return new Promise(resolve => {
-      let settled = false;
-
-      const body = el("div", "confirm-body");
-
-      append(
-        body,
-        el("p", "confirm-line", rowTitle(row)),
-        el("p", "confirm-line", t("proj.deleteLine"))
-      );
-
-      const summary = [];
-
-      if (row.cover_desktop_path) {
-        summary.push(t("proj.fileCover"));
-      }
-
-      if (documentationCount > 0) {
-        summary.push(t("proj.fileDocs", { count: documentationCount }));
-      }
-
-      if (summary.length > 0) {
-        append(
-          body,
-          el(
-            "p",
-            "confirm-line",
-            t("proj.filesToDelete", { summary: summary.join(" + ") })
-          )
-        );
-      }
-
-      append(body, el("p", "confirm-line", t("confirm.cannotBeUndone")));
-
-      const field = textField({
-        id: "project-delete-confirm",
-        label: t("confirm.typeDelete"),
-        value: "",
-        maxLength: 10
-      });
-
-      append(body, field.node);
-
-      const controller = openModal({
-        title: t("confirm.deleteTitle"),
-        body,
-        size: "small",
-        actions: [
-          {
-            label: t("common.cancel"),
-            variant: "secondary",
-            onClick: ctl => {
-              settle(false);
-              ctl.close();
-            }
-          },
-          {
-            label: t("action.deletePermanently"),
-            variant: "danger",
-            onClick: ctl => {
-              if (trimmed(field.value) !== "DELETE") {
-                field.setError(t("confirm.typeDeleteError"));
-                field.focus();
-                return;
-              }
-
-              settle(true);
-              ctl.close();
-            }
-          }
-        ],
-        onClosed: () => settle(false)
-      });
-
-      field.control.addEventListener("input", () => field.setError(""));
-      field.focus();
-
-      function settle(value) {
-        if (settled) {
-          return;
-        }
-
-        settled = true;
-        resolve(value);
-      }
-
-      return controller;
-    });
-  }
-
-  async function move(index, direction) {
-    const ordered = activeRows();
-    const target = index + direction;
-
-    if (state.busy || index < 0 || target < 0 || target >= ordered.length) {
-      return;
-    }
-
-    const reordered = ordered.slice();
-    const [moved] = reordered.splice(index, 1);
-    reordered.splice(target, 0, moved);
-
-    // Normalise to a dense 0..n-1 sequence and write only what changed, so gaps
-    // and duplicates in the stored sort_order cannot break ordering.
-    const updates = [];
-
-    reordered.forEach((row, position) => {
-      if (Number(row.sort_order) !== position) {
-        updates.push({ id: row.id, sort_order: position });
-      }
-    });
-
-    if (updates.length === 0) {
-      return;
-    }
-
-    setBusy(true);
-
-    for (const update of updates) {
-      const { data, error } = await supabaseClient
-        .from("projects")
-        .update({ sort_order: update.sort_order })
-        .eq("id", update.id)
-        .select("id");
-
-      if (error || !data || data.length === 0) {
-        if (error) {
-          console.error(error);
-        }
-
-        setBusy(false);
-        toast(t("list.orderError"), "error");
-        await load();
-        return;
-      }
-    }
-
-    setBusy(false);
-    toast(t("list.orderUpdated"));
-    await load();
-  }
+  async function move() { toast('Ubah Sort order di Working Draft, lalu Publish untuk mengaktifkannya.'); }
 
   return {
     element: root,

@@ -5,10 +5,8 @@
 
    WHY A SEPARATE CLIENT
    ---------------------
-   js/guestbook.js owns its own hardcoded endpoint and does its
-   own fetch calls. It is deliberately left untouched, so this
-   module keeps the same dependency-free fetch style instead of
-   pulling a Supabase SDK onto the public page.
+   Public CMS and guestbook share the explicit deployment contract, while
+   keeping their existing dependency-free fetch and request/data contracts.
 
    CREDENTIALS
    -----------
@@ -17,43 +15,34 @@
    and this module never writes.
 ========================================================= */
 
-/* ---------------------------------------------------------
-   ENVIRONMENT
+import '../environment-config.js';
+import '../environment.js';
 
-   Opening the site locally must read the local Supabase stack;
-   anything else uses the deployed project.
---------------------------------------------------------- */
-
-const LOCAL_HOSTS = ["127.0.0.1", "localhost", "0.0.0.0", "[::1]", ""];
-
-const LOCAL = {
-    url: "http://127.0.0.1:54321",
-    key: "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH"
-};
-
-const PRODUCTION = {
-    url: "https://hldacuppejztqzqaejsi.supabase.co",
-    key: "sb_publishable_B_Fq0qQhLmbz_MtxI8rFqA_S8MY1OuO"
-};
-
-function resolveEnvironment() {
-
-    /*
-        `file://` reports an empty hostname, which is still a
-        local preview and must not reach production.
-    */
-
-    const host = window.location.hostname;
-
-    return LOCAL_HOSTS.includes(host) ? LOCAL : PRODUCTION;
-
+const environmentStatus = globalThis.PortfolioEnvironment.status();
+const ENVIRONMENT = environmentStatus.config;
+export const CMS_URL = ENVIRONMENT?.url || '';
+export const IS_LOCAL_CMS = ['local', 'fixture'].includes(ENVIRONMENT?.environment);
+function requireEnvironment() {
+    return globalThis.PortfolioEnvironment.requireEnvironment(ENVIRONMENT || {});
 }
 
-const ENVIRONMENT = resolveEnvironment();
-
-export const CMS_URL = ENVIRONMENT.url;
-
-export const IS_LOCAL_CMS = ENVIRONMENT === LOCAL;
+// M09 snapshot reads. Only a confirmed missing RPC permits the legacy adapter.
+export async function readProjectRpc(args = {}) {
+    requireEnvironment();
+    const response = await fetch(`${CMS_URL}/rest/v1/rpc/project_catalog`, {
+        method: "POST", cache: "no-store", signal: AbortSignal.timeout(8000),
+        headers: { apikey: ENVIRONMENT.key, Authorization: `Bearer ${ENVIRONMENT.key}`, "Content-Type": "application/json" },
+        body: JSON.stringify(args)
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        const error = new Error("Project catalog unavailable");
+        error.code = data?.code === "PGRST202" ? "LEGACY_SCHEMA" : "UNAVAILABLE";
+        throw error;
+    }
+    if (!Array.isArray(data)) throw new Error("Invalid project catalog");
+    return data;
+}
 
 
 /* ---------------------------------------------------------
@@ -66,8 +55,8 @@ export const IS_LOCAL_CMS = ENVIRONMENT === LOCAL;
 export const PUBLIC_BUCKET = "portfolio-media";
 
 /*
-    Certificate documents live in their own public bucket. It is the only
-    other bucket the public site may read from; portfolio-staging is private
+    Certificate documents live in a private bucket and are delivered by a
+    status-checking Edge Function; portfolio-staging remains private
     and must never be linked.
 */
 
@@ -82,6 +71,7 @@ export const PUBLIC_DOCUMENT_BUCKET = "portfolio-documents";
 */
 
 function buildPublicUrl(allowedBucket, bucket, path) {
+    if (!environmentStatus.ok) return null;
 
     if (bucket !== allowedBucket) {
         return null;
@@ -120,10 +110,11 @@ export function publicMediaUrl(bucket, path) {
 
 }
 
-export function publicDocumentUrl(bucket, path) {
-
-    return buildPublicUrl(PUBLIC_DOCUMENT_BUCKET, bucket, path);
-
+export function publicDocumentUrl(bucket, path, certificateId) {
+    if (!environmentStatus.ok) return null;
+    if (bucket !== PUBLIC_DOCUMENT_BUCKET || !path ||
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(certificateId || "")) return null;
+    return `${CMS_URL}/functions/v1/certificate-document?id=${encodeURIComponent(certificateId)}`;
 }
 
 /*
@@ -162,7 +153,8 @@ export function safeExternalUrl(value) {
 
 const REQUEST_TIMEOUT_MS = 8000;
 
-export async function readTable(table, query) {
+export async function readTable(table, query, { cache } = {}) {
+    requireEnvironment();
 
     const controller = new AbortController();
 
@@ -177,6 +169,7 @@ export async function readTable(table, query) {
             `${CMS_URL}/rest/v1/${table}?${query}`,
             {
                 method: "GET",
+                ...(cache ? { cache } : {}),
                 headers: {
                     apikey: ENVIRONMENT.key,
                     Authorization: `Bearer ${ENVIRONMENT.key}`,
@@ -187,9 +180,23 @@ export async function readTable(table, query) {
         );
 
         if (!response.ok) {
-            throw new Error(
-                `${table}: ${response.status} ${response.statusText}`
-            );
+            const detail = await response.json().catch(() => ({}));
+            const error = new Error(`${table}: ${response.status} ${response.statusText}`);
+            if (["42703", "PGRST204"].includes(detail?.code) && /\bpublished_revision_id\b/.test(detail?.message || "")) {
+                error.code = "LEGACY_PROJECT_SCHEMA";
+            }
+            // Only expose the compatibility signal; do not log backend payloads.
+            if (["42703", "PGRST204"].includes(detail?.code) &&
+                /\bcover_(?:fit|position_x|position_y)\b/.test(detail?.message || "")) {
+                error.code = detail.code;
+                error.message = "projects: missing cover_fit/cover_position_x/cover_position_y";
+            }
+            if (["42703", "PGRST204"].includes(detail?.code) &&
+                /cv_(version|filename|size_bytes|updated_at)/.test(detail?.message || "")) {
+                error.code = detail.code;
+                error.message = "profile: missing cv_version/cv_filename/cv_size_bytes/cv_updated_at";
+            }
+            throw error;
         }
 
         const rows = await response.json();

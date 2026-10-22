@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portable Potentiostat - Engineering Case Study</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        indigo: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            200: '#c7d2fe',
+                            300: '#a5b4fc',
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5', // Primary Accent
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            900: '#312e81',
+                        }
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 40px -4px rgba(0, 0, 0, 0.04)',
+                        'card-hover': '0 10px 40px -10px rgba(0, 0, 0, 0.08)',
+                        'node': '0 0 0 4px white, 0 4px 12px rgba(0,0,0,0.1)',
+                        'node-active': '0 0 0 4px #eef2ff, 0 4px 12px rgba(79, 70, 229, 0.3)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #ffffff;
+            color: #0f172a;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Reading Progress Bar */
+        #progress-bar {
+            transform-origin: 0% 50%;
+            transition: transform 0.1s ease-out;
+        }
+
+        /* Scroll Reveal Animation */
+        .reveal-up {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .reveal-up.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .reveal-delay-1 { transition-delay: 150ms; }
+        .reveal-delay-2 { transition-delay: 300ms; }
+
+        /* Timeline Styles */
+        .timeline-line-bg {
+            position: absolute;
+            left: 24px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: #f1f5f9; /* slate-100 */
+        }
+        .timeline-line-fill {
+            position: absolute;
+            left: 24px;
+            top: 0;
+            width: 2px;
+            background-color: #4f46e5; /* indigo-600 */
+            transform-origin: top;
+            transform: scaleY(0);
+            transition: transform 0.1s ease-out;
+            z-index: 10;
+        }
+        
+        @media (min-width: 768px) {
+            .timeline-line-bg, .timeline-line-fill {
+                left: 50%;
+                transform: translateX(-50%) scaleY(0); /* scaleY applies to fill only via JS */
+            }
+            .timeline-line-fill {
+                transform: translateX(-50%) scaleY(0);
+            }
+        }
+
+        /* Architecture Nodes */
+        .arch-node {
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            cursor: pointer;
+        }
+        .arch-node:hover {
+            transform: translateY(-4px);
+            border-color: #a5b4fc;
+        }
+        .arch-node.active {
+            border-color: #4f46e5;
+            background-color: #eef2ff;
+            box-shadow: 0 10px 30px -10px rgba(79, 70, 229, 0.2);
+        }
+
+        /* Connecting Lines (Simulated via SVG for Architecture) */
+        .arch-lines svg path {
+            stroke-dasharray: 6;
+            animation: dash 2s linear infinite;
+        }
+        @keyframes dash {
+            to { stroke-dashoffset: -12; }
+        }
+
+        /* Bento Cards */
+        .bento-card {
+            background: #ffffff;
+            border: 1px solid #f1f5f9;
+            border-radius: 1.5rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+        .bento-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--tw-shadow-card-hover);
+            border-color: #e2e8f0;
+        }
+
+        /* Lightbox Modal */
+        #lightbox { backdrop-filter: blur(16px); transition: opacity 0.3s ease; }
+        #lightbox.hidden { opacity: 0; pointer-events: none; }
+        #lightbox:not(.hidden) { opacity: 1; pointer-events: auto; }
+        #lightbox-img { transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); transform: scale(0.95); }
+        #lightbox:not(.hidden) #lightbox-img { transform: scale(1); }
+
+        /* Expandable technical details */
+        .tech-detail-content {
+            display: grid;
+            grid-template-rows: 0fr;
+            transition: grid-template-rows 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .tech-detail-content.expanded {
+            grid-template-rows: 1fr;
+        }
+        .tech-detail-content > div {
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body class="relative">
+
+    <!-- Top Progress Bar -->
+    <div class="fixed top-0 left-0 w-full h-1 bg-transparent z-50">
+        <div id="progress-bar" class="h-full bg-indigo-600 w-full scale-x-0"></div>
+    </div>
+
+    <!-- Mobile Header (Visible only on small screens) -->
+    <nav class="lg:hidden fixed top-0 left-0 w-full px-6 py-4 flex justify-between items-center z-40 bg-white/90 backdrop-blur-md border-b border-slate-100">
+        <a href="#" class="text-sm font-semibold text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-arrow-left text-slate-400"></i> Portfolio
+        </a>
+        <button id="mobile-menu-btn" class="text-slate-600 text-xl"><i class="fa-solid fa-bars"></i></button>
+    </nav>
+
+    <!-- Main Layout Container -->
+    <div class="max-w-[1440px] mx-auto flex">
+        
+        <!-- Sticky Sidebar Navigation (Desktop) -->
+        <aside class="hidden lg:block w-[280px] shrink-0 sticky top-0 h-screen overflow-y-auto py-12 pl-8 pr-6 border-r border-slate-100 no-scrollbar relative z-20 bg-white">
+            <a href="#" class="group flex items-center text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors mb-16">
+                <i class="fa-solid fa-arrow-left mr-2 text-xs transition-transform group-hover:-translate-x-1"></i>
+                Back to Projects
+            </a>
+
+            <div class="text-xs font-bold text-slate-900 uppercase tracking-widest mb-6 font-mono">Contents</div>
+            <nav id="toc" class="flex flex-col space-y-1 relative">
+                <!-- Highlight Indicator -->
+                <div id="toc-indicator" class="absolute left-0 w-0.5 bg-indigo-600 rounded-r-md transition-all duration-300 z-10" style="top: 0; height: 32px;"></div>
+                
+                <a href="#hero" class="toc-link block px-4 py-2 text-sm font-medium text-slate-900 rounded-lg hover:bg-slate-50 transition-colors relative z-20">Overview</a>
+                <a href="#challenge" class="toc-link block px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors relative z-20">Challenge & Solution</a>
+                <a href="#journey" class="toc-link block px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors relative z-20">Development Journey</a>
+                <a href="#architecture" class="toc-link block px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors relative z-20">Inside the System</a>
+                <a href="#features" class="toc-link block px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors relative z-20">Key Capabilities</a>
+                <a href="#tech" class="toc-link block px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors relative z-20">Technology Stack</a>
+                <a href="#docs" class="toc-link block px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors relative z-20">Documentation</a>
+                <a href="#results" class="toc-link block px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors relative z-20">Reflections</a>
+            </nav>
+
+            <div class="mt-16 pt-8 border-t border-slate-100">
+                <a href="#" class="block w-full py-3 px-4 bg-slate-900 hover:bg-indigo-600 text-white text-sm font-medium text-center rounded-xl transition-colors shadow-sm">
+                    View GitHub Repo
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 min-w-0 pt-20 lg:pt-0">
+            
+            <section id="hero" class="pt-12 lg:pt-24 pb-16 px-6 lg:px-16 scroll-mt-24">
+                <div class="max-w-4xl">
+                    <div class="reveal-up">
+                        <div class="inline-flex items-center gap-2 mb-6 px-3 py-1.5 rounded-md bg-indigo-50 text-xs font-mono text-indigo-700 tracking-wide">
+                            <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                            Embedded IoT Systems
+                        </div>
+                        <h1 class="text-4xl md:text-6xl font-bold tracking-tight text-slate-900 leading-[1.1] mb-6">
+                            Portable Potentiostat &amp; IoT Monitoring System
+                        </h1>
+                        <p class="text-xl md:text-2xl text-slate-500 font-light leading-relaxed mb-10">
+                            An end-to-end electrochemical measurement system integrating low-level analog hardware, real-time edge processing, and cloud-based analytics.
+                        </p>
+                    </div>
+
+                    <div class="reveal-up reveal-delay-1 flex flex-wrap gap-y-6 gap-x-12 text-sm font-mono border-y border-slate-100 py-6 mb-12">
+                        <div>
+                            <span class="block text-slate-400 mb-1 uppercase tracking-wider text-[10px]">Role</span>
+                            <span class="text-slate-900 font-medium">Systems Engineer</span>
+                        </div>
+                        <div>
+                            <span class="block text-slate-400 mb-1 uppercase tracking-wider text-[10px]">Timeline</span>
+                            <span class="text-slate-900 font-medium">Jan - Aug 2025</span>
+                        </div>
+                        <div>
+                            <span class="block text-slate-400 mb-1 uppercase tracking-wider text-[10px]">Domain</span>
+                            <span class="text-slate-900 font-medium">Hardware &amp; Web</span>
+                        </div>
+                        <div>
+                            <span class="block text-slate-400 mb-1 uppercase tracking-wider text-[10px]">Status</span>
+                            <span class="text-indigo-600 font-medium">Deployed Prototype</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="reveal-up reveal-delay-2 w-full aspect-[4/3] md:aspect-[21/9] bg-slate-100 rounded-3xl overflow-hidden cursor-pointer group relative shadow-soft" onclick="openLightbox('https://placehold.co/1920x820/f1f5f9/64748b?text=System+Overview+Photography')">
+                    <img src="https://placehold.co/1920x820/f1f5f9/64748b?text=System+Overview+Photography" alt="Project Hero" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                    <div class="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors"></div>
+                    <div class="absolute bottom-4 right-4 bg-white/90 backdrop-blur px-3 py-1.5 rounded-full text-xs font-medium text-slate-600 shadow-sm flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <i class="fa-solid fa-expand"></i> Enlarge
+                    </div>
+                </div>
+            </section>
+
+            <section id="challenge" class="py-16 px-6 lg:px-16 scroll-mt-24">
+                <div class="max-w-5xl mx-auto bg-slate-50 rounded-[2.5rem] p-8 md:p-16 border border-slate-100 reveal-up">
+                    <div class="grid md:grid-cols-2 gap-12 md:gap-20">
+                        <div>
+                            <h2 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4 font-mono">The Challenge</h2>
+                            <h3 class="text-3xl font-bold text-slate-900 tracking-tight mb-6">Lab equipment is stationary, expensive, and isolated.</h3>
+                            <p class="text-slate-600 leading-relaxed mb-6">
+                                Traditional potentiostats used for electrochemical analysis are bulky desktop machines costing thousands of dollars. Researchers in environmental monitoring and point-of-care diagnostics require field-ready devices that can collect precise analog data and immediately upload it for remote analysis without relying on a dedicated laptop.
+                            </p>
+                        </div>
+                        <div class="relative">
+                            <h2 class="text-sm font-bold text-indigo-500 uppercase tracking-widest mb-4 font-mono">The Solution</h2>
+                            <h3 class="text-3xl font-bold text-slate-900 tracking-tight mb-6">A fully connected edge-to-cloud analytical instrument.</h3>
+                            <p class="text-slate-600 leading-relaxed mb-8">
+                                I designed a custom PCB combining precision analog front-end (AFE) components with an ESP32 microcontroller. This handheld device performs cyclic voltammetry, digitizes the signal, and transmits it via WiFi/MQTT to a custom Node.js backend, visualizing the chemical reactions in real-time on a React dashboard.
+                            </p>
+                            <div class="flex items-center gap-4 text-sm font-medium text-slate-900 bg-white py-3 px-5 rounded-xl shadow-sm border border-slate-100 w-max">
+                                <i class="fa-solid fa-bullseye text-indigo-500"></i> Cost reduced by 95%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="journey" class="py-24 px-6 lg:px-16 scroll-mt-24 relative overflow-hidden">
+                <div class="max-w-4xl mx-auto text-center mb-20 reveal-up">
+                    <h2 class="text-sm font-bold text-indigo-600 uppercase tracking-widest mb-4 font-mono">The Process</h2>
+                    <h3 class="text-4xl font-bold text-slate-900 tracking-tight mb-6">Engineering the System</h3>
+                    <p class="text-lg text-slate-500 max-w-2xl mx-auto">A step-by-step breakdown of designing the hardware, programming the firmware, and building the web architecture.</p>
+                </div>
+
+                <!-- Timeline Container -->
+                <div id="timeline-container" class="relative max-w-5xl mx-auto pb-12">
+                    <!-- The Background Line -->
+                    <div class="timeline-line-bg"></div>
+                    <!-- The Fill Line -->
+                    <div id="timeline-fill" class="timeline-line-fill"></div>
+
+                    <!-- STEP 1 -->
+                    <div class="relative w-full flex justify-end md:justify-between items-center mb-24 lg:mb-32 group timeline-item reveal-up">
+                        <!-- Node indicator -->
+                        <div class="absolute left-[24px] md:left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-white border-4 border-slate-200 z-20 flex items-center justify-center transition-colors duration-300 timeline-node">
+                            <div class="w-2 h-2 bg-slate-400 rounded-full transition-colors duration-300 node-inner"></div>
+                        </div>
+                        
+                        <!-- Left space (empty on desktop for odd items, empty on mobile always) -->
+                        <div class="hidden md:block md:w-[45%]"></div>
+                        
+                        <!-- Content Card (Right on desktop odd, Right on mobile) -->
+                        <div class="w-[calc(100%-64px)] md:w-[45%] text-left bg-white p-6 md:p-8 rounded-2xl border border-slate-100 shadow-soft hover:shadow-card-hover transition-shadow">
+                            <div class="text-xs font-mono text-indigo-500 font-bold mb-2">PHASE 01</div>
+                            <h4 class="text-2xl font-bold text-slate-900 mb-3">Analog Hardware Design</h4>
+                            <p class="text-slate-600 mb-6 leading-relaxed">The core challenge was translating a chemical reaction into a readable digital signal. I designed a transimpedance amplifier (TIA) circuit to convert nano-ampere currents from the sensor into measurable voltage, feeding it into a 16-bit ADC.</p>
+                            
+                            <div class="flex flex-wrap gap-2 mb-6">
+                                <span class="px-2.5 py-1 bg-slate-100 text-slate-600 text-xs font-mono rounded">KiCad</span>
+                                <span class="px-2.5 py-1 bg-slate-100 text-slate-600 text-xs font-mono rounded">Op-Amps</span>
+                                <span class="px-2.5 py-1 bg-slate-100 text-slate-600 text-xs font-mono rounded">LMP91000</span>
+                            </div>
+
+                            <!-- Expandable Tech Note -->
+                            <button class="tech-toggle text-sm font-semibold text-indigo-600 flex items-center gap-2 hover:text-indigo-700 transition-colors focus:outline-none">
+                                <i class="fa-solid fa-chevron-down transition-transform duration-300"></i> View Schematics Note
+                            </button>
+                            <div class="tech-detail-content">
+                                <div class="pt-4 mt-4 border-t border-slate-100 text-sm text-slate-500 font-mono leading-relaxed">
+                                    > Noise reduction was critical. Implemented a driven-shield approach and star grounding on the 4-layer PCB to isolate the sensitive analog traces from the noisy ESP32 RF antenna.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- STEP 2 -->
+                    <div class="relative w-full flex justify-end md:justify-between items-center mb-24 lg:mb-32 group timeline-item reveal-up">
+                        <div class="absolute left-[24px] md:left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-white border-4 border-slate-200 z-20 flex items-center justify-center transition-colors duration-300 timeline-node">
+                            <div class="w-2 h-2 bg-slate-400 rounded-full transition-colors duration-300 node-inner"></div>
+                        </div>
+                        
+                        <!-- Content Card (Left on desktop even, Right on mobile) -->
+                        <div class="w-[calc(100%-64px)] md:w-[45%] text-left md:text-right bg-white p-6 md:p-8 rounded-2xl border border-slate-100 shadow-soft hover:shadow-card-hover transition-shadow order-2 md:order-1">
+                            <div class="text-xs font-mono text-indigo-500 font-bold mb-2">PHASE 02</div>
+                            <h4 class="text-2xl font-bold text-slate-900 mb-3">Firmware & Data Acquisition</h4>
+                            <p class="text-slate-600 mb-6 leading-relaxed">Wrote RTOS-based firmware for the ESP32 to handle strict timing requirements. One task sweeps the voltage across the sensor precisely every 10ms, while another task batches the readings and publishes them via MQTT to prevent dropped packets.</p>
+                            
+                            <div class="flex flex-wrap gap-2 mb-6 md:justify-end">
+                                <span class="px-2.5 py-1 bg-slate-100 text-slate-600 text-xs font-mono rounded">C++</span>
+                                <span class="px-2.5 py-1 bg-slate-100 text-slate-600 text-xs font-mono rounded">FreeRTOS</span>
+                                <span class="px-2.5 py-1 bg-slate-100 text-slate-600 text-xs font-mono rounded">I2C / SPI</span>
+                            </div>
+
+                            <button class="tech-toggle text-sm font-semibold text-indigo-600 flex items-center gap-2 md:justify-end w-full hover:text-indigo-700 transition-colors focus:outline-none">
+                                <i class="fa-solid fa-chevron-down transition-transform duration-300"></i> Signal Processing Note
+                            </button>
+                            <div class="tech-detail-content">
+                                <div class="pt-4 mt-4 border-t border-slate-100 text-sm text-slate-500 font-mono leading-relaxed md:text-right">
+                                    > Applied a lightweight digital low-pass filter (moving average) directly on the edge device to smooth 60Hz mains interference before network transmission, saving bandwidth.
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Right space on desktop -->
+                        <div class="hidden md:block md:w-[45%] order-1 md:order-2"></div>
+                    </div>
+
+                    <!-- STEP 3 -->
+                    <div class="relative w-full flex justify-end md:justify-between items-center mb-24 lg:mb-32 group timeline-item reveal-up">
+                        <div class="absolute left-[24px] md:left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-white border-4 border-slate-200 z-20 flex items-center justify-center transition-colors duration-300 timeline-node">
+                            <div class="w-2 h-2 bg-slate-400 rounded-full transition-colors duration-300 node-inner"></div>
+                        </div>
+                        
+                        <div class="hidden md:block md:w-[45%]"></div>
+                        
+                        <div class="w-[calc(100%-64px)] md:w-[45%] text-left bg-white p-6 md:p-8 rounded-2xl border border-slate-100 shadow-soft hover:shadow-card-hover transition-shadow">
+                            <div class="text-xs font-mono text-indigo-500 font-bold mb-2">PHASE 03</div>
+                            <h4 class="text-2xl font-bold text-slate-900 mb-3">Cloud Backend & MQTT Broker</h4>
+                            <p class="text-slate-600 mb-6 leading-relaxed">Set up an AWS EC2 instance running a Mosquitto MQTT broker and a Node.js Express server. The server subscribes to the hardware topics, parses the raw hex payloads into JSON, and stores historical experiments in PostgreSQL.</p>
+                            
+                            <div class="flex flex-wrap gap-2 mb-6">
+                                <span class="px-2.5 py-1 bg-slate-100 text-slate-600 text-xs font-mono rounded">Node.js</span>
+                                <span class="px-2.5 py-1 bg-slate-100 text-slate-600 text-xs font-mono rounded">MQTT</span>
+                                <span class="px-2.5 py-1 bg-slate-100 text-slate-600 text-xs font-mono rounded">PostgreSQL</span>
+                            </div>
+
+                            <!-- Image Artifact -->
+                            <div class="w-full h-32 bg-slate-100 rounded-lg overflow-hidden cursor-pointer relative group/img mt-4" onclick="openLightbox('https://placehold.co/1200x800/f1f5f9/475569?text=Backend+Data+Flow')">
+                                <img src="https://placehold.co/600x300/f1f5f9/475569?text=Data+Architecture" alt="Backend Architecture" class="w-full h-full object-cover transition-transform duration-500 group-hover/img:scale-105">
+                                <div class="absolute inset-0 bg-indigo-900/0 group-hover/img:bg-indigo-900/10 transition-colors flex items-center justify-center">
+                                    <i class="fa-solid fa-search-plus text-white opacity-0 group-hover/img:opacity-100 transition-opacity"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- STEP 4 -->
+                    <div class="relative w-full flex justify-end md:justify-between items-center mb-24 lg:mb-32 group timeline-item reveal-up">
+                        <div class="absolute left-[24px] md:left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-white border-4 border-slate-200 z-20 flex items-center justify-center transition-colors duration-300 timeline-node">
+                            <div class="w-2 h-2 bg-slate-400 rounded-full transition-colors duration-300 node-inner"></div>
+                        </div>
+                        
+                        <div class="w-[calc(100%-64px)] md:w-[45%] text-left md:text-right bg-white p-6 md:p-8 rounded-2xl border border-slate-100 shadow-soft hover:shadow-card-hover transition-shadow order-2 md:order-1">
+                            <div class="text-xs font-mono text-indigo-500 font-bold mb-2">PHASE 04</div>
+                            <h4 class="text-2xl font-bold text-slate-900 mb-3">Live Visualization Dashboard</h4>
+                            <p class="text-slate-600 mb-6 leading-relaxed">Engineered a React frontend utilizing WebSockets (Socket.io) to receive data from the backend instantly. Implemented high-performance charting with Recharts to draw the cyclic voltammograms at 60fps without browser lag.</p>
+                            
+                            <div class="flex flex-wrap gap-2 mb-6 md:justify-end">
+                                <span class="px-2.5 py-1 bg-slate-100 text-slate-600 text-xs font-mono rounded">React</span>
+                                <span class="px-2.5 py-1 bg-slate-100 text-slate-600 text-xs font-mono rounded">WebSockets</span>
+                                <span class="px-2.5 py-1 bg-slate-100 text-slate-600 text-xs font-mono rounded">Recharts</span>
+                            </div>
+
+                             <!-- Image Artifact -->
+                             <div class="w-full h-32 bg-slate-100 rounded-lg overflow-hidden cursor-pointer relative group/img mt-4" onclick="openLightbox('https://placehold.co/1200x800/f1f5f9/475569?text=Dashboard+Interface')">
+                                <img src="https://placehold.co/600x300/f1f5f9/475569?text=React+Dashboard" alt="UI" class="w-full h-full object-cover transition-transform duration-500 group-hover/img:scale-105">
+                                <div class="absolute inset-0 bg-indigo-900/0 group-hover/img:bg-indigo-900/10 transition-colors flex items-center justify-center">
+                                    <i class="fa-solid fa-search-plus text-white opacity-0 group-hover/img:opacity-100 transition-opacity"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="hidden md:block md:w-[45%] order-1 md:order-2"></div>
+                    </div>
+
+                    <!-- STEP 5 -->
+                    <div class="relative w-full flex justify-end md:justify-between items-center group timeline-item reveal-up">
+                        <div class="absolute left-[24px] md:left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-white border-4 border-slate-200 z-20 flex items-center justify-center transition-colors duration-300 timeline-node">
+                            <div class="w-2 h-2 bg-slate-400 rounded-full transition-colors duration-300 node-inner"></div>
+                        </div>
+                        
+                        <div class="hidden md:block md:w-[45%]"></div>
+                        
+                        <div class="w-[calc(100%-64px)] md:w-[45%] text-left bg-white p-6 md:p-8 rounded-2xl border border-slate-100 shadow-soft hover:shadow-card-hover transition-shadow border-l-4 border-l-indigo-500">
+                            <div class="text-xs font-mono text-indigo-500 font-bold mb-2">PHASE 05</div>
+                            <h4 class="text-2xl font-bold text-slate-900 mb-3">System Integration & Calibration</h4>
+                            <p class="text-slate-600 mb-0 leading-relaxed">The final step involved calibrating the custom hardware against a commercial $15,000 potentiostat using standard potassium ferricyanide solutions. The prototype achieved 98% accuracy compared to the benchtop standard.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="architecture" class="py-24 px-6 lg:px-16 bg-slate-50 border-y border-slate-100 scroll-mt-24">
+                <div class="max-w-6xl mx-auto">
+                    <div class="text-center mb-16 reveal-up">
+                        <h2 class="text-sm font-bold text-indigo-600 uppercase tracking-widest mb-4 font-mono">Inside the System</h2>
+                        <h3 class="text-3xl font-bold text-slate-900 tracking-tight mb-4">Architecture Explorer</h3>
+                        <p class="text-slate-500 max-w-xl mx-auto">Select a node below to understand its responsibility and how data flows from physical chemistry to cloud visualization.</p>
+                    </div>
+
+                    <!-- Architecture Diagram Container -->
+                    <div class="relative w-full max-w-4xl mx-auto bg-white rounded-[2rem] p-8 md:p-12 shadow-sm border border-slate-200 mb-8 reveal-up">
+                        
+                        <!-- Visual connecting lines (absolute background) -->
+                        <div class="absolute inset-0 z-0 hidden md:block arch-lines pointer-events-none p-12">
+                            <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+                                <!-- Top row horizontal -->
+                                <path id="line-hw-fw" d="M 16% 30% L 50% 30%" stroke="#cbd5e1" stroke-width="2" fill="none" />
+                                <path id="line-fw-net" d="M 50% 30% L 84% 30%" stroke="#cbd5e1" stroke-width="2" fill="none" />
+                                <!-- Vertical drops -->
+                                <path id="line-net-back" d="M 84% 30% L 84% 70%" stroke="#cbd5e1" stroke-width="2" fill="none" />
+                                <!-- Bottom row horizontal (right to left) -->
+                                <path id="line-back-db" d="M 84% 70% L 50% 70%" stroke="#cbd5e1" stroke-width="2" fill="none" />
+                                <path id="line-db-front" d="M 50% 70% L 16% 70%" stroke="#cbd5e1" stroke-width="2" fill="none" />
+                            </svg>
+                        </div>
+
+                        <!-- Nodes Grid -->
+                        <div class="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-y-16 text-center">
+                            
+                            <!-- Row 1 -->
+                            <div class="arch-node active bg-white border-2 border-slate-200 rounded-xl p-5" data-target="panel-hardware" onclick="activateArchNode(this, 'panel-hardware', ['line-hw-fw'])">
+                                <div class="w-10 h-10 mx-auto bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center mb-3 node-icon">
+                                    <i class="fa-solid fa-microchip"></i>
+                                </div>
+                                <h4 class="font-bold text-slate-900 text-sm">Sensor & AFE</h4>
+                                <p class="text-[10px] text-slate-500 font-mono mt-1">Analog Layer</p>
+                            </div>
+
+                            <div class="arch-node bg-white border-2 border-slate-200 rounded-xl p-5" data-target="panel-firmware" onclick="activateArchNode(this, 'panel-firmware', ['line-hw-fw', 'line-fw-net'])">
+                                <div class="w-10 h-10 mx-auto bg-slate-100 text-slate-600 rounded-lg flex items-center justify-center mb-3 node-icon">
+                                    <i class="fa-solid fa-memory"></i>
+                                </div>
+                                <h4 class="font-bold text-slate-900 text-sm">ESP32 Compute</h4>
+                                <p class="text-[10px] text-slate-500 font-mono mt-1">Edge Firmware</p>
+                            </div>
+
+                            <div class="arch-node bg-white border-2 border-slate-200 rounded-xl p-5" data-target="panel-network" onclick="activateArchNode(this, 'panel-network', ['line-fw-net', 'line-net-back'])">
+                                <div class="w-10 h-10 mx-auto bg-slate-100 text-slate-600 rounded-lg flex items-center justify-center mb-3 node-icon">
+                                    <i class="fa-solid fa-wifi"></i>
+                                </div>
+                                <h4 class="font-bold text-slate-900 text-sm">MQTT Broker</h4>
+                                <p class="text-[10px] text-slate-500 font-mono mt-1">Transport Layer</p>
+                            </div>
+
+                            <!-- Row 2 (Ordered visually bottom-right to bottom-left on desktop via CSS order) -->
+                            <div class="arch-node bg-white border-2 border-slate-200 rounded-xl p-5 md:col-start-3" data-target="panel-backend" onclick="activateArchNode(this, 'panel-backend', ['line-net-back', 'line-back-db'])">
+                                <div class="w-10 h-10 mx-auto bg-slate-100 text-slate-600 rounded-lg flex items-center justify-center mb-3 node-icon">
+                                    <i class="fa-solid fa-server"></i>
+                                </div>
+                                <h4 class="font-bold text-slate-900 text-sm">Node.js API</h4>
+                                <p class="text-[10px] text-slate-500 font-mono mt-1">Backend Service</p>
+                            </div>
+
+                            <div class="arch-node bg-white border-2 border-slate-200 rounded-xl p-5 md:col-start-2 md:row-start-2" data-target="panel-database" onclick="activateArchNode(this, 'panel-database', ['line-back-db', 'line-db-front'])">
+                                <div class="w-10 h-10 mx-auto bg-slate-100 text-slate-600 rounded-lg flex items-center justify-center mb-3 node-icon">
+                                    <i class="fa-solid fa-database"></i>
+                                </div>
+                                <h4 class="font-bold text-slate-900 text-sm">PostgreSQL</h4>
+                                <p class="text-[10px] text-slate-500 font-mono mt-1">Data Storage</p>
+                            </div>
+
+                            <div class="arch-node bg-white border-2 border-slate-200 rounded-xl p-5 md:col-start-1 md:row-start-2" data-target="panel-frontend" onclick="activateArchNode(this, 'panel-frontend', ['line-db-front'])">
+                                <div class="w-10 h-10 mx-auto bg-slate-100 text-slate-600 rounded-lg flex items-center justify-center mb-3 node-icon">
+                                    <i class="fa-solid fa-laptop-code"></i>
+                                </div>
+                                <h4 class="font-bold text-slate-900 text-sm">React Dashboard</h4>
+                                <p class="text-[10px] text-slate-500 font-mono mt-1">User Interface</p>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Detail Panel -->
+                    <div class="relative bg-slate-900 rounded-[2rem] text-white overflow-hidden shadow-xl min-h-[320px] max-w-4xl mx-auto reveal-up">
+                        
+                        <!-- Panel: Hardware -->
+                        <div id="panel-hardware" class="arch-panel absolute inset-0 p-8 md:p-12 flex flex-col md:flex-row gap-8 transition-opacity duration-300 opacity-100 z-10">
+                            <div class="flex-1">
+                                <div class="inline-block px-2 py-1 bg-white/10 text-slate-300 rounded font-mono text-[10px] mb-4 uppercase tracking-wider">Module 01 / Physical</div>
+                                <h4 class="text-2xl font-bold mb-3">Analog Front End (AFE)</h4>
+                                <p class="text-slate-400 text-sm leading-relaxed mb-6">Interfaces directly with the 3-electrode sensor. Applies a precise sweeping voltage and reads the returning micro-amp current. Uses a TI LMP91000 configured via I2C for programmable gain.</p>
+                                <ul class="text-sm text-slate-300 font-mono space-y-2">
+                                    <li><span class="text-indigo-400 mr-2">→</span> DAC generates excitation waveform</li>
+                                    <li><span class="text-indigo-400 mr-2">→</span> TIA converts current to voltage</li>
+                                </ul>
+                            </div>
+                            <div class="w-full md:w-1/3 bg-slate-800 rounded-xl border border-slate-700 overflow-hidden hidden md:block">
+                                <img src="https://placehold.co/400x400/1e293b/94a3b8?text=PCB+Schematic" class="w-full h-full object-cover opacity-60 mix-blend-luminosity" alt="Schematic">
+                            </div>
+                        </div>
+
+                        <!-- Panel: Firmware -->
+                        <div id="panel-firmware" class="arch-panel absolute inset-0 p-8 md:p-12 flex flex-col md:flex-row gap-8 transition-opacity duration-300 opacity-0 pointer-events-none">
+                            <div class="flex-1">
+                                <div class="inline-block px-2 py-1 bg-white/10 text-slate-300 rounded font-mono text-[10px] mb-4 uppercase tracking-wider">Module 02 / Edge Compute</div>
+                                <h4 class="text-2xl font-bold mb-3">ESP32 FreeRTOS Firmware</h4>
+                                <p class="text-slate-400 text-sm leading-relaxed mb-6">Orchestrates the hardware timing. Uses hardware timers to trigger ADC reads exactly every 10ms. Packages raw 16-bit integers into optimized binary structures for network transmission over WiFi.</p>
+                                <ul class="text-sm text-slate-300 font-mono space-y-2">
+                                    <li><span class="text-indigo-400 mr-2">→</span> Strict deterministic timing</li>
+                                    <li><span class="text-indigo-400 mr-2">→</span> WiFi provisioning & auto-reconnect</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Panel: Network -->
+                        <div id="panel-network" class="arch-panel absolute inset-0 p-8 md:p-12 flex flex-col md:flex-row gap-8 transition-opacity duration-300 opacity-0 pointer-events-none">
+                            <div class="flex-1">
+                                <div class="inline-block px-2 py-1 bg-white/10 text-slate-300 rounded font-mono text-[10px] mb-4 uppercase tracking-wider">Module 03 / Transport</div>
+                                <h4 class="text-2xl font-bold mb-3">MQTT Message Broker</h4>
+                                <p class="text-slate-400 text-sm leading-relaxed mb-6">Acts as the central nervous system. Devices publish telemetry to specific topics (`device/{id}/stream`). This pub/sub model decouples the hardware from the backend, ensuring high throughput and easy scaling.</p>
+                                <ul class="text-sm text-slate-300 font-mono space-y-2">
+                                    <li><span class="text-indigo-400 mr-2">→</span> QoS 1 for guaranteed delivery</li>
+                                    <li><span class="text-indigo-400 mr-2">→</span> TLS encryption for secure payload</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Other panels created identically for robustness but kept brief here -->
+                        <div id="panel-backend" class="arch-panel absolute inset-0 p-8 md:p-12 flex flex-col md:flex-row gap-8 transition-opacity duration-300 opacity-0 pointer-events-none"><div class="flex-1"><h4 class="text-2xl font-bold mb-3">Node.js Express API</h4><p class="text-slate-400 text-sm">Subscribes to MQTT broker, processes incoming binary payloads into readable JSON, handles authentication, and exposes REST endpoints for historical data fetching.</p></div></div>
+                        <div id="panel-database" class="arch-panel absolute inset-0 p-8 md:p-12 flex flex-col md:flex-row gap-8 transition-opacity duration-300 opacity-0 pointer-events-none"><div class="flex-1"><h4 class="text-2xl font-bold mb-3">PostgreSQL Database</h4><p class="text-slate-400 text-sm">Relational storage for user accounts, device metadata, and time-series experiment results. Optimized with indexing on device IDs and timestamps.</p></div></div>
+                        <div id="panel-frontend" class="arch-panel absolute inset-0 p-8 md:p-12 flex flex-col md:flex-row gap-8 transition-opacity duration-300 opacity-0 pointer-events-none"><div class="flex-1"><h4 class="text-2xl font-bold mb-3">React Single Page App</h4><p class="text-slate-400 text-sm">The user interface. Establishes a WebSocket connection to the Node API for live data plotting. Allows researchers to configure sweep parameters and export CSVs.</p></div></div>
+
+                    </div>
+                </div>
+            </section>
+
+            <section id="features" class="py-24 px-6 lg:px-16 scroll-mt-24">
+                <div class="max-w-5xl mx-auto">
+                    <h2 class="text-3xl font-bold text-slate-900 tracking-tight mb-12 reveal-up">Key Capabilities</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[minmax(200px,auto)]">
+                        
+                        <!-- Large Card -->
+                        <div class="bento-card md:col-span-2 p-8 md:p-10 flex flex-col justify-between reveal-up">
+                            <div>
+                                <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-xl mb-6">
+                                    <i class="fa-solid fa-chart-line"></i>
+                                </div>
+                                <h3 class="text-xl font-bold text-slate-900 mb-3">Real-Time Visualization</h3>
+                                <p class="text-slate-600 text-sm leading-relaxed max-w-md">
+                                    Chemical reactions happen in milliseconds. The platform processes and graphs data streams at 60 frames per second using WebGL acceleration, allowing researchers to monitor peaks and anomalies instantly.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Small Card -->
+                        <div class="bento-card p-8 flex flex-col reveal-up reveal-delay-1">
+                            <div class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center mb-6">
+                                <i class="fa-solid fa-battery-full"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-slate-900 mb-2">Battery Operated</h3>
+                            <p class="text-slate-500 text-sm leading-relaxed">Runs for 12 hours on a standard 18650 Li-ion cell thanks to aggressive deep-sleep firmware profiles.</p>
+                        </div>
+
+                        <!-- Small Card -->
+                        <div class="bento-card p-8 flex flex-col reveal-up">
+                            <div class="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center mb-6">
+                                <i class="fa-solid fa-file-export"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-slate-900 mb-2">Data Export</h3>
+                            <p class="text-slate-500 text-sm leading-relaxed">One-click export of raw telemetry to CSV/JSON formats, strictly adhering to standard laboratory data compliance.</p>
+                        </div>
+
+                        <!-- Large Card -->
+                        <div class="bento-card md:col-span-2 p-8 flex flex-col md:flex-row items-center gap-8 reveal-up reveal-delay-1">
+                            <div class="flex-1">
+                                <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-6">
+                                    <i class="fa-solid fa-sliders"></i>
+                                </div>
+                                <h3 class="text-xl font-bold text-slate-900 mb-3">Remote OTA Configuration</h3>
+                                <p class="text-slate-600 text-sm leading-relaxed">
+                                    Instead of physical dials, researchers configure the voltage sweep range, scan rate, and sensitivity directly from the web dashboard. Changes are pushed to the device Over-The-Air instantly.
+                                </p>
+                            </div>
+                            <div class="w-full md:w-48 h-32 bg-slate-50 rounded-lg border border-slate-100 flex flex-col justify-center px-4 font-mono text-xs text-slate-400">
+                                <div>> set_v_min: -0.5V</div>
+                                <div>> set_v_max: 1.0V</div>
+                                <div>> scan_rate: 50mV/s</div>
+                                <div class="text-indigo-500 mt-2">SUCCESS [200]</div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+            <section id="tech" class="py-24 px-6 lg:px-16 scroll-mt-24">
+                <div class="max-w-5xl mx-auto">
+                    <h2 class="text-3xl font-bold text-slate-900 tracking-tight mb-12 reveal-up">Engineering Decisions</h2>
+                    
+                    <div class="bg-white border border-slate-200 rounded-3xl overflow-hidden reveal-up">
+                        <div class="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-200">
+                            
+                            <!-- Col 1 -->
+                            <div class="p-8 md:p-10 space-y-8">
+                                <div>
+                                    <h4 class="font-bold text-slate-900 mb-1 flex items-center justify-between">
+                                        FreeRTOS (C++) <span class="text-[10px] font-mono bg-slate-100 px-2 py-1 rounded text-slate-500">Firmware</span>
+                                    </h4>
+                                    <p class="text-sm text-slate-600 leading-relaxed">Selected over Arduino core for deterministic task scheduling. Allowed separation of precise hardware polling from the unpredictable latency of WiFi transmission.</p>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-slate-900 mb-1 flex items-center justify-between">
+                                        MQTT Protocol <span class="text-[10px] font-mono bg-slate-100 px-2 py-1 rounded text-slate-500">Transport</span>
+                                    </h4>
+                                    <p class="text-sm text-slate-600 leading-relaxed">Chosen over standard HTTP REST. The lightweight binary header of MQTT drastically reduced payload overhead on the edge device and provided built-in connection state handling (Last Will & Testament).</p>
+                                </div>
+                            </div>
+
+                            <!-- Col 2 -->
+                            <div class="p-8 md:p-10 space-y-8">
+                                <div>
+                                    <h4 class="font-bold text-slate-900 mb-1 flex items-center justify-between">
+                                        Node.js & WebSockets <span class="text-[10px] font-mono bg-slate-100 px-2 py-1 rounded text-slate-500">Backend</span>
+                                    </h4>
+                                    <p class="text-sm text-slate-600 leading-relaxed">The event-driven, non-blocking I/O model of Node is perfectly suited for handling thousands of small, continuous data packets from IoT devices concurrently.</p>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-slate-900 mb-1 flex items-center justify-between">
+                                        Recharts / Canvas <span class="text-[10px] font-mono bg-slate-100 px-2 py-1 rounded text-slate-500">Frontend</span>
+                                    </h4>
+                                    <p class="text-sm text-slate-600 leading-relaxed">Standard DOM-based charting libraries crashed when fed high-frequency telemetry. Switched to a Canvas-based rendering approach within React to maintain smooth UI performance.</p>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="docs" class="py-24 px-6 lg:px-16 scroll-mt-24">
+                <div class="max-w-5xl mx-auto">
+                    <h2 class="text-3xl font-bold text-slate-900 tracking-tight mb-8 reveal-up">Project Artifacts</h2>
+                    
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 reveal-up">
+                        <div class="col-span-2 aspect-[16/9] bg-slate-100 rounded-2xl overflow-hidden cursor-pointer group" onclick="openLightbox('https://placehold.co/1200x800/f1f5f9/475569?text=PCB+Layout+Design')">
+                            <img src="https://placehold.co/800x450/f1f5f9/475569?text=PCB+Layout+Design" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="PCB">
+                            <p class="mt-2 text-xs font-mono text-slate-500 px-2 text-center absolute bottom-4 w-full opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md text-white">Altium PCB Layout</p>
+                        </div>
+                        <div class="col-span-1 aspect-[4/3] md:aspect-auto bg-slate-100 rounded-2xl overflow-hidden cursor-pointer group" onclick="openLightbox('https://placehold.co/800x1200/f1f5f9/475569?text=Prototype+Testing')">
+                            <img src="https://placehold.co/400x600/f1f5f9/475569?text=Lab+Testing" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Testing">
+                        </div>
+                        <div class="col-span-1 aspect-[4/3] bg-slate-100 rounded-2xl overflow-hidden cursor-pointer group" onclick="openLightbox('https://placehold.co/800x600/f1f5f9/475569?text=3D+Printed+Enclosure')">
+                            <img src="https://placehold.co/400x300/f1f5f9/475569?text=3D+Enclosure" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Enclosure">
+                        </div>
+                        <div class="col-span-2 aspect-[21/9] md:aspect-auto md:col-span-2 bg-slate-100 rounded-2xl overflow-hidden cursor-pointer group" onclick="openLightbox('https://placehold.co/1200x600/f1f5f9/475569?text=Dashboard+Analytics+View')">
+                            <img src="https://placehold.co/800x400/f1f5f9/475569?text=Web+Dashboard" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Dashboard">
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="results" class="py-24 px-6 lg:px-16 scroll-mt-24 border-t border-slate-100">
+                <div class="max-w-3xl mx-auto text-center reveal-up">
+                    <h2 class="text-sm font-bold text-indigo-600 uppercase tracking-widest mb-6 font-mono">Reflections</h2>
+                    <h3 class="text-3xl font-bold text-slate-900 tracking-tight mb-8">Bridging the Hardware-Software Gap</h3>
+                    <div class="text-left text-slate-600 leading-relaxed space-y-6">
+                        <p>
+                            Building an end-to-end IoT system is inherently interdisciplinary. A minor bug in the analog circuit design can manifest as corrupted data on the web frontend weeks later.
+                        </p>
+                        <p>
+                            The biggest technical challenge was managing noise. In early prototypes, the ESP32's WiFi transmissions caused massive voltage spikes on the sensitive analog lines, ruining the data. I solved this by redesigning the PCB ground planes and implementing a firmware constraint that prevents ADC reads during active WiFi transmission windows.
+                        </p>
+                        <p>
+                            <strong>Outcome:</strong> The resulting prototype successfully validated the concept of decentralized, low-cost analytical hardware. It demonstrated that complex edge data can be reliably synthesized, transmitted, and visualized in real-time using modern web technologies.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <footer class="bg-slate-50 py-16 px-6 lg:px-16 border-t border-slate-100 mt-12">
+                <div class="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+                    <a href="#" class="group flex items-center text-slate-500 hover:text-slate-900 transition-colors font-medium">
+                        <i class="fa-solid fa-arrow-left mr-3 transition-transform group-hover:-translate-x-1"></i> Return to Portfolio
+                    </a>
+                    
+                    <a href="#" class="group flex flex-col items-end text-right bg-white p-6 rounded-2xl border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                            Next Project <i class="fa-solid fa-arrow-right transition-transform group-hover:translate-x-1"></i>
+                        </span>
+                        <span class="text-lg font-bold text-slate-900">Autonomous Drone Swarm</span>
+                        <span class="text-sm font-mono text-slate-500">C++ / Robotics</span>
+                    </a>
+                </div>
+            </footer>
+        </main>
+    </div>
+
+    <!-- Fullscreen Lightbox Modal -->
+    <div id="lightbox" class="fixed inset-0 z-[100] bg-slate-900/95 hidden flex flex-col items-center justify-center p-4 md:p-12 cursor-zoom-out" onclick="closeLightbox(event)">
+        <button class="absolute top-6 right-6 w-12 h-12 bg-white/10 hover:bg-white/20 text-white rounded-full flex items-center justify-center transition-colors focus:outline-none z-10" onclick="closeLightbox(event)">
+            <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+        <img id="lightbox-img" src="" alt="Expanded View" class="max-w-full max-h-full rounded-lg shadow-2xl object-contain pointer-events-none relative z-0">
+    </div>
+
+    <script>
+        // --- 1. Scroll Reveal Animation ---
+        const revealElements = document.querySelectorAll('.reveal-up');
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                    // Optional: stop observing once revealed
+                    // revealObserver.unobserve(entry.target); 
+                }
+            });
+        }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+        revealElements.forEach(el => revealObserver.observe(el));
+
+        // --- 2. Top Progress Bar ---
+        const progressBar = document.getElementById('progress-bar');
+        window.addEventListener('scroll', () => {
+            const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const scrolled = (winScroll / height);
+            progressBar.style.transform = `scaleX(${scrolled})`;
+        });
+
+        // --- 3. Sticky Navigation Highlight ---
+        const sections = document.querySelectorAll('section[id]');
+        const navLinks = document.querySelectorAll('.toc-link');
+        const indicator = document.getElementById('toc-indicator');
+
+        function updateTocIndicator(activeLink) {
+            if(!activeLink) return;
+            // Get position relative to the nav container
+            const navTop = activeLink.parentElement.offsetTop;
+            const linkTop = activeLink.offsetTop;
+            indicator.style.top = `${linkTop}px`;
+            
+            navLinks.forEach(l => l.classList.replace('text-indigo-600', 'text-slate-500'));
+            navLinks.forEach(l => l.classList.remove('bg-indigo-50/50'));
+            activeLink.classList.replace('text-slate-500', 'text-indigo-600');
+            activeLink.classList.add('bg-indigo-50/50');
+        }
+
+        const navObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const id = entry.target.getAttribute('id');
+                    const activeLink = document.querySelector(`nav a[href="#${id}"]`);
+                    if(activeLink) updateTocIndicator(activeLink);
+                }
+            });
+        }, { rootMargin: '-20% 0px -70% 0px' }); // Trigger when section is near top
+
+        sections.forEach(section => navObserver.observe(section));
+
+        // Initial setup for indicator
+        setTimeout(() => {
+            const firstLink = navLinks[0];
+            if(firstLink) updateTocIndicator(firstLink);
+        }, 100);
+
+
+        // --- 4. Interactive Architecture Diagram ---
+        function activateArchNode(element, targetId, lineIds) {
+            // Reset nodes
+            document.querySelectorAll('.arch-node').forEach(node => {
+                node.classList.remove('active');
+                const icon = node.querySelector('.node-icon');
+                if(icon) {
+                    icon.classList.replace('bg-indigo-100', 'bg-slate-100');
+                    icon.classList.replace('text-indigo-600', 'text-slate-600');
+                }
+            });
+            
+            // Activate clicked node
+            element.classList.add('active');
+            const icon = element.querySelector('.node-icon');
+            if(icon) {
+                icon.classList.replace('bg-slate-100', 'bg-indigo-100');
+                icon.classList.replace('text-slate-600', 'text-indigo-600');
+            }
+
+            // Reset SVG lines
+            document.querySelectorAll('.arch-lines path').forEach(path => {
+                path.setAttribute('stroke', '#cbd5e1'); // slate-300
+                path.setAttribute('stroke-width', '2');
+            });
+            
+            // Highlight specific lines
+            if(lineIds && lineIds.length > 0) {
+                lineIds.forEach(id => {
+                    const line = document.getElementById(id);
+                    if(line) {
+                        line.setAttribute('stroke', '#4f46e5'); // indigo-600
+                        line.setAttribute('stroke-width', '3');
+                    }
+                });
+            }
+
+            // Cross-fade Info Panels
+            document.querySelectorAll('.arch-panel').forEach(panel => {
+                panel.classList.remove('opacity-100', 'z-10');
+                panel.classList.add('opacity-0', 'pointer-events-none');
+            });
+
+            const targetPanel = document.getElementById(targetId);
+            if(targetPanel) {
+                targetPanel.classList.remove('opacity-0', 'pointer-events-none');
+                targetPanel.classList.add('opacity-100', 'z-10');
+            }
+        }
+
+        // --- 5. Timeline Scroll Progression ---
+        const timelineContainer = document.getElementById('timeline-container');
+        const timelineFill = document.getElementById('timeline-fill');
+        const timelineNodes = document.querySelectorAll('.timeline-node');
+
+        window.addEventListener('scroll', () => {
+            if(!timelineContainer || !timelineFill) return;
+            
+            const rect = timelineContainer.getBoundingClientRect();
+            const viewportHeight = window.innerHeight;
+            
+            // How far down the container the "active" viewport line is
+            // Set active line to middle of screen
+            let activeLineY = (viewportHeight / 2) - rect.top; 
+            
+            // Clamp values
+            if (activeLineY < 0) activeLineY = 0;
+            if (activeLineY > rect.height) activeLineY = rect.height;
+
+            // Calculate percentage for CSS scaleY
+            let percentage = activeLineY / rect.height;
+            // Prevent going below 0 or above 1
+            percentage = Math.max(0, Math.min(1, percentage));
+            
+            // Only scale on Y axis to keep centering via X translation on desktop
+            timelineFill.style.transform = window.innerWidth >= 768 
+                ? `translateX(-50%) scaleY(${percentage})`
+                : `scaleY(${percentage})`;
+
+            // Highlight nodes that have been passed
+            timelineNodes.forEach(node => {
+                // Get node's relative Y position within the container
+                const nodeRelativeY = node.getBoundingClientRect().top - rect.top;
+                
+                const inner = node.querySelector('.node-inner');
+                if (activeLineY > nodeRelativeY) {
+                    node.classList.replace('border-slate-200', 'border-indigo-200');
+                    if(inner) inner.classList.replace('bg-slate-400', 'bg-indigo-600');
+                } else {
+                    node.classList.replace('border-indigo-200', 'border-slate-200');
+                    if(inner) inner.classList.replace('bg-indigo-600', 'bg-slate-400');
+                }
+            });
+        });
+
+        // --- 6. Expandable Technical Notes ---
+        document.querySelectorAll('.tech-toggle').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const targetContent = e.currentTarget.nextElementSibling;
+                const icon = e.currentTarget.querySelector('i');
+                
+                targetContent.classList.toggle('expanded');
+                
+                if (targetContent.classList.contains('expanded')) {
+                    icon.style.transform = 'rotate(180deg)';
+                } else {
+                    icon.style.transform = 'rotate(0deg)';
+                }
+            });
+        });
+
+        // --- 7. Lightbox Modal Logic ---
+        const lightbox = document.getElementById('lightbox');
+        const lightboxImg = document.getElementById('lightbox-img');
+
+        window.openLightbox = function(src) {
+            lightboxImg.src = src;
+            lightbox.classList.remove('hidden');
+            document.body.style.overflow = 'hidden'; // prevent scrolling behind
+        }
+
+        window.closeLightbox = function(e) {
+            // Close if clicking the background or the close button, not the image itself
+            if(e.target === lightbox || e.target.closest('button')) {
+                lightbox.classList.add('hidden');
+                document.body.style.overflow = 'auto';
+                setTimeout(() => { lightboxImg.src = ''; }, 300); // clear src after animation
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !lightbox.classList.contains('hidden')) {
+                lightbox.classList.add('hidden');
+                document.body.style.overflow = 'auto';
+            }
+        });
+
+    </script>
+</body>
+</html>
