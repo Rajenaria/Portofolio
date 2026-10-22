@@ -23,9 +23,7 @@ import { supabaseClient } from "../../core/supabase.js";
 import { el, append, clear, pageHeader } from "../../core/dom.js";
 import { confirmDialog, closeAllModals } from "../../core/modal.js";
 import { t } from "../../core/i18n.js";
-import { registerNavigationGuard } from "../../core/navigation-guard.js";
 
-import { createCvTab } from "./cv-tab.js";
 import { createHeroTab } from "./hero-tab.js";
 import { createAboutTab } from "./about-tab.js";
 import { createOrganizationTab } from "./organization-tab.js";
@@ -34,8 +32,7 @@ import { createOrganizationTab } from "./organization-tab.js";
 const TABS = [
   { id: "hero", key: "profile.tabHero" },
   { id: "about", key: "profile.tabAbout" },
-  { id: "organization", key: "profile.tabOrganization" },
-  { id: "cv", key: "cv.tab" }
+  { id: "organization", key: "profile.tabOrganization" }
 ];
 
 export const profileRoute = {
@@ -74,9 +71,49 @@ async function render(container, { signal }) {
 
   /* ---------------- unsaved-changes guards ---------------- */
 
-  function isDirty() { return Boolean(activeTab && activeTab.isDirty()); }
+  function handleBeforeUnload(event) {
+    if (!isDirty()) {
+      return;
+    }
 
-  const releaseNavigationGuard = registerNavigationGuard(isDirty, confirmUnsaved);
+    event.preventDefault();
+    event.returnValue = "";
+  }
+
+  let bypassNavigationGuard = false;
+
+  async function handleNavigationCapture(event) {
+    if (bypassNavigationGuard || !isDirty()) {
+      return;
+    }
+
+    const link = event.target.closest
+      ? event.target.closest(".sidebar-link[data-route]")
+      : null;
+
+    if (!link || link.dataset.route === "profile") {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const leave = await confirmUnsaved();
+
+    if (!leave) {
+      return;
+    }
+
+    bypassNavigationGuard = true;
+    link.click();
+  }
+
+  window.addEventListener("beforeunload", handleBeforeUnload);
+  document.addEventListener("click", handleNavigationCapture, true);
+
+  function isDirty() {
+    return Boolean(activeTab && activeTab.isDirty());
+  }
 
   async function confirmUnsaved() {
     return await confirmDialog({
@@ -192,8 +229,6 @@ async function render(container, { signal }) {
       });
     } else if (activeTabId === "about") {
       activeTab = createAboutTab({ profile: data.profile, ...options });
-    } else if (activeTabId === "cv") {
-      activeTab = createCvTab(options);
     } else {
       activeTab = createOrganizationTab({
         organization: data.organization,
@@ -299,7 +334,8 @@ async function render(container, { signal }) {
   await load();
 
   return () => {
-    releaseNavigationGuard();
+    window.removeEventListener("beforeunload", handleBeforeUnload);
+    document.removeEventListener("click", handleNavigationCapture, true);
 
     if (activeTab && typeof activeTab.destroy === "function") {
       activeTab.destroy();

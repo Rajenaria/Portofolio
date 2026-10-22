@@ -21,7 +21,21 @@
   All visible strings come from core/i18n.js; nothing in this file decides
   wording per language.
 
-  PRIVACY: publication count never disables Hide, Archive, or Trash.
+  THE MINIMUM-PUBLISHED RULE
+  --------------------------
+  The public carousel needs at least three cards. The database enforces that
+  with a latch: any count is allowed until the CMS first reaches three
+  published certificates, and from then on it may never drop below three.
+
+  Activation is not fetched separately — it is derivable from the count this
+  view already loads. A state below three can only exist before the latch
+  armed, because afterwards the database would have rejected it. So:
+
+      publishedCount >= 3   ->  latched, guard the reducing actions
+      publishedCount <  3   ->  still bootstrapping, everything allowed
+
+  The guards below are usability: they explain the rule and stop the owner
+  reaching a dead end. The database remains the authority.
 */
 
 import { supabaseClient } from "../../core/supabase.js";
@@ -44,14 +58,18 @@ import {
   CERTIFICATE_CATEGORIES
 } from "./categories.js";
 import { openCertificatePreview } from "./preview.js";
-import { hasDocument, openDocument, removeDocument } from "../../core/document-storage.js";
+import { documentUrl, removeDocument } from "../../core/document-storage.js";
 
 const SELECT_COLUMNS =
   "id, title, publisher, period, category, issuer_line, badge_text, description, status, sort_order, published_at, archived_at, deleted_at, created_at, updated_at, document_bucket, document_path, document_type, external_url";
 
+const MINIMUM_PUBLISHED = 3;
 
-
-
+/* Resolved at call time, never cached: the language can change while the list
+   is on screen and the hint has to follow it. */
+function minimumHint() {
+  return t("certificates.minimumHint", { min: MINIMUM_PUBLISHED });
+}
 
 function rowTitle(row) {
   return row.title || t("certificates.thisOne");
@@ -225,6 +243,23 @@ export function createCertificateList({ onEdit, onChanged }) {
     return publishedRows().length;
   }
 
+  /*
+    See the header note: below the minimum the latch cannot have armed, at or
+    above it the latch is armed, so the count alone tells us which regime we
+    are in.
+  */
+  function minimumIsLatched() {
+    return publishedCount() >= MINIMUM_PUBLISHED;
+  }
+
+  /* True when taking this row off the public site would break the rule. */
+  function wouldBreakMinimum(row) {
+    if (row.deleted_at || row.status !== "published") {
+      return false;
+    }
+
+    return minimumIsLatched() && publishedCount() <= MINIMUM_PUBLISHED;
+  }
 
   function visibleRows() {
     const term = state.filters.search.trim().toLowerCase();
@@ -254,9 +289,63 @@ export function createCertificateList({ onEdit, onChanged }) {
 
   function renderBanner() {
     clear(bannerSlot);
-    if (state.status !== "ready") return;
-    const panel = el("div", "admin-alert");
-    append(panel, el("p", "admin-alert-text", t("certificates.privacyCount", { count: publishedCount() })));
+
+    if (state.status !== "ready") {
+      return;
+    }
+
+    const count = publishedCount();
+    const latched = minimumIsLatched();
+    const atMinimum = latched && count === MINIMUM_PUBLISHED;
+
+    const panel = el(
+      "div",
+      atMinimum
+        ? "admin-alert admin-alert-warning cert-minimum"
+        : "admin-alert cert-minimum"
+    );
+
+    /*
+      The headline states the situation and the rule in one breath, because
+      "3 of 3" on its own does not tell the owner what happens next.
+    */
+    append(
+      panel,
+      el("p", "cert-minimum-count", String(count)),
+      el(
+        "p",
+        "admin-alert-title",
+        t(
+          count === 1
+            ? "certificates.visibleCountOne"
+            : "certificates.visibleCount",
+          { count, min: MINIMUM_PUBLISHED }
+        )
+      )
+    );
+
+    if (!latched) {
+      append(
+        panel,
+        el(
+          "p",
+          "admin-alert-text",
+          t("certificates.setupHint", { min: MINIMUM_PUBLISHED })
+        )
+      );
+    } else if (atMinimum) {
+      append(panel, el("p", "admin-alert-text", t("certificates.atMinimum")));
+    } else {
+      append(
+        panel,
+        el(
+          "p",
+          "admin-alert-text",
+          t("certificates.headroom", { count: count - MINIMUM_PUBLISHED })
+        )
+      );
+    }
+
     append(bannerSlot, panel);
   }
 
@@ -550,8 +639,9 @@ export function createCertificateList({ onEdit, onChanged }) {
     const canReorder = !filtersActive();
     const ordered = activeRows();
     const orderedIndex = ordered.findIndex(entry => entry.id === row.id);
+    const blocked = wouldBreakMinimum(row);
 
-    const documentHref = hasDocument(row.document_bucket, row.document_path);
+    const documentHref = documentUrl(row.document_bucket, row.document_path);
 
     const entries = [
       { label: t("common.edit"), onSelect: () => onEdit(row.id) },
@@ -562,7 +652,7 @@ export function createCertificateList({ onEdit, onChanged }) {
         hint: documentHref ? null : t("certificates.noDocument"),
         /* New tab, never an iframe: the site CSP sets frame-src 'none' and
            object-src 'none', and an embedded viewer would mean relaxing both. */
-        onSelect: () => openDocument(row.document_bucket, row.document_path)
+        onSelect: () => window.open(documentHref, "_blank", "noopener,noreferrer")
       },
       {
         label: t("action.moveUp"),
@@ -581,6 +671,8 @@ export function createCertificateList({ onEdit, onChanged }) {
     if (row.status === "published") {
       entries.push({
         label: t("action.hide"),
+        disabled: blocked,
+        hint: blocked ? minimumHint() : null,
         onSelect: () => hide(row)
       });
     } else if (row.status === "draft") {
@@ -595,6 +687,8 @@ export function createCertificateList({ onEdit, onChanged }) {
     } else {
       entries.push({
         label: t("action.archive"),
+        disabled: blocked,
+        hint: blocked ? minimumHint() : null,
         onSelect: () => archive(row)
       });
     }
@@ -602,6 +696,8 @@ export function createCertificateList({ onEdit, onChanged }) {
     entries.push({
       label: t("action.moveToTrash"),
       danger: true,
+      disabled: blocked,
+      hint: blocked ? minimumHint() : null,
       onSelect: () => moveToTrash(row)
     });
 
@@ -629,8 +725,7 @@ export function createCertificateList({ onEdit, onChanged }) {
       issuerLine: row.issuer_line,
       badgeText: row.badge_text,
       description: row.description,
-      document: hasDocument(row.document_bucket, row.document_path)
-        ? { bucket: row.document_bucket, path: row.document_path } : null,
+      documentUrl: documentUrl(row.document_bucket, row.document_path),
       externalUrl: row.external_url
     });
   }
@@ -640,6 +735,19 @@ export function createCertificateList({ onEdit, onChanged }) {
   function setBusy(next) {
     state.busy = next;
     root.classList.toggle("is-busy", next);
+  }
+
+  /*
+    The database raises check_violation from the minimum-published trigger.
+    That is the authority, and the owner should see the real reason rather
+    than a generic failure, so it is surfaced verbatim-ish here.
+  */
+  function failureMessage(error, fallback) {
+    if (error && error.code === "23514" && /at least 3/i.test(error.message || "")) {
+      return minimumHint();
+    }
+
+    return fallback;
   }
 
   async function applyPatch(row, patch, successMessage, fallbackMessage) {
@@ -662,7 +770,7 @@ export function createCertificateList({ onEdit, onChanged }) {
         console.error(error);
       }
 
-      toast(fallbackMessage, "error");
+      toast(failureMessage(error, fallbackMessage), "error");
       await load();
       return false;
     }

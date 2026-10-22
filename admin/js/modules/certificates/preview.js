@@ -17,7 +17,6 @@
 import { el, append, clear } from "../../core/dom.js";
 import { openModal } from "../../core/modal.js";
 import { t } from "../../core/i18n.js";
-import { openDocument } from "../../core/document-storage.js";
 import { buildCategoryIcon, categoryLabel } from "./categories.js";
 
 const ACCENT = "#2997ff";
@@ -86,15 +85,11 @@ function buildBack(data) {
     object-src 'none', so an embedded viewer would mean relaxing both.
     rel="noopener noreferrer" keeps the opened tab away from window.opener.
   */
-  const href = data.document ? "#" : data.externalUrl || null;
+  const href = data.documentUrl || data.externalUrl || null;
 
   if (href) {
     const cta = el("a", "cert-preview-link", "LIHAT SERTIFIKAT");
     cta.href = href;
-    if (data.document) cta.addEventListener("click", event => {
-      event.preventDefault();
-      openDocument(data.document.bucket, data.document.path);
-    });
     cta.target = "_blank";
     cta.rel = "noopener noreferrer";
     append(inner, cta);

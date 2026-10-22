@@ -24,7 +24,6 @@ import { el, append, clear, pageHeader } from "../../core/dom.js";
 import { confirmDialog, closeAllModals } from "../../core/modal.js";
 import { toast } from "../../core/toast.js";
 import { t } from "../../core/i18n.js";
-import { registerNavigationGuard } from "../../core/navigation-guard.js";
 
 import { createExperienceList } from "./list-view.js";
 import { createExperienceEditor } from "./editor-view.js";
@@ -44,6 +43,7 @@ async function render(container, { signal }) {
   let listView = null;
   let editorView = null;
   let dirty = false;
+  let bypassNavigationGuard = false;
 
   /* ---------------- unsaved-changes guards ---------------- */
 
@@ -51,7 +51,41 @@ async function render(container, { signal }) {
     return Boolean(editorView && editorView.isDirty());
   }
 
-  const releaseNavigationGuard = registerNavigationGuard(isDirty, confirmUnsaved);
+  function handleBeforeUnload(event) {
+    if (!isDirty()) {
+      return;
+    }
+
+    event.preventDefault();
+    event.returnValue = "";
+  }
+
+  async function handleNavigationCapture(event) {
+    if (bypassNavigationGuard || !isDirty()) {
+      return;
+    }
+
+    const link = event.target.closest
+      ? event.target.closest(".sidebar-link[data-route]")
+      : null;
+
+    if (!link || link.dataset.route === "experience") {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!(await confirmUnsaved())) {
+      return;
+    }
+
+    bypassNavigationGuard = true;
+    link.click();
+  }
+
+  window.addEventListener("beforeunload", handleBeforeUnload);
+  document.addEventListener("click", handleNavigationCapture, true);
 
   async function confirmUnsaved() {
     return await confirmDialog({
@@ -183,7 +217,8 @@ async function render(container, { signal }) {
   showList();
 
   return () => {
-    releaseNavigationGuard();
+    window.removeEventListener("beforeunload", handleBeforeUnload);
+    document.removeEventListener("click", handleNavigationCapture, true);
     teardownViews();
     closeAllModals();
   };

@@ -1,15 +1,14 @@
 # AGENTS.md
 
 Rules for any developer or AI working in this repository. Read
-`PROJECT.md` first for project context, then verify relevant code and
-configuration; some architecture descriptions predate the CMS.
+`PROJECT.md` first for what this project is and how it's structured.
 
 ## General
 
 - Read `PROJECT.md` before making any significant change.
 - Inspect existing code before creating new files — check whether
-  something similar already exists in `js/`, `css/`, `assets/`, `admin/`,
-  `supabase/`, or `scripts/`.
+  something similar already exists in `js/`, `css/`, `assets/`, or
+  `scripts/`.
 - Follow the existing structure. Don't invent new top-level folders
   (`services/`, `controllers/`, `frontend/`, etc.) for a static site this
   size.
@@ -19,9 +18,8 @@ configuration; some architecture descriptions predate the CMS.
 - Follow existing technology choices (see "Project-Specific" below).
 - Do not modify unrelated files. A change to the guestbook should not
   touch the education section, and vice versa.
-- Do not introduce unnecessary abstractions. Preserve the existing public
-  styles/scripts, `js/cms/`, and `admin/js/` module boundaries unless a
-  scoped restructuring has been approved.
+- Do not introduce unnecessary abstractions. A single-file `css/style.css`
+  and two-file `js/` split is intentional, not an oversight.
 
 ## Project-Specific
 
@@ -29,8 +27,7 @@ configuration; some architecture descriptions predate the CMS.
   no bundler, no build step for the production site.
 - Do not introduce a frontend framework (React, Vue, Next.js, etc.) or a
   build tool (Vite, Webpack, etc.) without explicit approval — this would
-  change the static deployment workflow. Use a local HTTP server for
-  module-based public CMS and admin verification.
+  break the current "open `index.html`, deploy as static files" workflow.
 - Preserve the existing visual design (layout, spacing, color, typography,
   animation, responsive behavior) unless a redesign is explicitly
   requested. The current design is final, not a work in progress.
@@ -53,49 +50,7 @@ configuration; some architecture descriptions predate the CMS.
   `js/script.js` into multiple files) must be proposed before it's
   implemented — see "AI Improvement Behavior" below.
 
-## Instruction Scope and References
-
-- This file applies repository-wide. Inspect any applicable nested
-  `AGENTS.md` / `AGENTS.override.md` before editing an area.
-- `PROJECT.md` and `README.md` describe project context; verify current
-  behavior against source/configuration and report discrepancies.
-- `docs/PORTFOLIO_MASTER_PROMPT.md` and `docs/AGENTS_PORTFOLIO_DRAFT.md`
-  remain references, not automatic implementation authorization or
-  overrides of this file. Tailwind CSS and framework migration evaluation
-  remains PROPOSED; migration requires explicit approval.
-- Check availability and status of referenced workflow documents before
-  using them; report missing references without inferring their contents.
-- For CMS work, consult relevant docs under `docs/Features/`,
-  `docs/Database/`, `docs/Security/`, and `docs/Design/`. Respect their
-  stated planning/historical scope; report conflicts with current code
-  and confirmed decisions instead of assuming deployment or approval.
-
-## Safety and Verification
-
-- Preserve existing CMS data contracts, owner/MFA checks, database and
-  Storage authorization, public/private visibility, and guestbook behavior.
-  Propose changes to these boundaries before implementation.
-- Do not expose secrets or session tokens. Client publishable keys are
-  distinct from server secrets; do not rotate credentials during an audit.
-- Keep local and production targets distinct. Do not access production,
-  deploy, apply migrations, change secrets/dependencies, delete existing
-  files/data, or mutate Git without explicit authorization for that scope.
-- Verify according to impact: responsive behavior, keyboard/focus,
-  reduced motion, and security boundaries where relevant. Report actual
-  commands/results and distinguish PASS, FAIL, NOT RUN, NOT VERIFIED.
-- No working automated test suite, lint, typecheck, or build command is
-  defined in `package.json`; `npm test` is a failing placeholder.
-  Do not report unavailable checks or historical audit results as passed.
-- User-facing reports use Bahasa Indonesia and distinguish verified
-  facts, proposals, approved decisions, and unresolved items.
-
 ## AI Improvement Behavior
-
-- During read-only audits, do not edit even small issues. Present the
-  proposed diff and wait for approval before integration.
-- Approval covers the agreed subtask only. Do not expand scope or advance
-  to another milestone without authorization; do not re-request approval
-  for work already explicitly authorized within that scope.
 
 You may notice improvements while working. How you act on them depends on
 their size:
@@ -103,7 +58,7 @@ their size:
 **Small / local improvement** (e.g. fixing a typo, tightening a comment,
 correcting an obviously wrong relative path):
 ```
-may be done directly within an authorized implementation scope
+may be done directly
 ↓
 explain what you did afterward
 ```

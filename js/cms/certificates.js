@@ -7,9 +7,18 @@
    proportional fade all stay exactly as js/certificates.js
    built them.
 
-   The CMS response is authoritative for every count. Zero renders an empty
-   state, one or two render simple articles, three or more keep the carousel.
-   A request failure displays an unavailable state, never historical cards.
+   ACTIVATION RULE
+   ---------------
+   The carousel needs at least three cards to read as a
+   carousel, so the rule has a floor as well as a source:
+
+       request fails            -> keep the static V1 cards
+       succeeds, 0-2 published  -> keep the static V1 cards
+       succeeds, 3+ published   -> the CMS list is authoritative
+
+   The two sets are never merged. A successful read either
+   replaces the whole array or changes nothing, so a card can
+   never appear twice.
 
    SAFETY
    ------
@@ -17,7 +26,7 @@
    through the existing createElement/textContent renderer. The
    icon is looked up from a frozen table by category key, never
    taken from the database. A document link may only resolve
-   through the certificate delivery endpoint, and an external link must
+   inside the public documents bucket, and an external link must
    parse as absolute http(s) — anything else leaves the card
    with no call to action rather than a live bad href.
 ========================================================= */
@@ -76,7 +85,7 @@ function iconFor(category) {
 }
 
 
-
+const MINIMUM_PUBLISHED = 3;
 
 
 function warn(message, error) {
@@ -93,13 +102,13 @@ function warn(message, error) {
 
    Priority: the uploaded document first, the issuer's own page
    second, nothing third. A row whose document reference points
-   anywhere other than the documents bucket is treated as
+   anywhere other than the public documents bucket is treated as
    having no document at all.
 --------------------------------------------------------- */
 
 function certificateLink(row) {
 
-    const document = publicDocumentUrl(row.document_bucket, row.document_path, row.id);
+    const document = publicDocumentUrl(row.document_bucket, row.document_path);
 
     if (document) {
         return document;
@@ -149,11 +158,6 @@ function toCard(row) {
 --------------------------------------------------------- */
 
 async function load() {
-    // A fail-closed config can reject synchronously, before the deferred
-    // controller's DOMContentLoaded callback replaces the named DOM property.
-    if (document.readyState !== "complete" && typeof window.certificatesCarousel?.rebuild !== "function") {
-        await new Promise(resolve => document.addEventListener("DOMContentLoaded", resolve, { once: true }));
-    }
 
     const rows = await readTable(
         "certificates",
@@ -169,6 +173,23 @@ async function load() {
         row.deleted_at === null &&
         filled(row.title)
     );
+
+    /*
+        Below the floor the CMS is still being set up, so the
+        static cards stay. Rebuilding with one or two rows would
+        replace a working carousel with a degenerate one.
+    */
+
+    if (published.length < MINIMUM_PUBLISHED) {
+
+        warn(
+            `certificates: ${published.length} published, ` +
+            `keeping the static set (minimum ${MINIMUM_PUBLISHED})`
+        );
+
+        return;
+
+    }
 
     const controller = window.certificatesCarousel;
 
@@ -207,8 +228,5 @@ async function load() {
 */
 
 load()
-    .catch(error => {
-        warn("certificates unavailable", error);
-        window.certificatesCarousel?.rebuild?.([], "Sertifikat belum dapat dimuat. Silakan coba lagi nanti.");
-    })
+    .catch(error => warn("certificates unavailable", error))
     .finally(() => window.portfolioReady?.mark("certificates"));

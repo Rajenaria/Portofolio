@@ -6,7 +6,8 @@
   document object per certificate. Sharing one function would mean a parameter
   that switches between two unrelated shapes.
 
-  It reuses media-storage's removeObjects() for failed uploads.
+  It reuses media-storage's publicUrl() and removeObjects() rather than
+  reimplementing them.
 
   SECURITY
   --------
@@ -14,16 +15,16 @@
     identity.
   - Only the publishable key plus the owner's aal2 JWT are used. No
     service_role path exists. Storage RLS is the authority.
-  - The database stores bucket + path; admin reads use authenticated Storage downloads.
+  - The database stores bucket + path, never a full URL. publicUrl() derives
+    an address for display only.
   - replaceDocument() follows the mandatory ordering: upload new, verify,
-    commit database, then read back the reference in the caller. Previous
-    versions are retained for recovery and possible shared references.
+    commit database, and only then delete the old object. Every failure leaves
+    the previously working document referenced and reachable.
 */
 
 import { supabaseClient } from "./supabase.js";
-import { removeObjects, MediaStorageError } from "./media-storage.js";
+import { publicUrl, removeObjects, MediaStorageError } from "./media-storage.js";
 import { t } from "./i18n.js";
-import { toast } from "./toast.js";
 
 export const DOCUMENT_BUCKET = "portfolio-documents";
 
@@ -46,33 +47,22 @@ function uuid() {
   });
 }
 
-export function hasDocument(bucket, path) {
-  return bucket === DOCUMENT_BUCKET && /^certificates\/[0-9a-f-]{36}\.(pdf|webp)$/i.test(path || "");
+export function documentUrl(bucket, path) {
+  if (bucket !== DOCUMENT_BUCKET) {
+    return null;
+  }
+
+  return publicUrl(bucket, path);
 }
 
-export async function openDocument(bucket, path, { download = false } = {}) {
-  if (!hasDocument(bucket, path)) return false;
-  const tab = download ? null : window.open("about:blank", "_blank");
-  if (tab) { tab.opener = null; tab.document.body.textContent = t("common.loading"); }
-  let url;
-  try {
-    const { data, error } = await supabaseClient.storage.from(bucket).download(path);
-    if (error || !data) throw new Error("Document unavailable");
-    url = URL.createObjectURL(data);
-    if (download) {
-      const link = document.createElement("a");
-      link.href = url; link.download = `certificate.${path.split(".").pop()}`;
-      document.body.appendChild(link); link.click(); link.remove();
-    } else if (tab) { tab.location.replace(url); }
-    else { throw new Error("Preview window unavailable"); }
-    window.setTimeout(() => URL.revokeObjectURL(url), 60000);
-    return true;
-  } catch {
-    if (tab) tab.close();
-    if (url) URL.revokeObjectURL(url);
-    toast(t("doc.errAccess"), "error");
-    return false;
-  }
+/*
+  Supabase Storage serves a public object inline. Appending ?download turns it
+  into an attachment, which is what a Download action wants — the HTML
+  `download` attribute is ignored cross-origin.
+*/
+export function documentDownloadUrl(bucket, path) {
+  const url = documentUrl(bucket, path);
+  return url ? `${url}?download` : null;
 }
 
 async function uploadObject(path, file, type) {
@@ -95,9 +85,29 @@ async function uploadObject(path, file, type) {
   return data.path;
 }
 
+/* Confirms the object is really in the bucket listing, not merely that the
+   upload call returned without an error. */
 async function verifyUpload(path) {
-  const { data, error } = await supabaseClient.storage.from(DOCUMENT_BUCKET).info(path);
-  if (error || !data) throw new MediaStorageError(t("doc.errVerify"), "VERIFY_FAILED", error);
+  const name = path.split("/").pop();
+
+  const { data, error } = await supabaseClient.storage
+    .from(DOCUMENT_BUCKET)
+    .list(DIRECTORY, { limit: 100, search: name });
+
+  if (error) {
+    throw new MediaStorageError(
+      t("doc.errVerify"),
+      "VERIFY_FAILED",
+      error
+    );
+  }
+
+  if (!(data || []).some(entry => entry.name === name)) {
+    throw new MediaStorageError(
+      t("doc.errConfirm"),
+      "VERIFY_FAILED"
+    );
+  }
 }
 
 export async function removeDocument(bucket, path) {
@@ -115,12 +125,12 @@ export async function removeDocument(bucket, path) {
   commit:   async ({ bucket, path, type }) => void   must throw if the
             database write did not apply.
 
-  Order (uncertain writes preserve both generations):
+  Order (every failure leaves the old document referenced):
 
     1. upload new object
     2. verify it exists      -> failure removes the new object
-    3. commit database       -> uncertain result retains both generations
-    4. retain old object     -> reference-aware cleanup is a separate operation
+    3. commit database       -> failure removes the new object
+    4. delete old object     -> failure is only a warning
 
   Resolves with { bucket, path, type, cleanupWarning }.
 */
@@ -131,18 +141,26 @@ export async function replaceDocument({ file, type, previous, commit }) {
 
   try {
     await verifyUpload(path);
+    await commit({ bucket: DOCUMENT_BUCKET, path, type });
   } catch (error) {
+    // Database never accepted the new reference: do not leave an object
+    // nothing points at.
     await removeObjects(DOCUMENT_BUCKET, [path]);
     throw error;
   }
-  try {
-    await commit({ bucket: DOCUMENT_BUCKET, path, type });
-  } catch (error) {
-    // The write may have committed even if its acknowledgement was lost.
-    throw new MediaStorageError(t("doc.errUnconfirmed"), "COMMIT_UNCONFIRMED", error);
+
+  let cleanupWarning = null;
+
+  if (previous && previous.path && previous.path !== path) {
+    const result = await removeDocument(previous.bucket || DOCUMENT_BUCKET, previous.path);
+
+    if (result.failed.length > 0) {
+      // The new document is live and correct; the old file simply lingers.
+      // Rolling the database back here would be strictly worse.
+      cleanupWarning =
+        t("doc.cleanupWarning");
+    }
   }
 
-  // Retain previous versions: another certificate may still reference the object.
-  // Garbage collection needs an independent, explicitly authorized reference audit.
-  return { bucket: DOCUMENT_BUCKET, path, type, cleanupWarning: null };
+  return { bucket: DOCUMENT_BUCKET, path, type, cleanupWarning };
 }

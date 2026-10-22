@@ -9,8 +9,3 @@ __pycache__/
 
 # Tooling artifacts
 .playwright-mcp/
-
-# Generated CLI links/configuration are machine-local, not deployment inputs.
-.vercel/
-.supabase/
-supabase/.temp/

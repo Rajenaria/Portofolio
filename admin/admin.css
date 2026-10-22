@@ -2404,30 +2404,10 @@ body.has-modal-open {
 
 /* ---- Phase 8B: project media ---- */
 
-.project-cover-preview {
-  padding: 0;
-  border: 0;
-  aspect-ratio: 3 / 2;
-  width: min(100%, 420px);
-  min-height: 0;
-  overflow: hidden;
-  background: #e8e8ed;
-  border-radius: var(--radius-md);
-}
-
-.project-cover-preview .media-field-image {
-  display: block;
-  width: 100%;
-  height: 100%;
-  max-height: none;
-}
-
 .project-preview-cover {
   display: block;
   width: 100%;
-  aspect-ratio: 3 / 2;
   height: auto;
-  background: #e8e8ed;
   border-radius: var(--radius-md);
 }
 
@@ -4242,24 +4222,3 @@ a.admin-button {
 .sidebar-brand .lang-switch-inline .lang-switch-option.is-active {
   color: var(--rail-text);
 }
-
-/* M09 Project editor only. Existing admin shell and form builders are retained. */
-.m09-editor .page-actions,.m09-editor-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;}
-.m09-editor-tabs button[aria-pressed="true"]{background:#eaf3ff;color:#005bb8;border-color:#0071e3;}
-.m09-editor .form-field{margin-bottom:18px;}
-.m09-editor fieldset{min-width:0;border:1px solid #dfe3e9;border-radius:12px;padding:20px;margin:20px 0;}
-.m09-editor legend{padding:0 8px;font-weight:600;}
-.m09-editor .form-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;}
-.m09-editor :is(input,select,textarea){max-width:100%;}
-.m09-editor :is(input[type=number],select){font:inherit;min-height:44px;border:1px solid #c7cdd6;border-radius:8px;padding:8px;background:white;}
-.m09-crop-viewport{width:100%;max-width:700px;margin:16px 0;touch-action:none;cursor:move;}
-.m09-crop-viewport.is-mobile{max-width:320px;}
-.m09-crop-viewport .project-media-frame{position:relative;overflow:hidden;margin:0;background:#eeeef2;border-radius:12px;}
-.m09-crop-viewport picture{display:block;height:100%;width:100%;}
-.m09-crop-viewport img{display:block;height:100%;width:100%;user-select:none;-webkit-user-drag:none;pointer-events:none;}
-.m09-crop-viewport figcaption{display:none;}
-.m09-preview{min-width:0;}
-.m09-preview .pcs-reading-progress{position:sticky;top:0;}
-.modal-dialog:has(.m09-preview){width:min(1440px,96vw);max-width:1440px;}
-.m09-editor[aria-busy=true] .m09-editor-fields{pointer-events:none;opacity:.75;}
-@media(max-width:650px){.m09-editor .form-grid{grid-template-columns:1fr;}.m09-editor fieldset{padding:12px;}}

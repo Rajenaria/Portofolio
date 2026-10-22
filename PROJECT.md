@@ -1,131 +1,138 @@
 # Portfolio
 
-## Context and current architecture
+## Overview
 
-Personal portfolio for Rajendra Aria Nismara (Computer Engineering, Telkom
-University). Production frontend remains static HTML, Structured Vanilla CSS
-and JavaScript/ES Modules: no framework, bundler or production build step.
-M08 Option A remains approved; Tailwind and framework migration are DEFER.
+Personal portfolio website for Rajendra Aria Nismara (Computer Engineering,
+Telkom University). Single-page site (`index.html`) covering hero,
+about/organization/tech-stack slider, experience, education, portfolio
+projects, and a contact section with a live guestbook. Two standalone
+project detail pages live under `projects/`.
 
-M01–M10 are DONE — LOCAL VERIFIED; M10 closure is owner-approved.
-M11 staging integration is verified; production release remains pending.
-See docs/Features/M11-TECHNICAL-COMPLETION.md for measured scope and release gates.
-Source and fixture tests alone do not establish deployed behavior.
-Do not infer production readiness from earlier descriptions saying "deployed".
-Milestone history remains under `docs/Features/` and `docs/Security/`.
+The site is finished, deployed, and its visual design is final. This
+document describes the project as it exists today — it is not a design
+spec and does not propose visual changes.
 
-## Public features and entry points
+## Goals
 
-- `index.html`: hero/opening animation, About/organization/technologies,
-  experience, education, CMS certificates, Projects, contact/guestbook/footer.
-- Projects: category filter, initial six and load-more on desktop/tablet;
-  native horizontal swipe at <=650px on mobile. Actual published CMS data
-  controls cards, category labels, cover positioning and detail links.
-- `project.html?slug=...`: shared structured case-study renderer, sticky TOC,
-  timeline, architecture explorer, feature cards, decisions, gallery/lightbox
-  and reflections. Legacy CMS records have a compatibility adapter.
-- `projects/project-football-club.html` and `project-ecommerce.html`: retained
-  static historical routes. Their duplicate Football Club content is an open
-  owner-content issue; do not fabricate E-Commerce content.
-- Hero/footer CV use one active metadata version and delivery endpoint, with
-  legacy fallback only after confirmed old schema or unconfigured CV.
-- Guestbook reads comments and submits via `submit-comment`; its request
-  contract and moderation/filtering remain protected.
-- `admin/index.html`: owner/MFA-gated CMS, working drafts, preview, publishing,
-  crop/media management and unsaved-change guard.
+- Present Rajendra's background, experience, and project work to visitors
+  (recruiters, collaborators, university contacts).
+- Let visitors leave a public message (guestbook) that others can see.
+- Provide a downloadable CV and direct contact links (Instagram, WhatsApp,
+  email, LinkedIn).
 
-## Module and stylesheet ownership
+## Main Sections / Features
 
-| Entry / module | Responsibility |
-| --- | --- |
-| `js/initial-loader.js` | Early readiness gate; loaded in head before main scripts. |
-| `js/script.js` | Homepage navigation, section interactions and shared lifecycle. |
-| `js/hero-photo-stack.js`, `experience-stack.js`, `certificates.js` | Dedicated interactive components; preserve existing timing and disposal. |
-| `js/cms/client.js` | Public Supabase reads and URL helpers. |
-| `js/cms/profile-about.js`, `technologies.js`, `certificates.js`, `cv.js` | Public CMS section adapters. |
-| `js/cms/projects.js` | Homepage filters, pagination, native mobile rail and reveal observer. |
-| `js/cms/project-data.js`, `project-cover.js` | Shared catalog/legacy DTO and image/crop helpers. |
-| `js/cms/project-detail.js`, `project-case-study.js` | Detail entry and shared public/admin renderer, with cleanup. |
-| `admin/admin.js`, `admin/js/core/` | Admin router, session/MFA, modal/form/dirty guard, upload and server gateways. |
-| `admin/js/modules/` | Per-feature CMS controllers; project draft state/editor/crop/preview remain together. |
+- **Hero** — name, headline, CTA buttons (View Projects, Download CV).
+- **About** — horizontal 3-slide section: personal intro, organization/lab
+  activity documentation (inner photo carousel), and tech stack grid.
+- **Experience** — card grid of 4 professional/organizational experiences.
+- **Education** — SMA Pasundan 1 Bandung and Telkom University.
+- **Portfolio** — horizontally scrollable project card grid, 3 real
+  projects + 3 "coming soon" placeholders. Two projects link to standalone
+  detail pages in `projects/`.
+- **Contact + Guestbook** — social/contact links on the left; a guestbook
+  form + live comment list (backed by Supabase) on the right.
+- **Footer** — profile summary, contact info, quick links.
 
-Stylesheet ownership/load order:
+## Tech Stack
 
-- Homepage: `css/style.css`, with critical loader style in `index.html`.
-  It owns global theme/tokens, section styles and ordered responsive overrides.
-  Preserve its cascade; do not split/merge rules based only on similar selectors.
-- CMS detail: `css/project-detail.css` then `css/project-case-study.css`.
-- Admin: `admin/admin.css` then shared `css/project-case-study.css`.
-- Legacy details: `css/project-legacy.css`, containing the exact shared original
-  inline declarations at their former load position. No relative asset URLs.
-- `.project-case-study` scopes shared renderer styles/tokens. Keep public/admin
-  presentation boundaries, `[hidden]`, focus-visible, reduced motion and 650px
-  image selection. Keep CSS selectors and animation names used by controllers.
+- **HTML** — `index.html`, `projects/*.html` (no templating/build step).
+- **CSS** — single stylesheet, `css/style.css`.
+- **JavaScript** — vanilla JS, no framework or bundler:
+  - `js/script.js` — navigation, sliders/carousels, scroll reveal, general
+    page interactivity.
+  - `js/guestbook.js` — guestbook form validation, Supabase submission,
+    comment list rendering/slider, drag-to-scroll.
+- **Fonts/icons** — Google Fonts (Poppins), Devicon, Iconify — all loaded
+  from CDN in `index.html`'s `<head>`, not bundled locally.
 
-## Supabase boundaries
+## External Services
 
-There is server-side backend logic in Supabase Edge Functions and PostgreSQL,
-although Vercel serves the frontend statically. Source lives in `supabase/`:
+- **Supabase** — used exclusively by the guestbook (`js/guestbook.js`):
+  - Reads/writes the `comments` table via the Supabase REST endpoint.
+  - Submits new comments through a Supabase Edge Function
+    (`/functions/v1/submit-comment`).
+  - The client uses a Supabase **publishable** key (`sb_publishable_...`),
+    which is Supabase's newer public/anon-style key meant for client-side
+    use under Row Level Security — this is expected to be visible in
+    frontend source. See `README.md` for the exact location if you need to
+    rotate it.
 
-- Historical migrations define CMS tables, private schemas, RLS/grants, storage
-  access, request budgets and snapshot activation. Do not rewrite migration
-  history during cleanup.
-- `submit-comment` manages guestbook submission/rate limits.
-- `certificate-document` verifies current publication and document reference
-  for private certificate delivery; Hide/Archive retain documents.
-- `manage-cv` / `cv-document` validate owner+AAL2 uploads and active-version
-  downloads in private `portfolio-cv`; inactive versions remain private.
-- `manage-project`, `project-asset`, `project-media` and shared helpers manage
-  private drafts/originals, registry/derivatives, public publication checks,
-  revision/CAS/idempotency and recovery. No automatic orphan cleanup.
-- Browser publishable keys are not server secrets. Service-role keys belong
-  exclusively in server runtime. Client checks never replace server/RLS checks.
-
-Frontend/SQL/Edge contracts and real staging PostgreSQL, Auth/MFA, Storage/RLS,
-concurrency and Edge deployment evidence are documented in M11. Production and
-hosted frontend verification remain release gates.
-
-## Directory and asset contracts
+## System Architecture
 
 ```
-index.html / project.html    Current public entries
-projects/                   Retained static detail routes
-css/ / js/                  Public styles, components and CMS modules
-admin/                      Admin entry, vendor SDK, styles and modules
-assets/images/              profile / education / experience / projects /
-                            branding / backgrounds
-assets/documents/           Historical static CV (transition decision pending)
-supabase/                   Migrations, functions and local configuration
-scripts/                    Developer utilities, isolated fixtures and tests
-docs/                       Decisions, design, security and milestone history
+Browser
+│
+├── HTML  (index.html, projects/*.html)
+├── CSS   (css/style.css)
+└── Vanilla JavaScript (js/script.js, js/guestbook.js)
+       │
+       └── Guestbook (js/guestbook.js)
+             ↓
+          Supabase (REST + Edge Function)
 ```
 
-Every image with a `-mobile.webp` counterpart retains
-`<picture><source media="(max-width: 650px)">`. Keep both variants and historical
-asset URLs. Both existing Node+Sharp and Python+Pillow image optimizers remain:
-one uses an explicit manifest, the other scans sizes and can audit HTML.
-Do not remove assets merely because static HTML does not reference them.
+No backend, no build step, no server-rendered logic. `scripts/` contains
+developer-only utilities (image optimization) that never run in the
+browser and are not part of the deployed site.
 
-## Verification and deployment
+## Project Structure
 
-Use `node scripts/preview-portfolio.js` for isolated synthetic visual review.
-No HTTP server or backend runs in that launcher; Chrome gets a temporary
-profile, guarded network and known local responses. Direct static serving is
-not itself safe isolation for the source's remote service configuration.
-See README and `docs/Features/M07-SAFE-LOCAL-PREVIEW.md`.
+```
+index.html                     Main single-page site
+css/style.css                  Site stylesheet (single file)
+js/script.js                   General site JS (nav, sliders, reveal)
+js/guestbook.js                Guestbook form + Supabase integration
+projects/                      Standalone project detail pages
+  project-football-club.html
+  project-ecommerce.html
+assets/
+  images/
+    profile/                   Hero + about-me photos
+    education/                 School/university logos
+    experience/                Organization/lab documentation photos
+    projects/                  Portfolio card + project-page images
+    branding/                  Small standalone icons (site/tech icons,
+                                unused social-icon PNGs — see README)
+    backgrounds/                Section background images
+  documents/
+    CV-Rajendra Aria Nismara.pdf
+scripts/                       Dev-only utilities (not shipped to browser)
+  optimize-mobile-images.js    Node + Sharp mobile image generator
+  optimize-mobile-images.py    Python + Pillow mobile image generator +
+                                HTML <picture> auto-wrap audit
+package.json / package-lock.json   Node deps for the JS optimizer (sharp)
+requirements.txt               Python deps for the Python optimizer (Pillow)
+```
 
-`package.json` holds development image tooling; `npm test` is a failing
-placeholder. Run the relevant explicit `scripts/test-*.js` commands instead.
-ES Modules need HTTP; no dependency installation/build is needed for the
-native Chrome/CDP fixture scripts. Fixture passes are not real backend proofs.
+Every image with a `-mobile.webp` counterpart is served responsively via
+`<picture><source media="(max-width: 650px)">`. Both the original
+(desktop) and mobile files are kept side by side in the same category
+subfolder under `assets/images/`. This mechanism was not changed by the
+2026-08-13 structure cleanup — only the folder each file lives in.
 
-Vercel configuration/CSP and `.vercelignore` retain static deployment and
-exclude docs, scripts, Supabase definitions and local config. New production
-files stay within existing public folders; do not rename routes or add layers.
+## Development Status
 
-M11 must verify migration/bootstrap compatibility (M02/M04/M06/M09), local and
-staging function runtime, owner/AAL2, grants/RLS, storage consumers, trusted
-proxy/rate limits, concurrency/recovery, historical URLs/CDN cache and static
-CV transition. Audit references before any orphan cleanup. Favicon remains
-DEFER pending personal logo; expanded hero geometry remains OPEN for visual
-review. M10 does not resolve or weaken these blockers.
+Feature-complete and deployed. Current work is limited to structure/
+documentation cleanup, not new features or redesign. See
+`## Important Notes` below for one open content issue.
+
+## Important Notes
+
+- **Duplicate project content (needs content review):** `projects/
+  project-football-club.html` and `projects/project-ecommerce.html` are
+  byte-identical — both currently show Football Club / Real Madrid
+  content. `index.html`'s "E-Commerce Application" portfolio card links to
+  `project-ecommerce.html`, so that card is showing the wrong project
+  content today. The files were renamed (2026-08-13) to match which
+  portfolio card currently links to them, but the content itself was
+  **not** rewritten — writing real E-Commerce project content requires
+  input from the project owner and was out of scope for a structure-only
+  refactor.
+- **Two image optimizers, same job:** `scripts/optimize-mobile-images.js`
+  (Node + Sharp) and `scripts/optimize-mobile-images.py` (Python +
+  Pillow) both generate mobile WebP images, using different mechanisms
+  (explicit manifest vs. automatic size-based scan + optional HTML
+  auto-wrap). Both are kept — see `README.md` for when to use which.
+- Do not reintroduce a flat `Image/`, `JS/`, or `Project/` folder — the
+  site now expects `assets/images/<category>/`, `js/`, and `projects/`.

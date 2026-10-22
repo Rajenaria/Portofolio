@@ -1,25 +1,13 @@
 import {
   SUPABASE_URL,
-  SUPABASE_PUBLISHABLE_KEY,
-  OWNER_USER_ID,
-  environmentStatus
+  SUPABASE_PUBLISHABLE_KEY
 } from "./config.js";
 
 import { authStorage } from "./auth-storage.js";
 
 const { createClient } = window.supabase;
 
-// Do not instantiate Auth (including session refresh) for missing/mismatched input.
-let checked = environmentStatus;
-try {
-  if (checked.ok) globalThis.PortfolioEnvironment.requireEnvironment({
-    url: SUPABASE_URL, key: SUPABASE_PUBLISHABLE_KEY, owner: OWNER_USER_ID
-  });
-} catch {
-  checked = Object.freeze({ ok: false, message: globalThis.PortfolioEnvironment.message });
-}
-export const configurationStatus = checked;
-export const supabaseClient = configurationStatus.ok ? createClient(
+export const supabaseClient = createClient(
   SUPABASE_URL,
   SUPABASE_PUBLISHABLE_KEY,
   {
@@ -36,4 +24,4 @@ export const supabaseClient = configurationStatus.ok ? createClient(
       detectSessionInUrl: true
     }
   }
-) : null;
+);

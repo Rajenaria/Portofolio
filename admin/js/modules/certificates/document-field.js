@@ -3,7 +3,7 @@
 
   Owns three things and nothing else:
 
-    1. showing what is stored, with authenticated preview/download actions,
+    1. showing what is currently stored (public URL derived for display only),
     2. validating a picked file through document-processor.js,
     3. holding the processed file until the editor saves.
 
@@ -24,7 +24,7 @@ import {
   DocumentProcessorError,
   MAX_DOCUMENT_BYTES
 } from "../../core/document-processor.js";
-import { hasDocument, openDocument } from "../../core/document-storage.js";
+import { documentUrl, documentDownloadUrl } from "../../core/document-storage.js";
 import { formatBytes } from "../../core/image-processor.js";
 import { t } from "../../core/i18n.js";
 
@@ -102,7 +102,7 @@ export function createDocumentField({ current, onChange }) {
   function render() {
     clear(statusSlot);
 
-    const url = stored && hasDocument(stored.bucket, stored.path);
+    const url = stored ? documentUrl(stored.bucket, stored.path) : null;
     const showStored = Boolean(stored) && !removing && !pending;
 
     viewLink.hidden = !showStored || !url;
@@ -112,8 +112,13 @@ export function createDocumentField({ current, onChange }) {
     chooseButton.textContent =
       stored && !removing ? t("certDoc.replace") : t("certDoc.upload");
 
-    viewLink.href = "#";
-    downloadLink.href = "#";
+    if (url) {
+      viewLink.href = url;
+      downloadLink.href = documentDownloadUrl(stored.bucket, stored.path);
+    } else {
+      viewLink.removeAttribute("href");
+      downloadLink.removeAttribute("href");
+    }
 
     if (pending) {
       const line = el("p", "document-field-line");
@@ -216,13 +221,6 @@ export function createDocumentField({ current, onChange }) {
     notify();
   });
 
-  [viewLink, downloadLink].forEach(link => link.addEventListener("click", async event => {
-    event.preventDefault();
-    if (!stored || removing || pending || link.getAttribute("aria-busy") === "true") return;
-    link.setAttribute("aria-busy", "true");
-    try { await openDocument(stored.bucket, stored.path, { download: link === downloadLink }); }
-    finally { link.removeAttribute("aria-busy"); }
-  }));
   render();
 
   return {

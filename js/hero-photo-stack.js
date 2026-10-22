@@ -62,19 +62,11 @@
     let documentBound = false;
 
 
-    function updateAccessibleState() {
-        cards.forEach((card, index) => {
-            card.setAttribute("aria-pressed", String(order[0] === index));
-            card.setAttribute("aria-expanded", String(isSpread));
-        });
-    }
-
     function applyPositions() {
 
         order.forEach((cardIndex, position) => {
             cards[cardIndex].setAttribute("data-position", String(position));
         });
-        updateAccessibleState();
 
     }
 
@@ -87,7 +79,6 @@
 
         isSpread = true;
         stack.classList.add("is-spread");
-        updateAccessibleState();
 
     }
 
@@ -100,7 +91,6 @@
 
         isSpread = false;
         stack.classList.remove("is-spread");
-        updateAccessibleState();
 
     }
 
@@ -131,7 +121,7 @@
         selectTimer = window.setTimeout(() => {
             card.classList.remove("is-selecting");
             isAnimating = false;
-        }, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : SELECT_DURATION);
+        }, SELECT_DURATION);
 
     }
 
@@ -160,7 +150,7 @@
             return;
         }
 
-        if (!stage.contains(document.activeElement)) collapse();
+        collapse();
     }
 
     function handleStageFocusIn() {
@@ -173,14 +163,7 @@
             return;
         }
 
-        if (!stage.matches(":hover")) collapse();
-    }
-
-    function handleStageKeydown(event) {
-        if (event.key === "Escape") {
-            collapse();
-            event.stopPropagation();
-        }
+        collapse();
     }
 
     function handleDocumentClick(event) {
@@ -207,14 +190,12 @@
             boundStage.removeEventListener("pointerleave", handleStagePointerLeave);
             boundStage.removeEventListener("focusin", handleStageFocusIn);
             boundStage.removeEventListener("focusout", handleStageFocusOut);
-            boundStage.removeEventListener("keydown", handleStageKeydown);
         }
 
         stage.addEventListener("pointerenter", handleStagePointerEnter);
         stage.addEventListener("pointerleave", handleStagePointerLeave);
         stage.addEventListener("focusin", handleStageFocusIn);
         stage.addEventListener("focusout", handleStageFocusOut);
-        stage.addEventListener("keydown", handleStageKeydown);
 
         boundStage = stage;
 

@@ -2,7 +2,6 @@
 <html lang="en">
 
 <head>
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://code.iconify.design; style-src 'self' 'unsafe-inline'; font-src 'self' https://cdn.jsdelivr.net; img-src 'self' data: https://api.iconify.design; connect-src 'self' https://api.iconify.design; frame-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'">
 
     <meta charset="UTF-8">
 
@@ -23,7 +22,875 @@
     ></script>
 
 
-    <link rel="stylesheet" href="../css/project-legacy.css">
+    <style>
+
+        /* =========================================
+           RESET
+        ========================================= */
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+
+        body {
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+
+            background: #ffffff;
+
+            color: #0f172a;
+        }
+
+
+        img {
+            width: 100%;
+
+            display: block;
+        }
+
+
+        a {
+            color: inherit;
+
+            text-decoration: none;
+        }
+
+
+
+        /* =========================================
+           GLOBAL
+        ========================================= */
+
+        :root {
+
+            --purple:
+                #6d28d9;
+
+            --purple-soft:
+                #f5f3ff;
+
+            --dark:
+                #0f172a;
+
+            --text:
+                #475569;
+
+            --muted:
+                #94a3b8;
+
+            --line:
+                #e2e8f0;
+
+            --light-bg:
+                #f8fafc;
+
+            --container:
+                min(1180px, calc(100% - 80px));
+
+        }
+
+
+        .project-page-container {
+            width:
+                var(--container);
+
+            margin:
+                0 auto;
+        }
+
+
+
+        /* =========================================
+           TOP NAV
+        ========================================= */
+
+        .project-top-nav {
+            width: 100%;
+
+            padding:
+                24px 0;
+
+            border-bottom:
+                1px solid
+                #e2e8f0;
+
+            background:
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.95
+                );
+
+            position:
+                sticky;
+
+            top: 0;
+
+            z-index: 100;
+        }
+
+
+        .project-top-nav-inner {
+            width:
+                var(--container);
+
+            margin:
+                0 auto;
+
+            display:
+                flex;
+
+            justify-content:
+                space-between;
+
+            align-items:
+                center;
+
+            gap:
+                20px;
+        }
+
+
+        .project-back {
+            display:
+                inline-flex;
+
+            align-items:
+                center;
+
+            gap:
+                8px;
+
+            font-size:
+                13px;
+
+            font-weight:
+                600;
+
+            color:
+                #475569;
+
+            transition:
+                color .3s ease,
+                transform .3s ease;
+        }
+
+
+        .project-back:hover {
+            color:
+                #6d28d9;
+
+            transform:
+                translateX(-3px);
+        }
+
+
+        .project-owner {
+            font-size:
+                13px;
+
+            font-weight:
+                700;
+
+            color:
+                #0f172a;
+        }
+
+
+
+        /* =========================================
+           HERO
+        ========================================= */
+
+        .project-detail-hero {
+            padding:
+                110px 0
+                80px;
+        }
+
+
+        .project-number {
+            margin-bottom:
+                20px;
+
+            font-size:
+                11px;
+
+            font-weight:
+                700;
+
+            letter-spacing:
+                2px;
+
+            color:
+                #6d28d9;
+        }
+
+
+        .project-detail-hero h1 {
+            max-width:
+                850px;
+
+            margin-bottom:
+                20px;
+
+            font-size:
+                clamp(
+                    52px,
+                    7vw,
+                    100px
+                );
+
+            line-height:
+                .95;
+
+            letter-spacing:
+                -5px;
+
+            color:
+                #0f172a;
+        }
+
+
+        .project-detail-hero h1 span {
+            color:
+                #6d28d9;
+        }
+
+
+        .project-intro {
+            max-width:
+                690px;
+
+            margin-top:
+                28px;
+
+            font-size:
+                17px;
+
+            line-height:
+                1.8;
+
+            color:
+                #64748b;
+        }
+
+
+
+        /* =========================================
+           META
+        ========================================= */
+
+        .project-meta {
+            margin-top:
+                50px;
+
+            padding-top:
+                25px;
+
+            border-top:
+                1px solid
+                #e2e8f0;
+
+            display:
+                flex;
+
+            flex-wrap:
+                wrap;
+
+            gap:
+                60px;
+        }
+
+
+        .project-meta-item p {
+            margin-bottom:
+                7px;
+
+            font-size:
+                9px;
+
+            font-weight:
+                700;
+
+            letter-spacing:
+                1.7px;
+
+            color:
+                #94a3b8;
+        }
+
+
+        .project-meta-item span {
+            font-size:
+                13px;
+
+            font-weight:
+                600;
+
+            color:
+                #0f172a;
+        }
+
+
+
+        /* =========================================
+           HERO Image
+        ========================================= */
+
+        .project-cover {
+            margin-bottom:
+                120px;
+
+            border-radius:
+                24px;
+
+            overflow:
+                hidden;
+
+            background:
+                #f1f5f9;
+        }
+
+
+        .project-cover img {
+            width: 100%;
+
+            min-height:
+                420px;
+
+            object-fit:
+                cover;
+        }
+
+        .project-cover picture {
+            display: contents;
+        }
+
+
+
+        /* =========================================
+           ABOUT PROJECT
+        ========================================= */
+
+        .project-about {
+            padding-bottom:
+                120px;
+
+            display:
+                grid;
+
+            grid-template-columns:
+                1.5fr 1fr;
+
+            gap:
+                120px;
+
+            align-items:
+                start;
+        }
+
+
+        .project-small-label {
+            margin-bottom:
+                20px;
+
+            font-size:
+                10px;
+
+            font-weight:
+                700;
+
+            letter-spacing:
+                2px;
+
+            color:
+                #6d28d9;
+        }
+
+
+        .project-about h2 {
+            max-width:
+                600px;
+
+            margin-bottom:
+                28px;
+
+            font-size:
+                clamp(
+                    32px,
+                    4vw,
+                    52px
+                );
+
+            line-height:
+                1.1;
+
+            letter-spacing:
+                -2px;
+
+            color:
+                #0f172a;
+        }
+
+
+        .project-about-text {
+            max-width:
+                650px;
+        }
+
+
+        .project-about-text p {
+            margin-bottom:
+                18px;
+
+            font-size:
+                15px;
+
+            line-height:
+                1.9;
+
+            color:
+                #64748b;
+        }
+
+
+
+        /* =========================================
+           TECH STACK
+        ========================================= */
+
+        .project-tools {
+            padding:
+                30px;
+
+            border:
+                1px solid
+                #e2e8f0;
+
+            border-radius:
+                20px;
+
+            background:
+                #f8fafc;
+        }
+
+
+        .project-tools h3 {
+            margin-bottom:
+                25px;
+
+            font-size:
+                17px;
+
+            color:
+                #0f172a;
+        }
+
+
+        .project-tool-list {
+            display:
+                flex;
+
+            flex-wrap:
+                wrap;
+
+            gap:
+                10px;
+        }
+
+
+        .project-tool {
+            display:
+                inline-flex;
+
+            align-items:
+                center;
+
+            gap:
+                8px;
+
+            padding:
+                10px 14px;
+
+            border:
+                1px solid
+                #e2e8f0;
+
+            border-radius:
+                50px;
+
+            background:
+                #ffffff;
+
+            font-size:
+                11px;
+
+            font-weight:
+                600;
+
+            color:
+                #475569;
+        }
+
+
+        .project-tool iconify-icon {
+            font-size:
+                17px;
+
+            color:
+                #6d28d9;
+        }
+
+
+
+        /* =========================================
+           DOCUMENTATION
+        ========================================= */
+
+        .project-documentation {
+            padding:
+                100px 0;
+
+            background:
+                #f8fafc;
+        }
+
+
+        .project-documentation-heading {
+            margin-bottom:
+                50px;
+
+            text-align:
+                center;
+        }
+
+
+        .project-documentation-heading h2 {
+            margin-top:
+                12px;
+
+            font-size:
+                clamp(
+                    32px,
+                    4vw,
+                    50px
+                );
+
+            letter-spacing:
+                -2px;
+        }
+
+
+        .project-documentation-grid {
+            display:
+                grid;
+
+            grid-template-columns:
+                repeat(
+                    2,
+                    minmax(0, 1fr)
+                );
+
+            gap:
+                22px;
+        }
+
+
+        .project-documentation-item {
+            border-radius:
+                20px;
+
+            overflow:
+                hidden;
+
+            background:
+                #e2e8f0;
+        }
+
+
+        .project-documentation-item img {
+            width: 100%;
+
+            height:
+                100%;
+
+            min-height:
+                350px;
+
+            object-fit:
+                cover;
+
+            transition:
+                transform .6s
+                cubic-bezier(
+                    .22,
+                    1,
+                    .36,
+                    1
+                );
+        }
+
+
+        .project-documentation-item:hover img {
+            transform:
+                scale(1.025);
+        }
+
+
+        .project-documentation-item.is-large {
+            grid-column:
+                1 / -1;
+        }
+
+
+        .project-documentation-item.is-large img {
+            min-height:
+                500px;
+        }
+
+        .project-documentation-item picture {
+            display: contents;
+        }
+
+
+
+        /* =========================================
+           BOTTOM NAVIGATION
+        ========================================= */
+
+        .project-bottom-navigation {
+            padding:
+                80px 0;
+        }
+
+
+        .project-bottom-inner {
+            display:
+                flex;
+
+            justify-content:
+                space-between;
+
+            align-items:
+                center;
+
+            gap:
+                25px;
+        }
+
+
+        .project-bottom-link {
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+            gap:
+                7px;
+        }
+
+
+        .project-bottom-link:last-child {
+            text-align:
+                right;
+        }
+
+
+        .project-bottom-link small {
+            font-size:
+                9px;
+
+            font-weight:
+                700;
+
+            letter-spacing:
+                1.5px;
+
+            color:
+                #94a3b8;
+        }
+
+
+        .project-bottom-link span {
+            font-size:
+                17px;
+
+            font-weight:
+                700;
+
+            color:
+                #0f172a;
+
+            transition:
+                color .3s ease;
+        }
+
+
+        .project-bottom-link:hover span {
+            color:
+                #6d28d9;
+        }
+
+
+
+        /* =========================================
+           FOOTER
+        ========================================= */
+
+        .project-footer {
+            padding:
+                35px 0;
+
+            background:
+                #0f172a;
+
+            color:
+                #64748b;
+
+            font-size:
+                11px;
+        }
+
+
+        .project-footer-inner {
+            width:
+                var(--container);
+
+            margin:
+                0 auto;
+
+            display:
+                flex;
+
+            justify-content:
+                space-between;
+
+            gap:
+                20px;
+        }
+
+
+
+        /* =========================================
+           RESPONSIVE
+        ========================================= */
+
+        @media (
+            max-width: 800px
+        ) {
+
+            :root {
+
+                --container:
+                    calc(
+                        100% - 40px
+                    );
+
+            }
+
+
+            .project-detail-hero {
+                padding:
+                    80px 0
+                    60px;
+            }
+
+
+            .project-detail-hero h1 {
+                letter-spacing:
+                    -3px;
+            }
+
+
+            .project-about {
+                grid-template-columns:
+                    1fr;
+
+                gap:
+                    50px;
+            }
+
+
+            .project-documentation-grid {
+                grid-template-columns:
+                    1fr;
+            }
+
+
+            .project-documentation-item.is-large {
+                grid-column:
+                    auto;
+            }
+
+        }
+
+
+
+        @media (
+            max-width: 520px
+        ) {
+
+            .project-owner {
+                display:
+                    none;
+            }
+
+
+            .project-meta {
+                gap:
+                    30px;
+            }
+
+
+            .project-cover img {
+                min-height:
+                    280px;
+            }
+
+
+            .project-documentation-item img,
+            .project-documentation-item.is-large img {
+                min-height:
+                    260px;
+            }
+
+
+            .project-bottom-inner {
+                align-items:
+                    flex-start;
+
+                flex-direction:
+                    column;
+            }
+
+
+            .project-bottom-link:last-child {
+                text-align:
+                    left;
+            }
+
+
+            .project-footer-inner {
+                flex-direction:
+                    column;
+            }
+
+        }
+
+    </style>
 
 </head>
 

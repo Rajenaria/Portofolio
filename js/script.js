@@ -102,8 +102,6 @@ updateMainNavbar();
     ===================================== */
 
     function openMobileMenu() {
-        menu.inert = false;
-        menu.setAttribute("aria-hidden", "false");
 
         nav.classList.add(
             "is-mobile-open"
@@ -130,9 +128,6 @@ updateMainNavbar();
     ===================================== */
 
     function closeMobileMenu() {
-        if (menu.contains(document.activeElement)) toggle.focus({preventScroll: true});
-        menu.inert = true;
-        menu.setAttribute("aria-hidden", "true");
 
         nav.classList.remove(
             "is-mobile-open"
@@ -153,9 +148,6 @@ updateMainNavbar();
     }
 
 
-
-    menu.inert = true;
-    menu.setAttribute("aria-hidden", "true");
 
     /* =====================================
        TOGGLE
@@ -318,10 +310,6 @@ function updateNavbarScroll() {
 
 const revealElements =
     document.querySelectorAll(".reveal");
-
-revealElements.forEach(element => {
-    element.addEventListener("focusin", () => element.classList.add("reveal-active"));
-});
 
 
 if (
@@ -712,18 +700,8 @@ function updateAboutSlider() {
     }
 
 
-    aboutSlides.forEach((slide, index) => {
-        const active = index === aboutIndex;
-        if (!active && slide.contains(document.activeElement)) {
-            aboutNext?.focus({preventScroll: true});
-        }
-        slide.inert = !active;
-        slide.setAttribute("aria-hidden", String(!active));
-        slide.setAttribute("role", "group");
-        slide.setAttribute("aria-label", `Slide ${index + 1} dari ${aboutSlides.length}`);
-    });
-    aboutTrack.style.transition = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-        ? "none" : "transform 0.7s cubic-bezier(0.22, 1, 0.36, 1)";
+    aboutTrack.style.transition =
+        "transform 0.7s cubic-bezier(0.22, 1, 0.36, 1)";
 
 
     aboutTrack.style.transform =
@@ -737,7 +715,6 @@ function updateAboutSlider() {
                 "active",
                 index === aboutIndex
             );
-            dot.setAttribute("aria-current", String(index === aboutIndex));
 
         }
     );
@@ -745,15 +722,6 @@ function updateAboutSlider() {
 }
 
 
-
-aboutSlider?.addEventListener("keydown", event => {
-    if (event.altKey || event.ctrlKey || event.metaKey ||
-        event.target.closest("input,textarea,select,.about-org-gallery")) return;
-    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
-    event.preventDefault();
-    aboutIndex = (aboutIndex + (event.key === "ArrowRight" ? 1 : -1) + aboutSlides.length) % aboutSlides.length;
-    updateAboutSlider();
-});
 
 /* =========================================
    ABOUT NEXT
@@ -1303,12 +1271,8 @@ if (
 
     function updateOrganizationSlider() {
 
-        Array.from(orgPhotos).forEach((photo, index) => {
-            photo.inert = index !== orgIndex;
-            photo.setAttribute("aria-hidden", String(index !== orgIndex));
-        });
-        orgTrack.style.transition = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-            ? "none" : "transform 0.55s cubic-bezier(0.22, 1, 0.36, 1)";
+        orgTrack.style.transition =
+            "transform 0.55s cubic-bezier(0.22, 1, 0.36, 1)";
 
 
         orgTrack.style.transform =
@@ -1328,7 +1292,6 @@ if (
                     "active",
                     index === orgIndex
                 );
-                dot.setAttribute("aria-current", String(index === orgIndex));
 
             }
         );
@@ -1701,6 +1664,1404 @@ if (
 updateAboutSlider();
 
 /* =========================================
+   PROJECT HORIZONTAL DRAG
+   SAFE FOR LINKS / BUTTONS
+========================================= */
+
+(function () {
+
+    const projectGrid =
+        document.querySelector(
+            "#projectGrid"
+        );
+
+
+    if (!projectGrid) {
+        return;
+    }
+
+
+    let isDragging = false;
+
+    let startX = 0;
+
+    let startScrollLeft = 0;
+
+    let dragDistance = 0;
+
+    let hasDragged = false;
+
+    let activePointerId = null;
+
+
+    /*
+        Waktu singkat setelah drag selesai.
+
+        Ini dipakai supaya browser tidak
+        membuka link secara tidak sengaja
+        setelah user benar-benar melakukan drag.
+    */
+
+    let suppressClickUntil = 0;
+
+
+
+    /* =====================================
+       POINTER DOWN
+    ===================================== */
+
+    projectGrid.addEventListener(
+        "pointerdown",
+        (event) => {
+
+
+            /*
+                PENTING:
+
+                Kalau user klik:
+
+                - link
+                - button
+                - input
+                - textarea
+                - select
+                - label
+
+                jangan mulai drag carousel.
+
+                Jadi tombol "Lihat Project"
+                tetap bisa diklik normal.
+            */
+
+            if (
+                event.target.closest(
+                    "a, button, input, textarea, select, label"
+                )
+            ) {
+
+                return;
+
+            }
+
+
+
+            /*
+                Kalau menggunakan mouse,
+                hanya tombol kiri yang
+                boleh memulai drag.
+
+                Touch dan pen tetap boleh.
+            */
+
+            if (
+                event.pointerType === "mouse" &&
+                event.button !== 0
+            ) {
+
+                return;
+
+            }
+
+
+
+            /*
+                Mulai drag.
+            */
+
+            isDragging = true;
+
+            hasDragged = false;
+
+
+            activePointerId =
+                event.pointerId;
+
+
+            startX =
+                event.clientX;
+
+
+            startScrollLeft =
+                projectGrid.scrollLeft;
+
+
+            dragDistance = 0;
+
+
+
+            /*
+                Tambahkan class visual
+                grabbing.
+            */
+
+            projectGrid.classList.add(
+                "is-dragging"
+            );
+
+
+
+            /*
+                Pointer capture membuat drag
+                tetap bekerja meskipun cursor
+                sedikit keluar dari area card.
+            */
+
+            try {
+
+                projectGrid.setPointerCapture(
+                    event.pointerId
+                );
+
+            }
+
+            catch (error) {
+
+                /*
+                    Browser fallback.
+                */
+
+            }
+
+        }
+    );
+
+
+
+    /* =====================================
+       POINTER MOVE
+    ===================================== */
+
+    projectGrid.addEventListener(
+        "pointermove",
+        (event) => {
+
+
+            /*
+                Abaikan kalau tidak sedang drag.
+            */
+
+            if (
+                !isDragging ||
+                event.pointerId !== activePointerId
+            ) {
+
+                return;
+
+            }
+
+
+
+            /*
+                Hitung seberapa jauh
+                mouse / jari bergerak.
+            */
+
+            dragDistance =
+                event.clientX -
+                startX;
+
+
+
+            /*
+                Kita baru menganggap user
+                benar-benar drag kalau bergerak
+                lebih dari 6px.
+
+                Jadi klik kecil tidak dianggap drag.
+            */
+
+            if (
+                Math.abs(
+                    dragDistance
+                ) > 6
+            ) {
+
+                hasDragged = true;
+
+            }
+
+
+
+            /*
+                Mouse ke kiri
+                → carousel ke kanan.
+
+                Mouse ke kanan
+                → carousel ke kiri.
+            */
+
+            projectGrid.scrollLeft =
+                startScrollLeft -
+                dragDistance;
+
+        }
+    );
+
+
+
+    /* =====================================
+       END DRAG
+    ===================================== */
+
+    function stopDragging(event) {
+
+
+        if (!isDragging) {
+            return;
+        }
+
+
+
+        /*
+            Pastikan event berasal dari
+            pointer yang sama.
+        */
+
+        if (
+            event &&
+            activePointerId !== null &&
+            event.pointerId !== activePointerId
+        ) {
+
+            return;
+
+        }
+
+
+
+        /*
+            Simpan status sebelum reset.
+        */
+
+        const draggedThisGesture =
+            hasDragged;
+
+
+
+        /*
+            Reset drag.
+        */
+
+        isDragging = false;
+
+        activePointerId = null;
+
+
+
+        projectGrid.classList.remove(
+            "is-dragging"
+        );
+
+
+
+        /*
+            Lepaskan pointer capture.
+        */
+
+        try {
+
+            if (
+                event &&
+                projectGrid.hasPointerCapture(
+                    event.pointerId
+                )
+            ) {
+
+                projectGrid.releasePointerCapture(
+                    event.pointerId
+                );
+
+            }
+
+        }
+
+        catch (error) {
+
+            /*
+                Browser fallback.
+            */
+
+        }
+
+
+
+        /*
+            Kalau tadi benar-benar melakukan drag,
+            blok click palsu / ghost click
+            selama 180ms.
+
+            Ini mencegah card membuka link
+            secara tidak sengaja setelah drag.
+        */
+
+        if (draggedThisGesture) {
+
+            suppressClickUntil =
+                performance.now() + 180;
+
+        }
+
+
+
+        dragDistance = 0;
+
+        hasDragged = false;
+
+    }
+
+
+
+    /* =====================================
+       POINTER UP
+    ===================================== */
+
+    projectGrid.addEventListener(
+        "pointerup",
+        stopDragging
+    );
+
+
+
+    /* =====================================
+       POINTER CANCEL
+    ===================================== */
+
+    projectGrid.addEventListener(
+        "pointercancel",
+        stopDragging
+    );
+
+
+
+    /* =====================================
+       POINTER LEAVE
+    ===================================== */
+
+    projectGrid.addEventListener(
+        "pointerleave",
+        (event) => {
+
+
+            /*
+                Fallback tambahan kalau cursor
+                keluar area setelah mouse dilepas.
+            */
+
+            if (
+                isDragging &&
+                event.buttons === 0
+            ) {
+
+                stopDragging(
+                    event
+                );
+
+            }
+
+        }
+    );
+
+
+
+    /* =====================================
+       PREVENT ACCIDENTAL CLICK
+       SETELAH DRAG
+    ===================================== */
+
+    projectGrid.addEventListener(
+        "click",
+        (event) => {
+
+
+            /*
+                Klik normal SELALU boleh.
+
+                Kita hanya memblokir click
+                yang muncul sesaat setelah
+                user benar-benar melakukan drag.
+            */
+
+            if (
+                performance.now() <
+                suppressClickUntil
+            ) {
+
+                event.preventDefault();
+
+                event.stopPropagation();
+
+            }
+
+        },
+        true
+    );
+
+
+
+    /* =====================================
+       SHIFT + MOUSE WHEEL
+       HORIZONTAL SCROLL
+    ===================================== */
+
+    projectGrid.addEventListener(
+        "wheel",
+        (event) => {
+
+
+            /*
+                Kalau trackpad memang menghasilkan
+                horizontal scroll,
+                gunakan deltaX secara langsung.
+            */
+
+            if (
+                Math.abs(
+                    event.deltaX
+                )
+                >
+                Math.abs(
+                    event.deltaY
+                )
+            ) {
+
+                projectGrid.scrollLeft +=
+                    event.deltaX;
+
+
+                return;
+
+            }
+
+
+
+            /*
+                SHIFT + scroll wheel
+                juga bisa digunakan untuk
+                horizontal scrolling.
+            */
+
+            if (event.shiftKey) {
+
+                event.preventDefault();
+
+
+                projectGrid.scrollLeft +=
+                    event.deltaY;
+
+            }
+
+        },
+        {
+            passive: false
+        }
+    );
+
+})();
+/* =========================================
+   PROJECT INFINITE RUNNING CAROUSEL
+========================================= */
+
+(function () {
+
+    const projectGrid =
+        document.querySelector(
+            "#projectGrid"
+        );
+
+
+    if (!projectGrid) {
+        return;
+    }
+
+
+    /* =====================================
+       DUPLICATE PROJECTS
+    ===================================== */
+
+    /*
+        Bukan const: integrasi CMS publik
+        mengganti isi #projectGrid setelah
+        halaman jalan, lalu memanggil
+        window.refreshProjectCarousel().
+        Semua closure di bawah membaca
+        variabel ini, jadi cukup di-assign
+        ulang sekali di satu tempat.
+    */
+
+    let originalCards =
+        Array.from(
+            projectGrid.querySelectorAll(
+                ".project-card"
+            )
+        );
+
+
+    if (
+        originalCards.length === 0
+    ) {
+        return;
+    }
+
+
+    /*
+        Clone semua card.
+
+        Contoh:
+
+        01 02 03 04 05 06
+        menjadi
+        01 02 03 04 05 06
+        01 02 03 04 05 06
+    */
+
+    function buildClones() {
+
+        originalCards.forEach(
+            (card) => {
+
+                const clone =
+                    card.cloneNode(true);
+
+
+                clone.classList.add(
+                    "project-card-clone"
+                );
+
+
+                clone.setAttribute(
+                    "aria-hidden",
+                    "true"
+                );
+
+
+                /*
+                    Link clone tidak perlu
+                    bisa difokuskan keyboard.
+                */
+
+                clone
+                    .querySelectorAll("a")
+                    .forEach((link) => {
+
+                        link.setAttribute(
+                            "tabindex",
+                            "-1"
+                        );
+
+                    });
+
+
+                projectGrid.appendChild(
+                    clone
+                );
+
+            }
+        );
+
+    }
+
+
+    /*
+        Apakah carousel benar-benar perlu melooping?
+
+        Klon hanya masuk akal kalau set asli memang lebih lebar
+        dari viewport carousel. Kalau semua project sudah muat
+        (misalnya baru ada 1-2 project), klon justru tampil di
+        sebelah aslinya dan terbaca sebagai project ganda.
+
+        Sinyal utamanya lebar konten asli vs lebar viewport,
+        bukan jumlah project. Minimal dua kartu asli dipakai
+        sebagai syarat aman supaya loop tetap mulus.
+    */
+
+    const LOOP_TOLERANCE = 4;
+
+    let loopEnabled = false;
+
+    /*
+        startLoop() menyentuh const/let yang dideklarasikan
+        lebih bawah di IIFE ini. Pada pemanggilan pertama
+        evaluateLoopMode() belum boleh menyalakan loop; yang
+        menyalakan adalah startLoop() di akhir IIFE. Setelah itu
+        resize/refresh boleh menyalakannya langsung.
+    */
+
+    let carouselReady = false;
+
+
+    function removeClones() {
+
+        projectGrid
+            .querySelectorAll(
+                ".project-card-clone"
+            )
+            .forEach((clone) => {
+
+                clone.remove();
+
+            });
+
+    }
+
+
+    /*
+        Satu-satunya tempat yang memutuskan mode carousel.
+
+        Selalu membersihkan klon lama sebelum mengukur, jadi
+        pengukuran memakai set asli murni dan klon tidak pernah
+        menumpuk saat resize berulang.
+    */
+
+    function evaluateLoopMode() {
+
+        removeClones();
+
+        measureOriginalWidth();
+
+
+        loopEnabled =
+            originalCards.length >= 2 &&
+            cachedOriginalWidth >
+                projectGrid.clientWidth +
+                LOOP_TOLERANCE;
+
+
+        if (loopEnabled) {
+
+            buildClones();
+
+            if (carouselReady) {
+                startLoop();
+            }
+
+            return;
+
+        }
+
+
+        /*
+            Tanpa loop: tidak ada klon, tidak ada auto-scroll,
+            dan posisi dikembalikan ke awal supaya kartu
+            pertama selalu terlihat utuh.
+        */
+
+        projectGrid.scrollLeft = 0;
+
+    }
+
+
+    /*
+        Diisi di bagian indikator paling bawah.
+        Refresh hook memakainya supaya bar
+        ikut sinkron tanpa membuat listener baru.
+    */
+
+    let syncIndicator = null;
+
+
+
+    /* =====================================
+       SETTINGS
+    ===================================== */
+
+    const speed = 30;
+
+    let paused = false;
+
+    let previousTime = null;
+
+    /*
+        Watchdog: pada sebagian browser mobile,
+        pointerup/pointercancel tidak selalu
+        terpicu di elemen ini kalau sentuhan
+        dialihkan browser jadi native scroll
+        halaman (misalnya scroll vertikal yang
+        jarinya sempat menyentuh area carousel).
+
+        Tanpa ini, carousel bisa "macet" pause
+        selamanya karena resume() tidak pernah
+        dipanggil. Watchdog memaksa resume
+        setelah jeda singkat kalau tidak ada
+        sinyal release yang masuk.
+    */
+
+    let pauseWatchdog = null;
+
+
+    /*
+        Cache lebar total set asli
+        supaya tidak perlu memanggil
+        getBoundingClientRect() /
+        getComputedStyle() di setiap
+        animation frame.
+
+        Di-refresh ulang hanya saat
+        resize (di-debounce).
+    */
+
+    let cachedOriginalWidth = 0;
+
+
+
+    /* =====================================
+       MEASURE ORIGINAL WIDTH
+    ===================================== */
+
+    function measureOriginalWidth() {
+
+        if (
+            originalCards.length === 0
+        ) {
+
+            cachedOriginalWidth = 0;
+
+            return;
+
+        }
+
+
+        let totalWidth = 0;
+
+
+        const style =
+            window.getComputedStyle(
+                projectGrid
+            );
+
+
+        const gap =
+            parseFloat(
+                style.columnGap ||
+                style.gap ||
+                "0"
+            );
+
+
+        originalCards.forEach(
+            (card) => {
+
+                totalWidth +=
+                    card.getBoundingClientRect()
+                        .width;
+
+            }
+        );
+
+
+        totalWidth +=
+            gap *
+            originalCards.length;
+
+
+        cachedOriginalWidth =
+            totalWidth;
+
+    }
+
+
+    /*
+        Keputusan awal mode carousel. Ini juga yang melakukan
+        pengukuran pertama, jadi measureOriginalWidth() tidak
+        perlu dipanggil terpisah di sini.
+    */
+
+    evaluateLoopMode();
+
+
+    /*
+        Re-evaluasi saat resize, di-debounce supaya resize
+        tidak menyebabkan lag. Listener-nya tetap satu: yang
+        berubah hanya fungsi yang dipanggil, sehingga tidak ada
+        listener ganda dan klon tidak menumpuk.
+    */
+
+    let resizeTimeout = null;
+
+    window.addEventListener(
+        "resize",
+        () => {
+
+            clearTimeout(
+                resizeTimeout
+            );
+
+            resizeTimeout =
+                setTimeout(
+                    evaluateLoopMode,
+                    150
+                );
+
+        },
+        {
+            passive: true
+        }
+    );
+
+
+    window.addEventListener(
+        "load",
+        evaluateLoopMode
+    );
+
+
+
+    /* =====================================
+       PAUSE WHEN SECTION NOT VISIBLE
+       (hemat CPU/GPU saat carousel
+       tidak terlihat di viewport)
+    ===================================== */
+
+    let isSectionVisible = true;
+
+    const portfolioSection =
+        document.querySelector(
+            "#portfolio"
+        );
+
+
+    if (
+        portfolioSection &&
+        "IntersectionObserver" in window
+    ) {
+
+        const carouselVisibilityObserver =
+            new IntersectionObserver(
+                (entries) => {
+
+                    entries.forEach(
+                        (entry) => {
+
+                            isSectionVisible =
+                                entry.isIntersecting;
+
+
+                            if (
+                                isSectionVisible
+                            ) {
+
+                                previousTime = null;
+
+                                startLoop();
+
+                            }
+
+                        }
+                    );
+
+                },
+                {
+                    threshold: 0
+                }
+            );
+
+
+        carouselVisibilityObserver.observe(
+            portfolioSection
+        );
+
+    }
+
+
+
+    /* =====================================
+       REDUCED MOTION
+    ===================================== */
+
+    const prefersReducedMotion =
+        window.matchMedia &&
+        window.matchMedia(
+            "(prefers-reduced-motion: reduce)"
+        ).matches;
+
+
+
+    /* =====================================
+       ANIMATION
+    ===================================== */
+
+    let isLoopRunning = false;
+
+
+    function run(time) {
+
+        /*
+            Berhenti juga ketika loop dimatikan (set asli muat
+            di viewport), supaya tidak ada auto-scroll pada
+            carousel yang tidak punya apa-apa untuk digulir.
+        */
+
+        if (!isSectionVisible || !loopEnabled) {
+
+            isLoopRunning = false;
+
+            return;
+
+        }
+
+
+        if (
+            previousTime === null
+        ) {
+
+            previousTime = time;
+
+        }
+
+
+        const delta =
+            (
+                time -
+                previousTime
+            ) / 1000;
+
+
+        previousTime = time;
+
+
+        if (!paused) {
+
+            projectGrid.scrollLeft +=
+                speed * delta;
+
+
+            /*
+                Ketika sudah melewati
+                seluruh set pertama,
+                geser kembali ke posisi sama
+                di set pertama.
+
+                Secara visual tidak terlihat.
+            */
+
+            if (
+                cachedOriginalWidth > 0 &&
+                projectGrid.scrollLeft >=
+                    cachedOriginalWidth
+            ) {
+
+                projectGrid.scrollLeft -=
+                    cachedOriginalWidth;
+
+            }
+
+        }
+
+
+        requestAnimationFrame(run);
+
+    }
+
+
+    function startLoop() {
+
+        if (
+            isLoopRunning ||
+            prefersReducedMotion ||
+            !loopEnabled
+        ) {
+
+            return;
+
+        }
+
+
+        isLoopRunning = true;
+
+        requestAnimationFrame(run);
+
+    }
+
+
+
+    /* =====================================
+       PAUSE ON USER INTERACTION
+    ===================================== */
+
+    function pause() {
+
+        paused = true;
+
+
+        clearTimeout(
+            pauseWatchdog
+        );
+
+        pauseWatchdog =
+            setTimeout(
+                resume,
+                2500
+            );
+
+    }
+
+
+    function resume() {
+
+        paused = false;
+
+        previousTime = null;
+
+
+        clearTimeout(
+            pauseWatchdog
+        );
+
+    }
+
+
+    projectGrid.addEventListener(
+        "mouseenter",
+        pause
+    );
+
+
+    projectGrid.addEventListener(
+        "mouseleave",
+        resume
+    );
+
+
+    projectGrid.addEventListener(
+        "pointerdown",
+        pause
+    );
+
+
+    projectGrid.addEventListener(
+        "pointerup",
+        resume
+    );
+
+
+    projectGrid.addEventListener(
+        "pointercancel",
+        resume
+    );
+
+
+    projectGrid.addEventListener(
+        "pointerleave",
+        resume
+    );
+
+
+
+    /* =====================================
+       START
+
+       Auto-scroll tidak dijalankan
+       jika user mengaktifkan
+       prefers-reduced-motion.
+
+       Drag / swipe / klik manual
+       tetap berfungsi normal
+       (ditangani IIFE terpisah
+       di atas).
+    ===================================== */
+
+    /* =====================================
+       SCROLL BAR INDICATOR
+
+       Markup indikatornya sudah lama ada di
+       index.html (#projectScrollIndicator
+       dengan data-scroll-index), tapi belum
+       pernah ada JS yang menyambungkannya —
+       jadi bar-nya tidak bisa diklik dan bar
+       pertama tersangkut "is-active" terus.
+       Ini bagian yang menyambungkannya.
+
+       Carousel ini loop tak terbatas: set asli
+       diklon satu kali, dan scrollLeft dibalikkan
+       ke awal setiap kali melewati
+       cachedOriginalWidth. Jadi posisi yang
+       berarti adalah sisa bagi terhadap lebar
+       set asli — bukan scrollLeft mentah.
+    ===================================== */
+
+    const scrollIndicator =
+        document.querySelector(
+            "#projectScrollIndicator"
+        );
+
+
+    if (scrollIndicator) {
+
+        const bars =
+            Array.from(
+                scrollIndicator.querySelectorAll(
+                    ".project-scroll-bar"
+                )
+            );
+
+
+        if (bars.length > 0) {
+
+            /*
+                Tiap bar mewakili satu segmen
+                dari set asli. Dengan 6 card dan
+                3 bar: card ke-0, ke-2, dan ke-4.
+                Dihitung dari jumlah bar yang
+                benar-benar ada, jadi menambah
+                atau mengurangi bar di HTML tidak
+                membuatnya rusak.
+            */
+
+            function cardIndexForBar(barIndex) {
+
+                return Math.min(
+                    originalCards.length - 1,
+                    Math.round(
+                        barIndex *
+                        originalCards.length /
+                        bars.length
+                    )
+                );
+
+            }
+
+
+            /* ---- SOROT BAR YANG SEDANG AKTIF ---- */
+
+            let indicatorFrame = 0;
+
+
+            function updateIndicator() {
+
+                indicatorFrame = 0;
+
+
+                if (cachedOriginalWidth <= 0) {
+                    return;
+                }
+
+
+                /*
+                    Sisa bagi supaya posisi di set
+                    klon dipetakan balik ke set asli.
+                    Ditambah cachedOriginalWidth dulu
+                    supaya scrollLeft negatif (efek
+                    overscroll di iOS) tidak
+                    menghasilkan indeks negatif.
+                */
+
+                const progress =
+                    (
+                        (
+                            projectGrid.scrollLeft %
+                            cachedOriginalWidth
+                        ) +
+                        cachedOriginalWidth
+                    ) %
+                    cachedOriginalWidth /
+                    cachedOriginalWidth;
+
+
+                const activeIndex =
+                    Math.min(
+                        bars.length - 1,
+                        Math.floor(
+                            progress * bars.length
+                        )
+                    );
+
+
+                bars.forEach((bar, index) => {
+
+                    const isActive =
+                        index === activeIndex;
+
+
+                    bar.classList.toggle(
+                        "is-active",
+                        isActive
+                    );
+
+
+                    if (isActive) {
+
+                        bar.setAttribute(
+                            "aria-current",
+                            "true"
+                        );
+
+                    } else {
+
+                        bar.removeAttribute(
+                            "aria-current"
+                        );
+
+                    }
+
+                });
+
+            }
+
+
+            function scheduleIndicatorUpdate() {
+
+                if (indicatorFrame) {
+                    return;
+                }
+
+
+                indicatorFrame =
+                    requestAnimationFrame(
+                        updateIndicator
+                    );
+
+            }
+
+
+            projectGrid.addEventListener(
+                "scroll",
+                scheduleIndicatorUpdate,
+                {
+                    passive: true
+                }
+            );
+
+
+            window.addEventListener(
+                "resize",
+                scheduleIndicatorUpdate,
+                {
+                    passive: true
+                }
+            );
+
+
+            /* ---- KLIK BAR = LOMPAT KE SEGMEN ---- */
+
+            bars.forEach((bar, index) => {
+
+                bar.addEventListener(
+                    "click",
+                    () => {
+
+                        const card =
+                            originalCards[
+                                cardIndexForBar(index)
+                            ];
+
+
+                        if (!card) {
+                            return;
+                        }
+
+
+                        /*
+                            WAJIB: tanpa pause, loop
+                            rAF terus menambah
+                            scrollLeft tiap frame dan
+                            "melawan" smooth scroll ini
+                            sampai lompatannya tidak
+                            pernah sampai. pause() punya
+                            watchdog yang melanjutkan
+                            auto-scroll lagi setelah
+                            2,5 detik.
+                        */
+
+                        pause();
+
+
+                        const target =
+                            projectGrid.scrollLeft +
+                            (
+                                card.getBoundingClientRect().left -
+                                projectGrid.getBoundingClientRect().left
+                            );
+
+
+                        projectGrid.scrollTo({
+                            left: target,
+                            behavior:
+                                prefersReducedMotion
+                                    ? "auto"
+                                    : "smooth"
+                        });
+
+                    }
+                );
+
+            });
+
+
+            updateIndicator();
+
+
+            syncIndicator = updateIndicator;
+
+        }
+
+    }
+
+
+    carouselReady = true;
+
+    startLoop();
+
+
+    /* =====================================
+       REFRESH HOOK
+
+       Dipakai integrasi CMS publik setelah
+       kartu asli di #projectGrid diganti.
+
+       Hanya membuang klon lama, mengambil
+       ulang daftar kartu asli, lalu menjalankan
+       ulang fungsi yang sudah ada. Tidak ada
+       listener, observer, timer, atau loop rAF
+       baru yang dibuat: semuanya terikat ke
+       #projectGrid / window, bukan ke kartu.
+    ===================================== */
+
+    window.refreshProjectCarousel =
+        function () {
+
+            removeClones();
+
+
+            originalCards =
+                Array.from(
+                    projectGrid.querySelectorAll(
+                        ".project-card"
+                    )
+                );
+
+
+            if (
+                originalCards.length === 0
+            ) {
+
+                cachedOriginalWidth = 0;
+
+                loopEnabled = false;
+
+                return;
+
+            }
+
+
+            /*
+                Satu jalur keputusan yang sama dengan init dan
+                resize: mengukur set asli, lalu memutuskan perlu
+                klon atau tidak. Kartu baru bisa saja belum punya
+                lebar final (gambar masih dimuat), tapi
+                evaluateLoopMode() juga sudah terpasang di event
+                resize dan load.
+            */
+
+            evaluateLoopMode();
+
+
+            if (syncIndicator) {
+                syncIndicator();
+            }
+
+        };
+
+})();
+/* =========================================
    GUESTBOOK REVEAL ANIMATION
 ========================================= */
 
@@ -1756,8 +3117,14 @@ if (guestbookSection) {
     }
 
 
-    const fullLayout = window.matchMedia("(min-width: 768px)");
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    /* hanya tablet / desktop */
+
+    const fullLayout =
+        window.matchMedia("(min-width: 768px)");
+
+    if (!fullLayout.matches) {
+        return;
+    }
 
 
     /* =====================================
@@ -1907,94 +3274,150 @@ const particleData = [
     });
 
 
-    let frame = 0, visible = false, suspended = false, bound = false;
-    let pointer = null, pointerChanged = false;
-    const enabled = () => visible && fullLayout.matches && !reducedMotion.matches &&
-        !document.hidden && !suspended;
+    /* =====================================
+       POINTER INTERACTION
+    ===================================== */
 
-    function stop() {
-        cancelAnimationFrame(frame);
-        frame = 0;
-        pointer = null;
-        pointerChanged = false;
-        particles.forEach(particle => {
-            particle.x = particle.y = particle.targetX = particle.targetY = 0;
-            particle.element.style.transform = "translate3d(0px, 0px, 0)";
-        });
-    }
-    function schedule() {
-        if (!frame && enabled()) frame = requestAnimationFrame(animateParticles);
-    }
-    function move(event) {
-        if (!enabled()) return;
-        pointer = { x: event.clientX, y: event.clientY };
-        pointerChanged = true;
-        schedule();
-    }
-    function leave() {
-        pointer = null;
-        pointerChanged = false;
-        particles.forEach(particle => { particle.targetX = particle.targetY = 0; });
-        schedule();
-    }
-    function animateParticles() {
-        frame = 0;
-        if (!enabled()) return;
-        if (pointerChanged && pointer) {
-            // Read geometry together, once per frame, before writing transforms.
-            particles.forEach(particle => {
-                const rect = particle.element.getBoundingClientRect();
-                const dx = rect.left + rect.width / 2 - pointer.x;
-                const dy = rect.top + rect.height / 2 - pointer.y;
-                const distance = Math.hypot(dx, dy);
-                const force = Math.max(0, (150 - distance) / 150) * 55;
-                const angle = Math.atan2(dy, dx);
-                particle.targetX = Math.cos(angle) * force;
-                particle.targetY = Math.sin(angle) * force;
+    guestbook.addEventListener(
+        "pointermove",
+        (event) => {
+
+            const rect =
+                guestbook.getBoundingClientRect();
+
+
+            particles.forEach((particle) => {
+
+                const particleRect =
+                    particle.element.getBoundingClientRect();
+
+
+                const particleX =
+                    particleRect.left +
+                    particleRect.width / 2;
+
+
+                const particleY =
+                    particleRect.top +
+                    particleRect.height / 2;
+
+
+                const dx =
+                    particleX -
+                    event.clientX;
+
+
+                const dy =
+                    particleY -
+                    event.clientY;
+
+
+                const distance =
+                    Math.sqrt(
+                        dx * dx +
+                        dy * dy
+                    );
+
+
+                const radius = 150;
+
+
+                if (distance < radius) {
+
+                    const force =
+                        (radius - distance) /
+                        radius;
+
+
+                    const angle =
+                        Math.atan2(dy, dx);
+
+
+                    const strength =
+                        force * 55;
+
+
+                    particle.targetX =
+                        Math.cos(angle) *
+                        strength;
+
+
+                    particle.targetY =
+                        Math.sin(angle) *
+                        strength;
+
+                } else {
+
+                    particle.targetX = 0;
+                    particle.targetY = 0;
+
+                }
+
             });
-            pointerChanged = false;
+
         }
-        let moving = false;
-        particles.forEach(particle => {
-            const dx = particle.targetX - particle.x, dy = particle.targetY - particle.y;
-            const settled = Math.abs(dx) < 0.05 && Math.abs(dy) < 0.05;
-            particle.x = settled ? particle.targetX : particle.x + dx * 0.09;
-            particle.y = settled ? particle.targetY : particle.y + dy * 0.09;
-            moving ||= !settled;
-            particle.element.style.transform = `translate3d(${particle.x}px, ${particle.y}px, 0)`;
-        });
-        if (moving) schedule();
+    );
+
+
+    /* ketika cursor keluar */
+
+    guestbook.addEventListener(
+        "pointerleave",
+        () => {
+
+            particles.forEach(
+                (particle) => {
+
+                    particle.targetX = 0;
+                    particle.targetY = 0;
+
+                }
+            );
+
+        }
+    );
+
+
+    /* =====================================
+       SMOOTH SPRING ANIMATION
+    ===================================== */
+
+    function animateParticles() {
+
+        particles.forEach(
+            (particle) => {
+
+                particle.x +=
+                    (particle.targetX -
+                        particle.x) *
+                    0.09;
+
+
+                particle.y +=
+                    (particle.targetY -
+                        particle.y) *
+                    0.09;
+
+
+                particle.element.style.transform =
+                    `translate3d(
+                        ${particle.x}px,
+                        ${particle.y}px,
+                        0
+                    )`;
+
+            }
+        );
+
+
+        requestAnimationFrame(
+            animateParticles
+        );
+
     }
-    const observer = typeof IntersectionObserver === "function" ? new IntersectionObserver(entries => {
-        visible = entries[0].isIntersecting;
-        if (!enabled()) stop();
-    }) : null;
-    function activityChanged() { if (!enabled()) stop(); }
-    function bind() {
-        if (bound) return;
-        bound = true;
-        guestbook.addEventListener("pointermove", move, { passive: true });
-        guestbook.addEventListener("pointerleave", leave);
-        fullLayout.addEventListener("change", activityChanged);
-        reducedMotion.addEventListener("change", activityChanged);
-        document.addEventListener("visibilitychange", activityChanged);
-        if (observer) observer.observe(guestbook);
-        else visible = true;
-    }
-    function suspend() {
-        suspended = true;
-        stop();
-        observer?.disconnect();
-        guestbook.removeEventListener("pointermove", move);
-        guestbook.removeEventListener("pointerleave", leave);
-        fullLayout.removeEventListener("change", activityChanged);
-        reducedMotion.removeEventListener("change", activityChanged);
-        document.removeEventListener("visibilitychange", activityChanged);
-        bound = false;
-    }
-    window.addEventListener("pagehide", suspend);
-    window.addEventListener("pageshow", () => { suspended = false; bind(); });
-    bind();
+
+
+    animateParticles();
 
 })();
 /* =========================================

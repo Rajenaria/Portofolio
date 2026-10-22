@@ -55,7 +55,7 @@ import {
 import { categoryOptions, DEFAULT_CATEGORY, isKnownCategory } from "./categories.js";
 import { buildCertificatePreview } from "./preview.js";
 import { createDocumentField } from "./document-field.js";
-import { replaceDocument, removeDocument, hasDocument } from "../../core/document-storage.js";
+import { replaceDocument, removeDocument, documentUrl } from "../../core/document-storage.js";
 
 /* Mirrors the column widths in 20260818110000_certificates_schema.sql. */
 const LIMITS = {
@@ -270,10 +270,10 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
       externalUrl: trimmed(fields.externalUrl.value),
       /* Pending files are not uploaded yet, so the preview links to what is
          actually reachable today: the stored document, or the issuer URL. */
-      document: (() => {
+      documentUrl: (() => {
         const stored = documentField.getStored();
         return stored && !documentField.isRemoving()
-          ? (hasDocument(stored.bucket, stored.path) ? stored : null)
+          ? documentUrl(stored.bucket, stored.path)
           : null;
       })()
     };
@@ -442,8 +442,9 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
     try {
       if (pendingDocument) {
         /*
-          Upload, verify, commit, then read the reference back. Uncertain results
-          retain both generations; previous versions are not deleted automatically.
+          Upload, verify, then commit the row in the same call. document-storage
+          only deletes the previous object AFTER the database has accepted the
+          new reference, so any failure leaves the old document live.
         */
         const outcome = await replaceDocument({
           file: pendingDocument.file,
@@ -458,15 +459,6 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
 
             if (result.error || !result.data) {
               throw new Error("certificate write did not apply");
-            }
-            const confirmed = await supabaseClient.from("certificates")
-              .select("document_bucket,document_path,document_type")
-              .eq("id", result.data.id).maybeSingle();
-            if (confirmed.error || !confirmed.data ||
-                confirmed.data.document_bucket !== paths.bucket ||
-                confirmed.data.document_path !== paths.path ||
-                confirmed.data.document_type !== paths.type) {
-              throw new Error("certificate reference could not be confirmed");
             }
           }
         });

@@ -1,5 +1,3 @@
-import { normalizeCover, validCover, missingCoverSchema } from "../../../../js/cms/project-cover.js";
-
 ﻿/*
   Project editor (Phase 8A core, Phase 8B media).
 
@@ -62,8 +60,6 @@ import {
   uploadVariantPair,
   removeObjects,
   promoteVariantPair,
-  verifyVariantPair,
-  MediaStorageError,
   resolveMediaUrl,
   newMediaId
 } from "../../core/media-storage.js";
@@ -129,7 +125,6 @@ export function validateUrl(value, label) {
 
 export function createProjectEditor({
   record,
-  coverSchemaAvailable = true,
   paragraphs: initialParagraphs = [],
   media: initialMedia = [],
   technologies = [],
@@ -295,45 +290,7 @@ export function createProjectEditor({
 
   /* ---------------- cover ---------------- */
 
-  const initialCover = normalizeCover(record || {});
-  const coverControls = el("div", "form-grid");
-  const coverFit = el("select", "admin-input");
-  coverFit.id = "project-cover-fit";
-  for (const value of ["cover", "contain"]) {
-    const option = el("option", null, t(`projCover.${value}`));
-    option.value = value;
-    append(coverFit, option);
-  }
-  coverFit.value = initialCover.cover_fit;
-  const coverX = el("input", "admin-input");
-  const coverY = el("input", "admin-input");
-  function coverControl(control, id, label, value) {
-    control.id = id;
-    if (control !== coverFit) {
-      control.type = "number";
-      control.min = "0";
-      control.max = "100";
-      control.step = "1";
-      control.value = String(value);
-    }
-    const field = el("div", "form-field");
-    const caption = el("label", "form-label", t(label));
-    caption.htmlFor = id;
-    append(field, caption, control);
-    append(coverControls, field);
-  }
-  coverControl(coverFit, coverFit.id, "projCover.fit");
-  coverControl(coverX, "project-cover-x", "projCover.x", initialCover.cover_position_x);
-  coverControl(coverY, "project-cover-y", "projCover.y", initialCover.cover_position_y);
-  function coverValues() {
-    return {
-      cover_fit: coverFit.value,
-      cover_position_x: coverX.value === "" ? NaN : Number(coverX.value),
-      cover_position_y: coverY.value === "" ? NaN : Number(coverY.value)
-    };
-  }
   const coverField = createProjectMediaField({
-    layout: coverValues(),
     title: t("projEditor.cover"),
     emptyText: t("projEditor.coverEmpty"),
     current:
@@ -365,8 +322,6 @@ export function createProjectEditor({
   append(
     coverSection,
     el("p", "form-help", t("projEditor.coverHelp")),
-    coverControls,
-    el("p", "form-help", t("projCover.help")),
     coverField.element,
     fields.coverAlt.node
   );
@@ -555,7 +510,6 @@ export function createProjectEditor({
       aboutHeading: trimmed(fields.aboutHeading.value),
       githubUrl: trimmed(fields.githubUrl.value),
       demoUrl: trimmed(fields.demoUrl.value),
-      ...coverValues(),
       coverAlt: trimmed(fields.coverAlt.value),
       featured: featured.value
     });
@@ -595,12 +549,6 @@ export function createProjectEditor({
   Object.values(fields).forEach(field =>
     field.control.addEventListener("input", markDirty)
   );
-  for (const control of [coverFit, coverX, coverY]) {
-    control.addEventListener("input", () => {
-      coverField.setLayout(coverValues());
-      markDirty();
-    });
-  }
   dateInput.addEventListener("input", markDirty);
   featured.control.addEventListener("change", markDirty);
 
@@ -616,14 +564,6 @@ export function createProjectEditor({
   /* ---------------- validation ---------------- */
 
   function validate({ forPublish }) {
-    if (!coverSchemaAvailable) {
-      toast(t("projCover.schemaMissing"), "error");
-      return false;
-    }
-    if (!validCover(coverValues()) || !coverX.checkValidity() || !coverY.checkValidity()) {
-      toast(t("projCover.invalid"), "error");
-      return false;
-    }
     const rules = {
       title: {
         label: t("projEditor.fieldTitle"),
@@ -747,7 +687,6 @@ export function createProjectEditor({
       about_heading: trimmedOrNull(fields.aboutHeading.value),
       github_url: trimmedOrNull(fields.githubUrl.value),
       demo_url: trimmedOrNull(fields.demoUrl.value),
-      ...coverValues(),
       cover_alt: trimmedOrNull(fields.coverAlt.value),
       featured: featured.value
     };
@@ -765,7 +704,6 @@ export function createProjectEditor({
 
   function setBusy(next, label) {
     busy = next;
-    for (const control of [coverFit, coverX, coverY]) control.disabled = next;
     saveButton.disabled = next;
     previewButton.disabled = next;
     back.disabled = next;
@@ -1012,8 +950,8 @@ export function createProjectEditor({
   /*
     Applies every staged media change. Ordering per operation is always:
     upload new -> verify -> write database -> only then delete the old object.
-    Upload failures remove only new, unreferenced objects. Once a database
-    write is attempted, retain both generations until its outcome is known.
+    A failure before the database write removes whatever was just uploaded, so
+    the previously referenced media always stays valid.
   */
   async function persistMedia(projectId) {
     const bucket = targetBucket();
@@ -1037,8 +975,6 @@ export function createProjectEditor({
         throw error;
       }
 
-      publishRecoveryNeeded = true;
-
       const { data, error } = await supabaseClient
         .from("projects")
         .update({
@@ -1050,6 +986,11 @@ export function createProjectEditor({
         .select("id");
 
       if (error || !data || data.length === 0) {
+        await removeObjects(uploaded.bucket, [
+          uploaded.desktopPath,
+          uploaded.mobilePath
+        ]);
+
         throw error || new Error("cover update did not apply");
       }
 
@@ -1073,7 +1014,6 @@ export function createProjectEditor({
 
     // ---- documentation removals (database first, then objects) ----
     for (const entry of documentationManager.getRemoved()) {
-      publishRecoveryNeeded = true;
       const { data, error } = await supabaseClient
         .from("project_media")
         .delete()
@@ -1106,8 +1046,6 @@ export function createProjectEditor({
           mobileFile: files.mobileFile
         });
 
-        publishRecoveryNeeded = true;
-
         const { data, error } = await supabaseClient
           .from("project_media")
           .insert({
@@ -1122,6 +1060,11 @@ export function createProjectEditor({
           .select("id");
 
         if (error || !data || data.length === 0) {
+          await removeObjects(uploaded.bucket, [
+            uploaded.desktopPath,
+            uploaded.mobilePath
+          ]);
+
           throw error || new Error("project_media insert did not apply");
         }
 
@@ -1147,8 +1090,6 @@ export function createProjectEditor({
         patch.desktop_path = uploaded.desktopPath;
         patch.mobile_path = uploaded.mobilePath;
 
-        publishRecoveryNeeded = true;
-
         const { data, error } = await supabaseClient
           .from("project_media")
           .update(patch)
@@ -1156,6 +1097,11 @@ export function createProjectEditor({
           .select("id");
 
         if (error || !data || data.length === 0) {
+          await removeObjects(uploaded.bucket, [
+            uploaded.desktopPath,
+            uploaded.mobilePath
+          ]);
+
           throw error || new Error("project_media update did not apply");
         }
 
@@ -1185,8 +1131,6 @@ export function createProjectEditor({
         continue;
       }
 
-      publishRecoveryNeeded = true;
-
       const { data, error } = await supabaseClient
         .from("project_media")
         .update(patch)
@@ -1199,301 +1143,136 @@ export function createProjectEditor({
     }
 
     await reloadMedia(projectId);
-    publishRecoveryNeeded = false;
 
     return warnings;
   }
 
-  let publishRecoveryNeeded = false;
-
-  async function readProjectMediaState(projectId) {
-    const [projectResult, mediaResult] = await Promise.all([
-      supabaseClient
-        .from("projects")
-        .select("id, status, published_at, updated_at, deleted_at, cover_bucket, cover_desktop_path, cover_mobile_path")
-        .eq("id", projectId)
-        .maybeSingle(),
-      supabaseClient
-        .from("project_media")
-        .select("id, bucket_name, desktop_path, mobile_path, alt_text, sort_order, is_active")
-        .eq("project_id", projectId)
-        .order("sort_order", { ascending: true })
-        .order("created_at", { ascending: true })
-    ]);
-
-    if (projectResult.error || !projectResult.data || mediaResult.error || !mediaResult.data) {
-      throw projectResult.error || mediaResult.error || new Error("Project media could not be confirmed.");
-    }
-
-    const project = projectResult.data;
-    return {
-      project,
-      cover: {
-        bucket: project.cover_bucket,
-        desktopPath: project.cover_desktop_path,
-        mobilePath: project.cover_mobile_path
-      },
-      media: mediaResult.data
-    };
-  }
-
-  function applyProjectMediaState(snapshot) {
-    state.status = snapshot.project.status;
-    state.publishedAt = snapshot.project.published_at;
-    state.updatedAtValue = snapshot.project.updated_at;
-    coverField.setStored(snapshot.cover.desktopPath ? snapshot.cover : null);
-    loadedMedia = snapshot.media;
-    documentationManager.setSavedMedia(loadedMedia);
-    publishRecoveryNeeded = false;
-    refreshStatusUi();
-  }
-
-  function mediaReferencesMatch(snapshot, expected) {
-    const samePair = (a, b) =>
-      a.bucket === b.bucket &&
-      a.desktopPath === b.desktopPath &&
-      a.mobilePath === b.mobilePath;
-    return samePair(snapshot.cover, expected.cover) &&
-      snapshot.media.length === expected.media.length &&
-      snapshot.media.every(row => {
-        const other = expected.media.find(entry => entry.id === row.id);
-        return other && samePair(
-          { bucket: row.bucket_name, desktopPath: row.desktop_path, mobilePath: row.mobile_path },
-          { bucket: other.bucket_name, desktopPath: other.desktop_path, mobilePath: other.mobile_path }
-        );
-      });
-  }
-
-  async function verifyPublicProjectMedia(snapshot) {
-    const pairs = [
-      snapshot.cover,
-      ...snapshot.media.map(row => ({
-        bucket: row.bucket_name,
-        desktopPath: row.desktop_path,
-        mobilePath: row.mobile_path
-      }))
-    ];
-
-    for (const pair of pairs) {
-      if (pair.bucket !== MEDIA_BUCKET) {
-        throw new Error("Project media is not ready for public access.");
-      }
-      await verifyVariantPair(pair);
-    }
-  }
-
   /*
-    Keep staging until status and references are read back successfully.
-    Failed database acknowledgements are ambiguous: after any reference write,
-    retain public copies even if rollback succeeds, rather than risk deleting
-    an object a delayed write may still reference. Fresh promotion keys make
-    those retained copies harmless to retry.
+    Promotes every staged object of this Project into the public bucket before
+    the status flips. Compensation rules (brief section 16):
+
+      copy/verify fails   -> remove the public objects created so far, stay Draft
+      database write fails-> remove the public objects, keep existing references
+      staging cleanup fails-> new public state stands, report an orphan warning
   */
   async function promoteStagedMedia(projectId) {
-    const original = await readProjectMediaState(projectId);
-    const expected = {
-      cover: { ...original.cover },
-      media: original.media.map(row => ({ ...row }))
-    };
-    const changes = [];
-    let referencesAttempted = false;
-    let statusAttempted = false;
-    let committed = null;
+    const created = [];
     const warnings = [];
 
-    if (original.project.deleted_at) {
-      throw new Error("A deleted project cannot be published.");
+    const cover = coverField.getStored();
+    const mediaRows = loadedMedia.filter(row => row.bucket_name === STAGING_BUCKET);
+    const coverNeedsPromotion = Boolean(
+      cover && cover.desktopPath && cover.bucket === STAGING_BUCKET
+    );
+
+    if (!coverNeedsPromotion && mediaRows.length === 0) {
+      return warnings;
     }
 
-    try {
-      if (original.project.status !== "published") {
-        if (original.cover.bucket === STAGING_BUCKET) {
-          const promoted = await promoteVariantPair({ from: original.cover });
-          changes.push({
-            table: "projects",
-            id: projectId,
-            from: original.cover,
-            promoted,
-            previous: {
-              cover_bucket: original.cover.bucket,
-              cover_desktop_path: original.cover.desktopPath,
-              cover_mobile_path: original.cover.mobilePath
-            },
-            next: {
-              cover_bucket: promoted.bucket,
-              cover_desktop_path: promoted.desktopPath,
-              cover_mobile_path: promoted.mobilePath
-            }
-          });
-          expected.cover = promoted;
-        }
+    let promotedCover = null;
+    const promotedMedia = [];
 
-        for (const row of original.media.filter(entry => entry.bucket_name === STAGING_BUCKET)) {
-          const from = {
+    try {
+      if (coverNeedsPromotion) {
+        promotedCover = await promoteVariantPair({ from: cover });
+        created.push({
+          bucket: promotedCover.bucket,
+          paths: [promotedCover.desktopPath, promotedCover.mobilePath]
+        });
+      }
+
+      for (const row of mediaRows) {
+        const promoted = await promoteVariantPair({
+          from: {
             bucket: row.bucket_name,
             desktopPath: row.desktop_path,
             mobilePath: row.mobile_path
-          };
-          const promoted = await promoteVariantPair({ from });
-          const next = {
-            bucket_name: promoted.bucket,
-            desktop_path: promoted.desktopPath,
-            mobile_path: promoted.mobilePath
-          };
-          changes.push({
-            table: "project_media",
-            id: row.id,
-            from,
-            promoted,
-            previous: {
-              bucket_name: row.bucket_name,
-              desktop_path: row.desktop_path,
-              mobile_path: row.mobile_path
-            },
-            next
-          });
-          Object.assign(expected.media.find(entry => entry.id === row.id), next);
-        }
-
-        for (const change of changes) {
-          referencesAttempted = true;
-          change.attempted = true;
-          const { data, error } = await supabaseClient
-            .from(change.table)
-            .update(change.next)
-            .eq("id", change.id)
-            .match(change.previous)
-            .select("id");
-          if (error || !data || data.length === 0) {
-            throw error || new Error("Project media changed during publication.");
           }
-        }
+        });
+
+        promotedMedia.push({ id: row.id, promoted, previous: row });
+        created.push({
+          bucket: promoted.bucket,
+          paths: [promoted.desktopPath, promoted.mobilePath]
+        });
       }
 
-      const ready = await readProjectMediaState(projectId);
-      if (!mediaReferencesMatch(ready, expected) ||
-          ready.project.status !== original.project.status || ready.project.deleted_at) {
-        throw new Error("Project changed during publication.");
-      }
-      await verifyPublicProjectMedia(ready);
-
-      if (ready.project.status !== "published") {
-        statusAttempted = true;
-        const patch = { status: "published" };
-        if (!ready.project.published_at) {
-          patch.published_at = new Date().toISOString();
-        }
-
+      if (promotedCover) {
         const { data, error } = await supabaseClient
           .from("projects")
-          .update(patch)
+          .update({
+            cover_bucket: promotedCover.bucket,
+            cover_desktop_path: promotedCover.desktopPath,
+            cover_mobile_path: promotedCover.mobilePath
+          })
           .eq("id", projectId)
-          .eq("status", ready.project.status)
-          .is("deleted_at", null)
-          .select("status, published_at, updated_at");
-        if (error || !data || data.length === 0 || data[0].status !== "published") {
-          throw error || new Error("Project publication could not be confirmed.");
+          .select("id");
+
+        if (error || !data || data.length === 0) {
+          throw error || new Error("cover promotion update did not apply");
         }
       }
 
-      committed = await readProjectMediaState(projectId);
-      if (committed.project.status !== "published" || committed.project.deleted_at ||
-          !mediaReferencesMatch(committed, expected)) {
-        throw new Error("Published project references could not be confirmed.");
+      for (const entry of promotedMedia) {
+        const { data, error } = await supabaseClient
+          .from("project_media")
+          .update({
+            bucket_name: entry.promoted.bucket,
+            desktop_path: entry.promoted.desktopPath,
+            mobile_path: entry.promoted.mobilePath
+          })
+          .eq("id", entry.id)
+          .select("id");
+
+        if (error || !data || data.length === 0) {
+          throw error || new Error("project_media promotion update did not apply");
+        }
       }
     } catch (error) {
-      if (!referencesAttempted && !statusAttempted && changes.length === 0) {
-        throw error;
+      // Nothing public may survive a failed promotion.
+      for (const entry of created) {
+        await removeObjects(entry.bucket, entry.paths);
       }
 
-      try {
-        let current = await readProjectMediaState(projectId);
-        if (current.project.status === "published") {
-          if (current.project.deleted_at || !mediaReferencesMatch(current, expected)) {
-            throw new Error("Publication outcome requires a reload.");
-          }
-          // The status write may have succeeded even when its response was lost.
-          await verifyPublicProjectMedia(current);
-          committed = current;
-        } else {
-          for (const change of changes.filter(entry => entry.attempted).reverse()) {
-            try {
-              const result = await supabaseClient
-                .from(change.table)
-                .update(change.previous)
-                .eq("id", change.id)
-                .match(change.next)
-                .select("id");
-              if (result.error) {
-                console.error(result.error);
-              }
-            } catch (rollbackError) {
-              console.error(rollbackError);
-            }
-          }
-
-          current = await readProjectMediaState(projectId);
-          applyProjectMediaState(current);
-
-          if (!referencesAttempted) {
-            for (const change of changes) {
-              await removeObjects(change.promoted.bucket, [
-                change.promoted.desktopPath,
-                change.promoted.mobilePath
-              ]);
-            }
-          }
-          throw error;
-        }
-      } catch (recoveryError) {
-        // No destructive cleanup when the database outcome is uncertain.
-        publishRecoveryNeeded = true;
-        throw new MediaStorageError(
-          t("projEditor.errPublishRecovery"),
-          "PUBLISH_RECOVERY_REQUIRED",
-          recoveryError
-        );
-      }
+      throw error;
     }
 
-    applyProjectMediaState(committed);
-    for (const change of changes) {
-      const cleanup = await removeObjects(change.from.bucket, [
-        change.from.desktopPath,
-        change.from.mobilePath
+    // Database now points at the public objects; staging copies are redundant.
+    if (promotedCover) {
+      const cleanup = await removeObjects(STAGING_BUCKET, [
+        cover.desktopPath,
+        cover.mobilePath
       ]);
+
       if (cleanup.failed.length > 0) {
-        warnings.push("staged image files could not be removed");
+        warnings.push("staged cover files could not be removed");
+      }
+
+      coverField.commit({
+        bucket: promotedCover.bucket,
+        desktopPath: promotedCover.desktopPath,
+        mobilePath: promotedCover.mobilePath
+      });
+    }
+
+    for (const entry of promotedMedia) {
+      const cleanup = await removeObjects(STAGING_BUCKET, [
+        entry.previous.desktop_path,
+        entry.previous.mobile_path
+      ]);
+
+      if (cleanup.failed.length > 0) {
+        warnings.push(`staged files could not be removed (${entry.previous.desktop_path})`);
       }
     }
-    return { project: committed.project, warnings };
-  }
 
+    await reloadMedia(projectId);
+
+    return warnings;
+  }
 
   async function save({ forPublish = false } = {}) {
     if (busy) {
-      return false;
-    }
-
-    if (publishRecoveryNeeded) {
-      if (coverField.hasPending() || documentationManager.snapshot() !== baselineMedia) {
-        toast(t("projEditor.errMediaRecovery"), "error");
-        return false;
-      }
-      setBusy(true, t("common.loading"));
-      try {
-        applyProjectMediaState(await readProjectMediaState(state.id));
-        baselineMedia = documentationManager.snapshot();
-      } catch (error) {
-        console.error(error);
-        toast(t("projEditor.errMediaRecovery"), "error");
-        return false;
-      } finally {
-        setBusy(false);
-      }
-    }
-
-    if (forPublish && state.status === "published") {
       return false;
     }
 
@@ -1591,11 +1370,9 @@ export function createProjectEditor({
       console.error(error);
       setBusy(false);
       toast(
-        publishRecoveryNeeded
-          ? t("projEditor.errMediaRecovery")
-          : error && error.name === "MediaStorageError"
-            ? error.message
-            : t("projEditor.errMedia"),
+        error && error.name === "MediaStorageError"
+          ? error.message
+          : t("projEditor.errMedia"),
         "error"
       );
       resetBaselineFormOnly();
@@ -1658,34 +1435,78 @@ export function createProjectEditor({
       return;
     }
 
+    const saved = await save({ forPublish: true });
+
+    if (!saved) {
+      return;
+    }
+
+    setBusy(true, t("common.publishing"));
+
+    /*
+      Media first: the Project must never become public while any of its images
+      still live only in the private staging bucket. A failure here leaves the
+      Project as a Draft with its staged media intact.
+    */
+    let promotionWarnings = [];
+
     try {
-      const saved = await save({ forPublish: true });
-      if (!saved || state.status === "published") {
-        return;
-      }
-
-      setBusy(true, t("common.publishing"));
-      const { warnings } = await promoteStagedMedia(state.id);
-      resetBaseline();
-      syncSlugLock();
-      toast(
-        warnings.length > 0
-          ? t("projEditor.publishedWarn", { warnings: warnings.join("; ") })
-          : t("projEditor.published"),
-        warnings.length > 0 ? "error" : "success"
-      );
-
-      if (typeof onSaved === "function") {
-        onSaved({ id: state.id, status: state.status });
-      }
+      promotionWarnings = await promoteStagedMedia(state.id);
     } catch (error) {
       console.error(error);
-      toast(t("projEditor.errPublishRecovery"), "error");
-    } finally {
       setBusy(false);
+      toast(
+        error && error.name === "MediaStorageError"
+          ? error.message
+          : t("projEditor.errPublishMedia"),
+        "error"
+      );
+      return;
+    }
+
+    const patch = { status: "published" };
+
+    // published_at records the FIRST publish and is never overwritten later
+    // (ADMIN-CMS-DATABASE.md section 87).
+    if (!state.publishedAt) {
+      patch.published_at = new Date().toISOString();
+    }
+
+    const { data, error } = await supabaseClient
+      .from("projects")
+      .update(patch)
+      .eq("id", state.id)
+      .select("status, published_at, updated_at");
+
+    setBusy(false);
+
+    if (error || !data || data.length === 0) {
+      if (error) {
+        console.error(error);
+      }
+
+      toast(t("projEditor.errPublish"), "error");
+      return;
+    }
+
+    state.status = data[0].status;
+    state.publishedAt = data[0].published_at;
+    state.updatedAtValue = data[0].updated_at;
+
+    refreshStatusUi();
+    syncSlugLock();
+
+    toast(
+      promotionWarnings.length > 0
+        ? t("projEditor.publishedWarn", { warnings: promotionWarnings.join("; ") })
+        : t("projEditor.published"),
+      promotionWarnings.length > 0 ? "error" : "success"
+    );
+
+    if (typeof onSaved === "function") {
+      onSaved({ id: state.id, status: state.status });
     }
   }
-
 
   function refreshStatusUi() {
     clear(statusSlot);
@@ -1698,7 +1519,6 @@ export function createProjectEditor({
   }
 
   function friendlyError(error) {
-    if (missingCoverSchema(error)) return t("projCover.schemaMissing");
     const haystack = `${error && error.code} ${error && error.message} ${error &&
       error.details}`.toLowerCase();
 
@@ -1740,7 +1560,6 @@ export function createProjectEditor({
     );
 
     openProjectPreview({
-      ...coverValues(),
       coverUrl,
       coverAlt: trimmed(fields.coverAlt.value),
       coverPending: coverField.hasPending(),

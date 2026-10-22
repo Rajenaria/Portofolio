@@ -23,27 +23,6 @@ html {
     scroll-behavior: smooth;
 }
 
-.skip-link {
-    position: fixed;
-    left: 16px;
-    top: 16px;
-    z-index: 1001;
-    transform: translateY(-200%);
-    padding: 12px 18px;
-    border-radius: 12px;
-    background: #fff;
-    color: #0071e3;
-}
-.skip-link:focus { transform: none; }
-:where(.portfolio-nav a, .mobile-nav-toggle, .simple-hero-button,
-    .simple-hero-scroll, .about-navigation, .about-navigation-dot,
-    .about-org-button, .about-org-dot, .footer-main-button,
-    .footer-secondary-button, .footer-social a, .contact-social-link, .footer-links a):focus-visible {
-    outline: 3px solid #0071e3;
-    outline-offset: 4px;
-}
-
-
 body {
     font-family:
         -apple-system,
@@ -225,15 +204,13 @@ section {
 }
 
 
-.portfolio-nav-links a:hover,
-.portfolio-nav-links a:focus-visible {
+.portfolio-nav-links a:hover {
     transform:
         translateY(-1px);
 }
 
 
 .portfolio-nav-links a:hover::after,
-.portfolio-nav-links a:focus-visible::after,
 .portfolio-nav-links a.active::after {
     width: 100%;
 }
@@ -282,8 +259,7 @@ section {
 }
 
 
-.portfolio-nav-contact:hover,
-.portfolio-nav-contact:focus-visible {
+.portfolio-nav-contact:hover {
     background-color: #0071e3;
 
     transform:
@@ -295,8 +271,7 @@ section {
 }
 
 
-.portfolio-nav-contact:hover span,
-.portfolio-nav-contact:focus-visible span {
+.portfolio-nav-contact:hover span {
     transform:
         translate(
             2px,
@@ -1838,6 +1813,250 @@ nav {
 }
 
 
+/* =========================================
+   CARD SNAP
+========================================= */
+
+.project-card {
+    min-width: 0;
+
+    scroll-snap-align: start;
+
+    scroll-snap-stop: always;
+}
+
+
+/* =========================================
+   PREVENT IMAGE DRAG
+========================================= */
+
+.project-card img {
+    user-select: none;
+
+    -webkit-user-drag: none;
+
+    pointer-events: none;
+}
+
+/* ================================
+   PROJECT CARD
+
+   Satu kartu = satu project. Wadah luar inilah yang bikin
+   tiap project terbaca sebagai unit yang sama, bukan
+   tumpukan gambar + teks yang tingginya beda-beda.
+
+   Kuncinya ada tiga:
+   - kartu jadi flex column, isinya .project-content
+     ikut memanjang (flex: 1)
+   - judul & deskripsi diberi min-height tetap
+   - blok tech + link didorong ke bawah (margin-top: auto)
+   sehingga posisi tiap bagian SEJAJAR di semua kartu,
+   berapa pun panjang teksnya.
+
+   Catatan: sengaja TANPA backdrop-filter. Carousel ini
+   auto-scroll terus-menerus dengan 12 kartu (6 asli + 6
+   klon); blur backdrop per frame di 12 elemen sebesar ini
+   mahal, terutama di HP. Di atas background section yang
+   rata, isian semi-transparan memberi tampilan yang sama
+   tanpa biaya itu.
+================================ */
+
+.project-card {
+    display: flex;
+
+    flex-direction: column;
+
+    padding: 14px 14px 22px;
+
+    border-radius: 24px;
+
+    border: 1px solid rgba(0, 0, 0, 0.09);
+
+    background-color: rgba(244, 244, 247, 0.92);
+
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.9),
+        0 1px 2px rgba(0, 0, 0, 0.04),
+        0 10px 30px rgba(0, 0, 0, 0.05);
+
+    overflow: hidden;
+
+    transition:
+        transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 0.4s ease,
+        border-color 0.4s ease;
+}
+
+
+.project-card:hover {
+    transform: translateY(-5px);
+
+    border-color: rgba(0, 0, 0, 0.10);
+
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.9),
+        0 2px 4px rgba(0, 0, 0, 0.05),
+        0 18px 44px rgba(0, 0, 0, 0.10);
+}
+
+
+/* ================================
+   PROJECT IMAGE
+
+   aspect-ratio, bukan tinggi px mati — supaya proporsinya
+   tetap sama persis di semua lebar kartu / breakpoint.
+================================ */
+
+.project-image {
+    width: 100%;
+
+    aspect-ratio: 3 / 2;
+
+    flex-shrink: 0;
+
+    overflow: hidden;
+
+    border-radius: 14px;
+
+    background-color: #e8e8ed;
+}
+
+
+.project-image img {
+    width: 100%;
+    height: 100%;
+
+    object-fit: cover;
+
+    display: block;
+
+    transition: transform 0.4s ease;
+}
+
+
+.project-card:hover .project-image img {
+    transform: scale(1.05);
+}
+
+
+/* ================================
+   PROJECT CONTENT
+================================ */
+
+.project-content {
+    /* Memanjang mengisi sisa kartu — inilah yang memberi
+       ruang bagi margin-top: auto di .project-tech. */
+    flex: 1;
+
+    display: flex;
+
+    flex-direction: column;
+
+    padding: 20px 6px 0;
+}
+
+
+.project-category {
+    margin: 0 0 10px;
+
+    font-size: 11px;
+    font-weight: 600;
+
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+
+    color: #86868b;
+}
+
+
+/* min-height 2 baris: judul 1 baris dan 2 baris sama-sama
+   memakai ruang yang sama, jadi deskripsi di semua kartu
+   mulai pada garis yang sama.
+
+   align-items: flex-end menempelkan judul ke dasar kotak
+   itu — sisa ruangnya jatuh di ATAS judul, bukan di antara
+   judul dan deskripsi. Efeknya baris terakhir judul selalu
+   duduk di garis yang sama, dan judul tetap rapat dengan
+   deskripsinya. */
+.project-content h3 {
+    margin: 0 0 12px;
+
+    min-height: 2.6em;
+
+    display: flex;
+
+    align-items: flex-end;
+
+    font-size: 22px;
+    font-weight: 600;
+
+    line-height: 1.3;
+
+    letter-spacing: -0.3px;
+
+    color: #1d1d1f;
+}
+
+
+/* min-height 4 baris, TANPA line-clamp — deskripsi pendek
+   tetap menyisakan ruang yang sama, deskripsi panjang tidak
+   terpotong diam-diam. */
+.project-text {
+    margin: 0 0 18px;
+
+    min-height: 6.6em;
+
+    font-size: 14px;
+    line-height: 1.65;
+
+    color: #6e6e73;
+}
+
+
+/* ================================
+   TECH STACK BADGE
+================================ */
+
+/* margin-top: auto mendorong blok ini (dan link di bawahnya)
+   ke dasar kartu — jadi baris tech dan tombol "Lihat Project"
+   berada di ketinggian yang sama persis di semua kartu. */
+.project-tech {
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 0;
+
+    margin-top: auto;
+    margin-bottom: 16px;
+
+    border-top: 1px solid rgba(0, 0, 0, 0.10);
+
+    padding-top: 14px;
+}
+
+
+.project-tech span {
+    padding: 0 12px 0 0;
+
+    margin-right: 12px;
+
+    border-right: 1px solid rgba(0, 0, 0, 0.14);
+
+    font-size: 11px;
+    font-weight: 500;
+
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+
+    color: #6e6e73;
+}
+
+.project-tech span:last-child {
+    padding-right: 0;
+    margin-right: 0;
+    border-right: none;
+}
 .tech-local-icon {
     width: 33px;
     height: 33px;
@@ -1855,42 +2074,71 @@ nav {
     transform: scale(1.12) rotate(-3deg);
 }
 
-/* M09 compact Projects grid; scoped to the homepage section. */
-#portfolio .project-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;overflow:visible;}
-#portfolio .project-card {min-width:0;display:flex;flex-direction:column;padding:12px;border:1px solid #dedee3;border-radius:24px;background:#fafafa;overflow:hidden;transition:box-shadow .25s,border-color .25s;}
-#portfolio .project-card:hover {border-color:#a9c9eb;box-shadow:0 10px 28px #0000000b;}
-#portfolio .project-content {padding:18px 8px 6px;display:flex;flex:1;flex-direction:column;min-width:0;overflow-wrap:anywhere;}
-#portfolio .project-category {font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:#53606e;margin:0 0 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-#portfolio .project-content h3 {font-size:21px;font-weight:600;line-height:1.3;margin:0 0 10px;min-height:2.6em;}
-#portfolio .project-text {font-size:14px;line-height:1.65;color:#61616a;margin:0 0 18px;min-height:3.3em;}
-#portfolio .project-content h3,#portfolio .project-text {display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
-#portfolio .project-tech {display:flex;flex-wrap:wrap;gap:6px;min-height:26px;margin-top:auto;margin-bottom:8px;font-size:11px;color:#555;}
-#portfolio .project-tech span {max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:4px 8px;background:#eeeef2;border-radius:6px;}
-#portfolio .project-link {display:flex;align-items:center;justify-content:flex-start;align-self:flex-start;gap:7px;min-height:44px;padding-right:8px;color:#0071e3;font-size:14px;font-weight:600;text-decoration:none;}
-#portfolio .project-arrow {display:inline-block;font-size:18px;line-height:1;transition:transform .2s;}
-#portfolio .project-link:is(:hover,:focus-visible) .project-arrow {transform:translate(2px,-2px);}
-#portfolio .project-filters {display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
-#portfolio .project-filters button,#portfolio .project-more {font:inherit;font-size:14px;border:1px solid #d2d2d7;border-radius:24px;padding:10px 18px;min-height:44px;background:white;color:#31313a;cursor:pointer;}
-#portfolio .project-filters button[aria-pressed="true"] {color:white;background:#0071e3;border-color:#0071e3;}
-#portfolio .project-filters button {max-width:100%;overflow-wrap:anywhere;text-align:left;}
-#portfolio #projectResults {font-size:14px;color:#61616a;margin:16px 0;}
-#portfolio .project-more {margin:24px auto 0;display:block;}
-#portfolio [hidden] {display:none!important;}
-#portfolio :is(a,button,.project-grid):focus-visible {outline:3px solid #0071e3;outline-offset:4px;}
-#portfolio .project-swipe-hint {font-size:12px;color:#61616a;margin:12px 0 0;}
-#portfolio .project-reveal {opacity:0;transform:translateY(14px);transition:opacity .35s,transform .35s;}
-#portfolio .project-reveal.is-revealed {opacity:1;transform:none;}
-#portfolio .project-reveal:focus-within {opacity:1;transform:none;}
-.project-media-frame {position:relative;overflow:hidden;margin:0;background:#eeeef2;border-radius:16px;isolation:isolate;}
-.project-media-frame picture {display:block;width:100%;height:100%;}
-.project-media-frame img {display:block;width:100%;height:100%;}
-.project-media-frame figcaption {position:absolute;bottom:0;left:0;right:0;background:#ffffffed;padding:8px 12px;color:#333;font-size:12px;}
-.project-media-open {position:absolute;inset:0;border:0;background:transparent;cursor:zoom-in;}
-@media(max-width:1099px){#portfolio .project-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
-@media(max-width:650px){#portfolio .project-grid{display:flex;gap:16px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-padding-inline:4px;padding:4px 4px 12px;overscroll-behavior-x:contain;scroll-behavior:auto;}#portfolio .project-card{flex:0 0 88%;scroll-snap-align:start;}#portfolio .project-reveal{opacity:1;transform:none;transition:none;}#portfolio .portfolio-heading h2{font-size:32px;}}
-@media(prefers-reduced-motion:reduce){#portfolio .project-reveal{opacity:1;transform:none;transition:none;}#portfolio .project-grid{scroll-behavior:auto;}#portfolio .project-card,#portfolio .project-arrow{transition:none;}#portfolio .project-link:is(:hover,:focus-visible) .project-arrow{transform:none;}}
+/* ================================
+   PROJECT LINK
+================================ */
 
-/* =========================================
+.project-link {
+    /* align-self: flex-start supaya lebarnya ikut teks, bukan
+       selebar kartu — kalau tidak, area kliknya melebar
+       sampai ke tepi kartu. */
+    align-self: flex-start;
+
+    display: inline-block;
+
+    text-decoration: none;
+
+    color: #0071e3;
+
+    font-size: 14px;
+    font-weight: 600;
+
+    transition: transform 0.2s ease;
+}
+
+
+.project-link:hover {
+    transform: translateX(5px);
+}
+
+
+.project-link:focus-visible {
+    outline: 2px solid #0071e3;
+
+    outline-offset: 3px;
+
+    border-radius: 4px;
+}
+
+
+/* ================================
+   RESPONSIVE
+================================ */
+
+@media (max-width: 992px) {
+
+    .project-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+}
+
+
+@media (max-width: 650px) {
+
+    .portfolio {
+        padding: 70px 6%;
+    }
+
+    .project-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .portfolio-heading h2 {
+        font-size: 32px;
+    }
+
+}/* =========================================
    PROJECT CASE STUDY
 ========================================= */
 
@@ -2291,7 +2539,7 @@ nav {
     inset: 0;
 
     background-image:
-        url("../assets/images/backgrounds/background.webp");
+        url("../assets/images/backgrounds/background.png");
 
     background-repeat: no-repeat;
 
@@ -4848,10 +5096,6 @@ nav.nav-scrolled {
 }
 
 
-.simple-hero-button:active,
-.footer-main-button:active,
-.footer-secondary-button:active { transform: translateY(1px); }
-
 .simple-hero-button span {
     font-size: 17px;
 
@@ -4873,16 +5117,14 @@ nav.nav-scrolled {
 }
 
 
-.simple-project-button:hover,
-.simple-project-button:focus-visible {
+.simple-project-button:hover {
     color: #0066cc;
 
     text-decoration: underline;
 }
 
 
-.simple-project-button:hover span,
-.simple-project-button:focus-visible span {
+.simple-project-button:hover span {
     transform: translateX(4px);
 }
 
@@ -4898,16 +5140,14 @@ nav.nav-scrolled {
 }
 
 
-.simple-cv-button:hover,
-.simple-cv-button:focus-visible {
+.simple-cv-button:hover {
     background-color: #0066cc;
 
     border-color: #0066cc;
 }
 
 
-.simple-cv-button:hover span,
-.simple-cv-button:focus-visible span {
+.simple-cv-button:hover span {
     transform: translateY(3px);
 }
 
@@ -4919,9 +5159,6 @@ nav.nav-scrolled {
 .simple-hero-visual {
     width: 100%;
     height: 100%;
-
-    /* Reserve navbar clearance and the photo lift on short desktop viewports. */
-    padding-top: 128px;
 
     position: relative;
 
@@ -5823,10 +6060,6 @@ nav.nav-scrolled {
 
     /* HERO */
 
-    .simple-hero-visual {
-        padding-top: 0;
-    }
-
     .simple-hero-container {
         width: 86%;
 
@@ -6108,6 +6341,311 @@ nav.nav-scrolled {
     color: rgba(255, 255, 255, 0.16);
 }
 /* =========================================
+   PROJECT HORIZONTAL CAROUSEL - FINAL
+========================================= */
+
+.project-scroll-wrapper {
+    width: 100%;
+
+    position: relative;
+
+    overflow: hidden;
+
+    cursor: grab;
+
+    user-select: none;
+
+    -webkit-user-select: none;
+
+    touch-action: pan-y;
+}
+
+
+.project-scroll-wrapper.is-dragging {
+    cursor: grabbing;
+}
+
+
+/* =========================================
+   SCROLL AREA
+========================================= */
+
+#projectGrid.project-grid {
+    width: 100%;
+
+    /*
+        PENTING:
+        Matikan sistem grid lama.
+    */
+
+    display: flex !important;
+
+    grid-template-columns: none !important;
+
+    grid-auto-columns: unset !important;
+
+    grid-auto-flow: unset !important;
+
+    flex-wrap: nowrap !important;
+
+    align-items: stretch;
+
+    gap: 25px;
+
+    overflow-x: auto !important;
+    overflow-y: hidden;
+
+    /* Ruang atas/bawah untuk shadow kartu + angkatan hover
+       supaya tidak terpotong area scroll. */
+    padding:
+        10px 2px
+        34px;
+
+    scroll-behavior: smooth;
+
+    scroll-snap-type: x mandatory;
+
+    overscroll-behavior-x: contain;
+
+    scrollbar-width: none;
+
+    cursor: grab;
+}
+
+
+#projectGrid.project-grid::-webkit-scrollbar {
+    display: none;
+}
+
+
+#projectGrid.project-grid.is-dragging {
+    cursor: grabbing;
+
+    scroll-behavior: auto;
+
+    scroll-snap-type: none;
+}
+
+
+/* =========================================
+   3 CARD TERLIHAT DI DESKTOP
+========================================= */
+
+#projectGrid .project-card {
+    /*
+        100% lebar area
+        dikurangi 2 gap = 50px
+        lalu dibagi 3.
+    */
+
+    flex:
+        0 0
+        calc(
+            (100% - 50px) / 3
+        );
+
+    width:
+        calc(
+            (100% - 50px) / 3
+        );
+
+    min-width: 0;
+
+    scroll-snap-align: start;
+
+    scroll-snap-stop: always;
+}
+
+
+/* =========================================
+   IMAGE
+========================================= */
+
+#projectGrid .project-card img {
+    pointer-events: none;
+
+    user-select: none;
+
+    -webkit-user-select: none;
+
+    -webkit-user-drag: none;
+}
+
+
+/* =========================================
+   TABLET
+========================================= */
+
+@media (max-width: 1000px) {
+
+    #projectGrid.project-grid {
+        gap: 20px;
+    }
+
+
+    #projectGrid .project-card {
+        flex:
+            0 0
+            calc(
+                (100% - 20px) / 2
+            );
+
+        width:
+            calc(
+                (100% - 20px) / 2
+            );
+    }
+
+}
+
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 650px) {
+
+    #projectGrid.project-grid {
+        gap: 14px;
+    }
+
+
+    #projectGrid .project-card {
+        /*
+            Sedikit card berikutnya
+            masih terlihat.
+        */
+
+        flex:
+            0 0
+            88%;
+
+        width:
+            88%;
+    }
+
+}
+/* =========================================
+   PROJECT SCROLL BAR INDICATOR
+========================================= */
+
+.project-scroll-indicator {
+    width: 100%;
+
+    margin-top: 18px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    gap: 8px;
+}
+
+
+/* BAR */
+
+.project-scroll-bar {
+    width: 16px;
+    height: 5px;
+
+    padding: 0;
+
+    border: none;
+
+    border-radius: 20px;
+
+    background-color: #d2d2d7;
+
+    cursor: pointer;
+
+    transition:
+        width 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+        background-color 0.3s ease,
+        transform 0.3s ease;
+}
+
+
+/* ACTIVE */
+
+.project-scroll-bar.is-active {
+    width: 32px;
+
+    background-color: #0071e3;
+}
+
+
+/* HOVER */
+
+.project-scroll-bar:hover {
+    transform: scaleY(1.3);
+}
+
+
+/* MOBILE */
+
+@media (max-width: 650px) {
+
+    .project-scroll-indicator {
+        margin-top: 14px;
+    }
+
+    .project-scroll-bar {
+        width: 13px;
+        height: 4px;
+    }
+
+    .project-scroll-bar.is-active {
+        width: 27px;
+    }
+
+}
+/* =========================================
+   PROJECT SCROLL INDICATOR
+========================================= */
+
+.project-scroll-indicator {
+    margin-top: 18px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    gap: 7px;
+}
+
+
+.project-scroll-bar {
+    width: 18px;
+    height: 4px;
+
+    padding: 0;
+
+    border: none;
+
+    border-radius: 20px;
+
+    background-color: #d2d2d7;
+
+    cursor: pointer;
+
+    transition:
+        width 0.3s ease,
+        background-color 0.3s ease,
+        transform 0.3s ease;
+}
+
+
+.project-scroll-bar.is-active {
+    width: 34px;
+
+    background-color: #0071e3;
+}
+
+
+.project-scroll-bar:hover {
+    transform: scaleY(1.25);
+}
+/* =========================================
    HORIZONTAL SLIDE HINT
 ========================================= */
 
@@ -6134,6 +6672,9 @@ nav.nav-scrolled {
 }
 
 
+.hint-mobile {
+    display: none;
+}
 
 
 /* LINE */
@@ -6182,7 +6723,64 @@ nav.nav-scrolled {
 }
 
 
+@media (max-width: 650px) {
 
+    .hint-desktop {
+        display: none;
+    }
+
+
+    .hint-mobile {
+        display: block;
+    }
+
+}
+/* =========================================
+   PROJECT SCROLL INDICATOR
+========================================= */
+
+.project-scroll-indicator {
+    margin-top: 16px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    gap: 7px;
+}
+
+
+.project-scroll-bar {
+    width: 18px;
+    height: 4px;
+
+    padding: 0;
+
+    border: none;
+
+    border-radius: 20px;
+
+    background-color: #d2d2d7;
+
+    cursor: pointer;
+
+    transition:
+        width 0.3s ease,
+        background-color 0.3s ease,
+        transform 0.3s ease;
+}
+
+
+.project-scroll-bar.is-active {
+    width: 34px;
+
+    background-color: #0071e3;
+}
+
+
+.project-scroll-bar:hover {
+    transform: scaleY(1.25);
+}
 /* =========================================
    ABOUT SLIDER INDICATOR - BAR STYLE
 ========================================= */
@@ -6233,7 +6831,19 @@ nav.nav-scrolled {
 .about-navigation-dot:hover {
     transform: scaleY(1.25);
 }
-@media (prefers-reduced-motion: reduce) {
+/* =========================================
+   PROJECT CONTINUOUS MOTION
+========================================= */
+
+#projectGrid.project-grid {
+    scroll-snap-type: none !important;
+
+    scroll-behavior: auto !important;
+}
+
+
+#projectGrid .project-card {
+    scroll-snap-align: none !important;
 }
 
 /* =========================================================
@@ -7444,8 +8054,7 @@ a.footer-contact-item:hover {
 }
 
 
-.footer-main-button:hover,
-.footer-main-button:focus-visible {
+.footer-main-button:hover {
     background: #2997ff;
 
     border-color: #2997ff;
@@ -7457,8 +8066,7 @@ a.footer-contact-item:hover {
 }
 
 
-.footer-main-button:hover span,
-.footer-main-button:focus-visible span {
+.footer-main-button:hover span {
     transform:
         translateX(3px);
 }
@@ -7478,8 +8086,7 @@ a.footer-contact-item:hover {
 }
 
 
-.footer-secondary-button:hover,
-.footer-secondary-button:focus-visible {
+.footer-secondary-button:hover {
     border-color: #2997ff;
 
     background:
@@ -7738,6 +8345,41 @@ a.footer-contact-item:hover {
         margin-top: 45px;
     }
 
+}
+/* =========================================
+   PROJECT CURSOR FIX
+========================================= */
+
+#projectGrid {
+    cursor: grab;
+}
+
+
+#projectGrid.is-dragging {
+    cursor: grabbing;
+}
+
+
+#projectGrid .project-card {
+    cursor: grab;
+}
+
+
+/* LINK TETAP BISA DIKLIK */
+
+#projectGrid .project-link {
+    position: relative;
+
+    z-index: 20;
+
+    cursor: pointer !important;
+
+    pointer-events: auto !important;
+}
+
+
+#projectGrid .project-link:hover {
+    cursor: pointer !important;
 }
 /* =========================================
    PREFERS REDUCED MOTION
@@ -9136,6 +9778,61 @@ a.footer-contact-item:hover {
         color: #ffffff;
     }
 
+}
+/* =========================================
+   FINAL PROJECT IMAGE SIZE FIX
+========================================= */
+
+#projectGrid .project-card {
+    overflow: hidden;
+}
+
+
+/* AREA GAMBAR CARD
+
+   Dulu tingginya dipatok px dan berbeda-beda tiap breakpoint
+   (230 / 210 / 220px) — itu salah satu sumber kartu terlihat
+   tidak konsisten. Sekarang satu aspect-ratio untuk semua
+   ukuran layar, jadi proporsi gambar selalu sama.
+   height/min/max di-reset ke auto karena aturan lama memakai
+   !important. */
+
+#projectGrid .project-image {
+    width: 100% !important;
+
+    aspect-ratio: 3 / 2;
+
+    height: auto !important;
+
+    min-height: 0 !important;
+    max-height: none !important;
+
+    flex-shrink: 0;
+
+    overflow: hidden;
+
+    background-color: #e8e8ed;
+}
+
+
+/* GAMBAR */
+
+#projectGrid .project-image img {
+    width: 100% !important;
+    height: 100% !important;
+
+    max-width: 100% !important;
+    max-height: 100% !important;
+
+    display: block;
+
+    object-fit: cover !important;
+    object-position: center !important;
+
+    pointer-events: none;
+
+    user-select: none;
+    -webkit-user-drag: none;
 }
 /* Tidak ada override tinggi gambar per breakpoint lagi —
    aspect-ratio di atas sudah menangani semua ukuran layar. */
@@ -11802,9 +12499,10 @@ a.footer-contact-item:hover {
    RESPONSIF
    Radius, lebar/tinggi kartu, dan perspective semuanya
    custom property di .certificates-section, sehingga tiap
-   breakpoint tinggal menimpanya. JS menghitung --cert-radius dari lebar,
-   gap dan jumlah kartu, dengan --cert-radius-base sebagai batas minimum.
-   Tinggi kartu tetap; teks panjang diakses melalui scroll region.
+   breakpoint tinggal menimpanya. js/certificates.js MEMBACA
+   --cert-radius lewat getComputedStyle (tidak hardcode) dan
+   menaikkan --cert-h bila ada sisi belakang yang lebih tinggi
+   dari --cert-h-base.
 ========================================================= */
 
 .certificates-section {
@@ -11821,14 +12519,40 @@ a.footer-contact-item:hover {
     --cert-card-bg: #131313;
     --cert-card-border: rgba(255, 255, 255, 0.07);
 
-    /* Card dimensions stay independent of CMS content. JS derives radius from
-       width, gap and count; each face provides scroll access to long content. */
+    /* =========================================
+       UKURAN KARTU SERTIFIKAT — ATUR DI SINI
+
+       Ini satu-satunya tempat yang mengatur besar kartu.
+       Tidak ada fungsi JavaScript yang perlu disentuh:
+       js/certificates.js hanya MEMBACA --cert-radius
+       (lewat getComputedStyle) untuk mengubah jarak geser
+       jari jadi derajat.
+
+         --cert-w           lebar kartu
+         --cert-h-base      tinggi minimum kartu
+                            (JS menaikkannya otomatis kalau
+                            sisi belakang ada yang lebih
+                            panjang — lihat measure())
+         --cert-radius      jari-jari lingkaran = rapat /
+                            renggangnya jarak antar kartu
+         --cert-perspective kedalaman efek 3D
+
+       ATURAN MEMPERBESAR:
+       kalikan KEEMPATNYA dengan angka yang sama. Proyeksi 3D
+       bersifat sebanding, jadi hasilnya tata letak yang
+       persis sama — hanya lebih besar. Kalau hanya --cert-w
+       yang dinaikkan, kartu akan saling mepet karena radius
+       lingkarannya tidak ikut melebar.
+
+       Contoh: semua ×1.2 -> 372 / 514 / 328 / 2088.
+
+       Rasio kartu dijaga 1 : 1.38 di semua breakpoint.
+    ========================================= */
+
     --cert-w: 310px;
     --cert-h-base: 428px;
     --cert-h: var(--cert-h-base);
-    --cert-radius-base: 273px;
-    --cert-radius: var(--cert-radius-base);
-    --cert-gap: 28px;
+    --cert-radius: 273px;
     --cert-perspective: 1740px;
 
     /* ---- TIMING ---- */
@@ -11884,7 +12608,6 @@ a.footer-contact-item:hover {
 
 /* TITLE */
 .certificates-heading h2 {
-    overflow-wrap: anywhere;
     margin: 0 0 15px;
 
     font-size: 42px;
@@ -12046,7 +12769,7 @@ a.footer-contact-item:hover {
 /* Outline dipasang di .cert-face, bukan di .cert-slot —
    .cert-slot ada di dalam rantai 3D dan kotaknya tidak
    selalu sejajar dengan kartu yang terlihat. */
-.cert-slot:focus-within .cert-face {
+.cert-slot:focus-visible .cert-face {
     outline: 2px solid var(--cert-accent);
 
     outline-offset: 3px;
@@ -12136,15 +12859,11 @@ a.footer-contact-item:hover {
 }
 
 
-/* The incoming active face must be focusable immediately, before its fade. */
-.cert-slot.is-active .cert-face { transition: opacity var(--cert-spin); }
-
-
 .cert-face-front {
     flex-direction: column;
 
     justify-content: space-between;
-    gap: 16px;
+
     padding: 36px 26px 28px;
 }
 
@@ -12157,21 +12876,6 @@ a.footer-contact-item:hover {
     padding: 28px 24px;
 }
 
-
-.cert-flip-button {
-    flex-shrink: 0;
-    padding: 5px 0;
-    border: 0;
-    background: transparent;
-    color: var(--cert-accent);
-    font: inherit;
-    font-size: 12px;
-    font-weight: 600;
-    text-align: left;
-    cursor: pointer;
-}
-.cert-flip-button:hover { text-decoration: underline; }
-.cert-flip-button:focus-visible { outline: 2px solid var(--cert-accent); outline-offset: 3px; }
 
 /* ---- GARIS AKSEN ---- */
 
@@ -12196,7 +12900,6 @@ a.footer-contact-item:hover {
 /* ---- IKON ---- */
 
 .cert-icon {
-    flex-shrink: 0;
     font-size: 46px;
 
     line-height: 1;
@@ -12208,10 +12911,6 @@ a.footer-contact-item:hover {
 /* ---- TEKS SISI DEPAN ---- */
 
 .cert-front-text {
-    min-height: 0;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    overflow-wrap: anywhere;
     display: flex;
 
     flex-direction: column;
@@ -12266,11 +12965,6 @@ a.footer-contact-item:hover {
 /* ---- TEKS SISI BELAKANG ---- */
 
 .cert-back-inner {
-    height: 100%;
-    min-height: 0;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    overflow-wrap: anywhere;
     display: flex;
 
     flex-direction: column;
@@ -12282,13 +12976,6 @@ a.footer-contact-item:hover {
     width: 100%;
 }
 
-
-/* Flex children retain their natural height inside the scroll regions. */
-.cert-front-text > *,
-.cert-back-inner > * { flex-shrink: 0; max-width: 100%; }
-
-.cert-front-text:focus-visible,
-.cert-back-inner:focus-visible { outline: 2px solid var(--cert-accent); outline-offset: -2px; }
 
 .cert-back-title {
     margin: 0;
@@ -12501,54 +13188,49 @@ a.footer-contact-item:hover {
 }
 
 
-.cert-live {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-}
-
 .cert-dots {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
+
     align-items: center;
-    min-width: 0;
-    gap: 2px;
+
+    gap: 6px;
 }
+
 
 .cert-dot {
-    position: relative;
-    width: 28px;
-    height: 28px;
-    flex-shrink: 0;
-    padding: 0;
-    border: 0;
-    border-radius: 20px;
-    background: transparent;
-    cursor: pointer;
-}
-
-.cert-dot::before {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
     width: 7px;
     height: 7px;
-    border-radius: inherit;
-    background: #d2d2d7;
-    transform: translate(-50%, -50%);
-    transition: width .25s ease, background-color .25s ease;
+
+    flex-shrink: 0;
+
+    padding: 0;
+
+    border: 0;
+
+    border-radius: 20px;
+
+    background-color: #d2d2d7;
+
+    cursor: pointer;
+
+    transition:
+        width 0.3s ease,
+        background-color 0.3s ease;
 }
 
-.cert-dot.is-active::before { width: 24px; background: #0071e3; }
-.cert-dot:hover::before { background: #0071e3; }
-.cert-dot:focus-visible { outline: 2px solid #0071e3; outline-offset: 1px; }
+
+.cert-dot.is-active {
+    width: 24px;
+
+    background-color: #0071e3;
+}
+
+
+.cert-dot:focus-visible {
+    outline: 2px solid #0071e3;
+
+    outline-offset: 3px;
+}
 
 
 /* =========================================
@@ -12562,7 +13244,7 @@ a.footer-contact-item:hover {
     .certificates-section {
         --cert-w: 264px;
         --cert-h-base: 365px;
-        --cert-radius-base: 234px;
+        --cert-radius: 234px;
         --cert-perspective: 1920px;
     }
 
@@ -12616,9 +13298,9 @@ a.footer-contact-item:hover {
        membatasi rentang lingkaran — kalau lebih besar lagi,
        kartu samping mulai tersentuh tepi layar di HP 360px. */
     .certificates-section {
-        --cert-w: min(200px, calc(100vw - 48px));
-        --cert-h-base: max(240px, calc(var(--cert-w) * 1.38));
-        --cert-radius-base: 175px;
+        --cert-w: 200px;
+        --cert-h-base: 276px;
+        --cert-radius: 175px;
         --cert-perspective: 2660px;
 
         padding: 70px 0;
@@ -12679,6 +13361,14 @@ a.footer-contact-item:hover {
     .cert-face-back {
         padding: 21px 17px;
 
+        /* Pengaman terakhir. Tinggi kartu sudah dinaikkan JS
+           mengikuti sisi belakang yang paling panjang, jadi
+           ini praktis tidak terpakai — tapi kalau isi datanya
+           jauh lebih panjang dari dugaan, teks bisa di-scroll
+           alih-alih terpotong diam-diam. */
+        overflow-y: auto;
+
+        -webkit-overflow-scrolling: touch;
     }
 
 
@@ -12716,7 +13406,7 @@ a.footer-contact-item:hover {
 
 
     .cert-controls {
-        gap: clamp(4px, 2vw, 14px);
+        gap: 14px;
 
         margin-top: 28px;
     }
@@ -12732,13 +13422,65 @@ a.footer-contact-item:hover {
 }
 
 
-/* Reduced motion: JS selects exactly one face; no fade or rotation tween. */
+/* =========================================
+   REDUCED MOTION
+
+   Rotasi globe jadi instan, flip jadi fade. Karena kartu
+   tidak lagi diputar, backface-visibility dimatikan dan
+   sisi belakang berhenti memakai rotateY(180deg) —
+   pergantian sisi murni lewat opacity.
+========================================= */
+
 @media (prefers-reduced-motion: reduce) {
-    .cert-ring, .cert-face, .cert-slot.is-active .cert-face,
-    .cert-dot::before, .cert-nav { transition: none; }
-    .cert-flip, .cert-slot.is-flipped .cert-flip { transform: none; transition: none; }
-    .cert-face { -webkit-backface-visibility: visible; backface-visibility: visible; }
-    .cert-face-back { transform: none; }
+
+    .cert-ring {
+        transition: none;
+    }
+
+
+    .cert-slot {
+        transition:
+            opacity 0.2s linear;
+    }
+
+
+    .cert-flip,
+    .cert-slot.is-flipped .cert-flip {
+        transform: none;
+
+        transition: none;
+    }
+
+
+    .cert-face {
+        -webkit-backface-visibility: visible;
+        backface-visibility: visible;
+
+        transition:
+            opacity 0.2s linear;
+    }
+
+
+    .cert-face-back {
+        transform: none;
+
+        opacity: 0;
+
+        pointer-events: none;
+    }
+
+
+    .cert-slot.is-flipped .cert-face-front {
+        opacity: 0;
+    }
+
+
+    .cert-slot.is-flipped .cert-face-back {
+        opacity: 1;
+
+        pointer-events: auto;
+    }
+
 }
 
 
@@ -12888,7 +13630,7 @@ a.footer-contact-item:hover {
 
     position: relative;
 
-    animation: l8-0 3s 1 linear forwards;
+    animation: l8-0 3s infinite linear;
 
     clip-path: inset(-33px 0);
 }
@@ -12910,7 +13652,7 @@ a.footer-contact-item:hover {
     left: -14px;
     bottom: 100%;
 
-    animation: l8-1 3s 1 linear forwards;
+    animation: l8-1 3s infinite linear;
 }
 
 @keyframes l8-0 {
@@ -12954,8 +13696,7 @@ a.footer-contact-item:hover {
 /* Screen-reader label. The bars themselves are aria-hidden, so this
    is what "Loading portfolio" is announced from. */
 
-.visually-hidden-loader,
-.visually-hidden {
+.visually-hidden-loader {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -13018,13 +13759,3 @@ a.footer-contact-item:hover {
     }
 
 }
-
-/* Compatibility for a published certificate set smaller than the 3D carousel. */
-.certificates-carousel[hidden] { display: none; }
-.cert-simple { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.5rem; padding: 2rem 1rem; }
-.cert-simple-card { width: min(100%, 340px); min-width: 0; padding: 1.5rem; border-radius: 20px;
-  background: #131313; color: #fff; border: 1px solid rgba(255,255,255,.07); overflow-wrap: anywhere; }
-.cert-simple-card h3 { font-size: 1.2rem; }
-.cert-simple-card p { margin-block: .75rem; }
-.cert-simple-card a { color: #2997ff; }
-.cert-simple-card a:focus-visible { outline: 2px solid #2997ff; outline-offset: 4px; }
