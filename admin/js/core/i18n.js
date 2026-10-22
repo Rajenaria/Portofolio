@@ -1,3 +1,5 @@
+import { requestLeave } from "./navigation-guard.js";
+
 /*
   Admin-only bilingual layer (Bahasa Indonesia + English).
 
@@ -49,6 +51,23 @@ export const DEFAULT_LANGUAGE = "id";
 const DICTIONARY = {
 
   id: {
+    "cv.tab": "CV",
+    "cv.title": "Pengelolaan CV",
+    "cv.choose": "Pilih CV PDF baru",
+    "cv.help": "PDF maksimal 5 MiB. Upload tidak menghapus versi lama. Perubahan berlaku setelah file dan metadata terkonfirmasi.",
+    "cv.save": "Simpan CV",
+    "cv.discard": "Batalkan pilihan",
+    "cv.unavailable": "Informasi CV belum tersedia.",
+    "cv.empty": "CV dinamis belum dikonfigurasi.",
+    "cv.download": "Unduh CV aktif",
+    "cv.loading": "Memuat dan memeriksa CV aktif...",
+    "cv.saving": "Mengunggah dan memverifikasi CV...",
+    "cv.saved": "CV aktif berhasil diverifikasi dan diperbarui.",
+    "cv.schema": "Migrasi CV belum tersedia. Pengelolaan Profile lainnya tetap dapat digunakan.",
+    "cv.forbidden": "Akses memerlukan akun owner dengan MFA AAL2.",
+    "cv.invalid": "Pilih file PDF valid, berekstensi .pdf, tipe application/pdf, dan ukuran 1 byte sampai 5 MiB.",
+    "cv.conflict": "Versi aktif berubah atau operasi berbenturan. Batalkan pilihan dan muat ulang sebelum memilih kembali.",
+    "cv.unconfirmed": "Hasil perubahan belum dapat dikonfirmasi. File dipertahankan. Coba lagi untuk rekonsiliasi; jangan menghapus file.",
     /* ---------- generic ---------- */
     "common.save": "Simpan",
     "common.saveChanges": "Simpan perubahan",
@@ -551,6 +570,14 @@ const DICTIONARY = {
     "projEditor.fieldDateHelp": "Disimpan sebagai tanggal; website mengambil tahunnya.",
     "projEditor.featured": "Proyek unggulan",
     "projEditor.featuredHelp": "Hanya penanda. Tidak mengubah ukuran, warna, atau tata letak kartu di website.",
+    "projCover.fit": "Tampilan gambar kartu",
+    "projCover.cover": "Cover - isi area",
+    "projCover.contain": "Contain - tampilkan seluruh gambar",
+    "projCover.x": "Posisi horizontal (%)",
+    "projCover.y": "Posisi vertikal (%)",
+    "projCover.help": "Pratinjau kartu rasio 3:2. Pengaturan berlaku untuk desktop dan mobile. Posisi hanya terlihat jika ada ruang atau bagian gambar di luar area. Halaman detail tidak berubah.",
+    "projCover.invalid": "Pilih cover/contain dan posisi bilangan bulat 0?100.",
+    "projCover.schemaMissing": "Pengaturan gambar belum dapat disimpan. Migrasi metadata cover perlu tersedia pada database tujuan.",
     "projEditor.cover": "Gambar sampul",
     "projEditor.coverHelp": "Tampil di kartu Portofolio dan di bagian atas halaman detail proyek.",
     "projEditor.coverEmpty": "Belum ada gambar sampul.",
@@ -569,11 +596,13 @@ const DICTIONARY = {
     "projEditor.publishedWarn": "Proyek ditampilkan. Peringatan pembersihan: {warnings}.",
     "projEditor.savedWarn": "Tersimpan. Peringatan pembersihan: {warnings}.",
     "projEditor.errPublish": "Tidak bisa menampilkan proyek ini. Datanya tetap tersimpan sebagai draf.",
+    "projEditor.errPublishRecovery": "Hasil publikasi belum dapat dipastikan. File gambar dipertahankan; coba lagi atau muat ulang sebelum mengubah gambar.",
     "projEditor.errPublishMedia": "Tidak bisa menampilkan gambar proyek ini. Proyek tetap draf dan gambarnya tidak berubah.",
     "projEditor.errSave": "Tidak bisa menyimpan proyek ini. Perubahan Anda masih tersimpan di form.",
     "projEditor.errParagraphs": "Proyek tersimpan, tetapi paragrafnya gagal diperbarui. Silakan coba lagi.",
     "projEditor.errTechnologies": "Proyek tersimpan, tetapi teknologinya gagal diperbarui. Silakan coba lagi.",
     "projEditor.errMedia": "Proyek tersimpan, tetapi gambarnya gagal diperbarui. Gambar sebelumnya tidak berubah.",
+    "projEditor.errMediaRecovery": "Hasil penyimpanan gambar belum dapat dipastikan. File dipertahankan; muat ulang sebelum mengubah gambar.",
 
     "projPara.title": "Tentang proyek",
     "projPara.add": "+ Tambah paragraf",
@@ -942,6 +971,9 @@ const DICTIONARY = {
     "picker.selected": "Gambar hasil optimasi dipilih.",
     "picker.chooseAnother": "Pilih gambar lain",
 
+    "doc.errAccess": "Dokumen tidak dapat dibuka. Periksa sesi admin dan coba lagi.",
+    "doc.errUnconfirmed": "Hasil penyimpanan dokumen belum pasti. File dipertahankan; muat ulang sebelum mencoba lagi.",
+    "certificates.privacyCount": "{count} sertifikat dipublikasikan. Hide/Archive selalu tersedia untuk menjaga privasi.",
     "doc.errNoFile": "Pilih file sertifikat terlebih dahulu.",
     "doc.errEmpty": "File ini kosong.",
     "doc.errTooLarge": "File ini lebih besar dari {size}.",
@@ -954,6 +986,23 @@ const DICTIONARY = {
   },
 
   en: {
+    "cv.tab": "CV",
+    "cv.title": "CV management",
+    "cv.choose": "Choose a new PDF CV",
+    "cv.help": "PDF up to 5 MiB. Upload never deletes previous versions. Changes apply only after the file and active metadata are verified.",
+    "cv.save": "Save CV",
+    "cv.discard": "Discard selection",
+    "cv.unavailable": "CV information is unavailable.",
+    "cv.empty": "Dynamic CV is not configured.",
+    "cv.download": "Download active CV",
+    "cv.loading": "Loading and checking the active CV...",
+    "cv.saving": "Uploading and verifying CV...",
+    "cv.saved": "The active CV was verified and updated.",
+    "cv.schema": "The CV migration is unavailable. Other Profile management remains usable.",
+    "cv.forbidden": "An owner account with MFA AAL2 is required.",
+    "cv.invalid": "Choose a valid .pdf file with application/pdf MIME type, from 1 byte to 5 MiB.",
+    "cv.conflict": "The active version changed or the operation conflicts. Discard the selection and reload before selecting again.",
+    "cv.unconfirmed": "The outcome is unconfirmed. Files are retained. Retry to reconcile; do not delete files.",
     "common.save": "Save",
     "common.saveChanges": "Save changes",
     "common.cancel": "Cancel",
@@ -1450,6 +1499,14 @@ const DICTIONARY = {
     "projEditor.fieldDateHelp": "Stored as a date; your website derives the year from it.",
     "projEditor.featured": "Featured project",
     "projEditor.featuredHelp": "A marker only. It does not change the card size, colour or layout on your website.",
+    "projCover.fit": "Card image fit",
+    "projCover.cover": "Cover - fill area",
+    "projCover.contain": "Contain - show full image",
+    "projCover.x": "Horizontal position (%)",
+    "projCover.y": "Vertical position (%)",
+    "projCover.help": "Approximate 3:2 card preview. Shared by desktop and mobile. Position is visible only when there is spare space or image overflow. Detail page is unchanged.",
+    "projCover.invalid": "Choose cover/contain and whole-number positions from 0 to 100.",
+    "projCover.schemaMissing": "Image settings cannot be saved until the cover metadata migration is available in the target database.",
     "projEditor.cover": "Cover image",
     "projEditor.coverHelp": "Shown on the Portfolio card and at the top of the project detail page.",
     "projEditor.coverEmpty": "No cover image configured.",
@@ -1468,11 +1525,13 @@ const DICTIONARY = {
     "projEditor.publishedWarn": "Project is now visible. Cleanup warning: {warnings}.",
     "projEditor.savedWarn": "Saved. Cleanup warning: {warnings}.",
     "projEditor.errPublish": "Could not show this project. It is still saved as a draft.",
+    "projEditor.errPublishRecovery": "Could not confirm publication. Image files have been retained; retry or reload before changing images.",
     "projEditor.errPublishMedia": "Could not publish the project images. The project is still a draft and its images are unchanged.",
     "projEditor.errSave": "Could not save this project. Your changes are still here.",
     "projEditor.errParagraphs": "Project saved, but its paragraphs could not be updated. Please retry.",
     "projEditor.errTechnologies": "Project saved, but its technologies could not be updated. Please retry.",
     "projEditor.errMedia": "Project saved, but its images could not be updated. Any previous image is unchanged.",
+    "projEditor.errMediaRecovery": "Could not confirm the image save. Files have been retained; reload before changing images.",
 
     "projPara.title": "About the project",
     "projPara.add": "+ Add paragraph",
@@ -1841,6 +1900,9 @@ const DICTIONARY = {
     "picker.selected": "Optimized image selected.",
     "picker.chooseAnother": "Choose another",
 
+    "doc.errAccess": "Could not open the document. Check your admin session and retry.",
+    "doc.errUnconfirmed": "Could not confirm the document save. Files are retained; reload before retrying.",
+    "certificates.privacyCount": "{count} certificates published. Hide/Archive remain available for privacy.",
     "doc.errNoFile": "Choose a certificate file first.",
     "doc.errEmpty": "This file is empty.",
     "doc.errTooLarge": "This file is larger than {size}.",
@@ -1892,10 +1954,12 @@ export function t(key, params) {
   );
 }
 
-export function setLanguage(code) {
+export async function setLanguage(code) {
   if (!DICTIONARY[code] || code === current) {
     return;
   }
+
+  if (!await requestLeave()) return false;
 
   current = code;
 
@@ -1910,7 +1974,7 @@ export function setLanguage(code) {
 
   listeners.forEach(listener => {
     try {
-      listener(code);
+      listener(code, { guardApproved: true });
     } catch (error) {
       console.error(error);
     }

@@ -428,6 +428,21 @@ file_size_limit = "5MB"
 allowed_mime_types = ["image/webp"]
 
 [storage.buckets.portfolio-documents]
-public = true
+public = false
 file_size_limit = "10MB"
 allowed_mime_types = ["application/pdf", "image/webp"]
+
+[functions.certificate-document]
+verify_jwt = false
+
+[storage.buckets.portfolio-cv]
+public = false
+file_size_limit = "5MiB"
+allowed_mime_types = ["application/pdf"]
+
+# manage-cv verifies the caller JWT and owner/AAL2 via the database itself.
+[functions.manage-cv]
+verify_jwt = false
+
+[functions.cv-document]
+verify_jwt = false

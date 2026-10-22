@@ -16,6 +16,7 @@
 
 import { el, append, clear } from "./dom.js";
 import { t } from "./i18n.js";
+import { registerNavigationGuard } from "./navigation-guard.js";
 
 const FOCUSABLE = [
   "a[href]",
@@ -108,6 +109,7 @@ export function openModal({
   body,
   actions = [],
   onRequestClose,
+  isDirty,
   size,
   onClosed
 }) {
@@ -198,6 +200,16 @@ export function openModal({
   };
 
   stack.push(entry);
+  let modalBusy = false;
+  const snapshot = () => JSON.stringify(Array.from(content.querySelectorAll("input,select,textarea"),
+    field => [field.name, field.type, field.value, field.checked]));
+  const baseline = snapshot();
+  const releaseGuard = typeof onRequestClose === "function"
+    ? registerNavigationGuard(
+        () => modalBusy || (typeof isDirty === "function" ? isDirty() : snapshot() !== baseline),
+        () => modalBusy ? false : onRequestClose("navigation"))
+    : () => {};
+  entry.close = close;
 
   overlay.addEventListener("mousedown", event => {
     if (event.target === overlay) {
@@ -215,6 +227,7 @@ export function openModal({
   focusTarget.focus();
 
   async function requestClose(reason) {
+    if (modalBusy) return;
     if (typeof onRequestClose === "function") {
       const allowed = await onRequestClose(reason);
 
@@ -233,6 +246,7 @@ export function openModal({
       return;
     }
 
+    releaseGuard();
     stack.splice(index, 1);
     overlay.remove();
 
@@ -257,6 +271,7 @@ export function openModal({
   let fieldsDisabledByBusy = [];
 
   function setBusy(busy, pendingLabel) {
+    modalBusy = busy;
     actionButtons.forEach((button, index) => {
       button.disabled = busy;
 
@@ -361,8 +376,7 @@ export function confirmDialog({
 
 export function closeAllModals() {
   while (stack.length > 0) {
-    const entry = stack.pop();
-    entry.overlay.remove();
+    stack[stack.length - 1].close();
   }
 
   document.body.classList.remove("has-modal-open");

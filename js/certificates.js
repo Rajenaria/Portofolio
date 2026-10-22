@@ -4,7 +4,7 @@
    menyentuh script.js, guestbook.js, hero-photo-stack.js,
    atau experience-stack.js.
 
-   Alur: CERTIFICATES (data) -> renderCards() -> init()
+   Alur: CMS data -> build() -> initCarousel()
 
    ---------------------------------------------------------
    GEOMETRI
@@ -15,11 +15,9 @@
        .cert-ring : translateZ(-radius) rotateY(sudut)
        .cert-slot : rotateY(i * step) translateZ(radius)
 
-   Nilai radius TIDAK di-hardcode di sini — ia hidup di CSS
-   sebagai --cert-radius supaya bisa dioverride per
-   breakpoint. Transform di atas menyebut var(--cert-radius)
-   langsung, dan JS hanya MEMBACA nilainya (getComputedStyle)
-   untuk mengubah jarak geser jari menjadi derajat.
+   CSS menentukan dimensi, gap, radius dasar, dan perspective.
+   measure() menghitung radius polygon dari lebar kartu dan jumlah data.
+   Transform berbagi --cert-radius; drag memakai radius hasil perhitungan.
 
    ---------------------------------------------------------
    LAPISAN TRANSFORM (penting)
@@ -174,46 +172,20 @@
        radius-nya juga berubah. */
     const DRAG_GAIN = 2.2;
 
-    /* Ambang peredupan kartu, dalam derajat dari posisi depan.
-       |rel| <= fadeStart -> opacity 1 (terbaca penuh)
-       |rel| >= fadeEnd   -> opacity 0 (membelakangi — WAJIB
-       disembunyikan, kalau tidak sisi belakang kartu terlihat
-       terbalik seperti cermin).
-
-       Keduanya DIHITUNG dari step (= 360 / jumlah kartu), bukan
-       angka mati, supaya komposisi globe-nya bertahan berapa pun
-       jumlah sertifikatnya. Nilai V1 dipakai sebagai titik
-       kalibrasi: dengan 5 kartu rumus ini menghasilkan 45 dan
-       110.2 — praktis identik dengan 45 / 110 yang lama.
-
-       Bagian proporsionalnya membuat tetangga kiri-kanan tetap di
-       sekitar 0.59 di berapa pun jumlah kartu. Yang bekerja cuma
-       clamp di kedua ujung:
-
-         - BATAS ATAS menahan kasus 3 kartu. Di sana tetangga
-           duduk di 120°, sudah lewat horizon backface: yang
-           menghadap kita justru sisi BELAKANG kartu, terbaca
-           terbalik seperti cermin. Batas ini menekan opacity-nya
-           ke ~0.26 — cukup untuk hadir sebagai kedalaman, terlalu
-           redup untuk teks cerminnya terbaca.
-
-         - BATAS BAWAH menahan jumlah kartu besar supaya tetangga
-           tidak merangkak naik ke opacity penuh dan jadi ramai.
-           Dengan 8 atau 12 kartu tetap hanya dua tetangga yang
-           tampak, sisanya 0. */
-
+    // Fade tracks angular step so only the nearest visual neighbours remain.
+    // Upper bounds keep the reversed surfaces of a three-card ring subdued.
     const FADE_START_FACTOR = 0.625;
     const FADE_END_FACTOR = 1.53;
 
-    const FADE_START_MIN = 16;
+    const FADE_START_MIN = 0;
     const FADE_START_MAX = 62;
 
-    const FADE_END_MIN = 40;
+    const FADE_END_MIN = 0;
     const FADE_END_MAX = 140;
 
-    /* Di bawah opacity ini kartu dianggap tidak ada:
-       pointer-events none, aria-hidden, keluar dari tab order. */
+    /* Decorative neighbours never take input, regardless of opacity. */
     const HIDDEN_OPACITY = 0.08;
+    const VISIBLE_NEIGHBORS = 1;
 
     const RESIZE_DEBOUNCE = 150;
 
@@ -313,9 +285,9 @@
             "rotateY(" + (index * step) + "deg) " +
             "translateZ(var(--cert-radius))";
 
-        slot.setAttribute("role", "button");
+        slot.setAttribute("role", "group");
+        slot.setAttribute("aria-roledescription", "slide");
         slot.setAttribute("tabindex", "0");
-        slot.setAttribute("aria-pressed", "false");
         slot.setAttribute(
             "aria-label",
             "Sertifikat: " + cert.title + " — " + cert.publisher +
@@ -354,13 +326,21 @@
         publisher.textContent = cert.publisher;
 
         frontText.append(year, title, publisher);
-        front.append(icon, frontText);
+        const flipButton = document.createElement("button");
+        flipButton.type = "button";
+        flipButton.className = "cert-flip-button";
+        flipButton.textContent = "Buka detail";
+        flipButton.setAttribute("aria-label", "Buka detail sertifikat " + cert.title);
+        front.append(icon, frontText, flipButton);
 
 
         /* ---------------- SISI BELAKANG ---------------- */
 
         const back = document.createElement("div");
         back.className = "cert-face cert-face-back";
+        back.id = "cert-details-" + index;
+        flipButton.setAttribute("aria-controls", back.id);
+        flipButton.setAttribute("aria-expanded", "false");
 
         const backInner = document.createElement("div");
         backInner.className = "cert-back-inner";
@@ -373,7 +353,16 @@
         backSubtitle.className = "cert-back-subtitle";
         backSubtitle.textContent = cert.subtitle;
 
-        backInner.append(backTitle, backSubtitle);
+        const closeButton = document.createElement("button");
+        closeButton.type = "button";
+        closeButton.className = "cert-flip-button";
+        closeButton.textContent = "Tutup detail";
+        closeButton.setAttribute("aria-label", "Tutup detail sertifikat " + cert.title);
+        backInner.append(closeButton, backTitle, backSubtitle);
+        backInner.setAttribute("role", "region");
+        backInner.setAttribute("aria-label", "Detail sertifikat " + cert.title);
+        frontText.setAttribute("role", "region");
+        frontText.setAttribute("aria-label", "Informasi sertifikat " + cert.title);
 
         if (cert.badge) {
             const badge = document.createElement("span");
@@ -476,7 +465,7 @@
         /* `faces` dipakai render(): peredupan dipasang di kedua
            muka kartu, bukan di slot — lihat catatan di render(). */
         return {
-            slot, flip, front, back, backInner, link, hasLink, index,
+            slot, flip, front, frontText, flipButton, closeButton, back, backInner, link, hasLink, index,
             faces: [front, back]
         };
     }
@@ -533,6 +522,14 @@
         });
 
 
+        const live = document.createElement("p");
+        live.className = "visually-hidden cert-live";
+        live.setAttribute("role", "status");
+        live.setAttribute("aria-live", "polite");
+        live.setAttribute("aria-atomic", "true");
+        carousel.appendChild(live);
+        dots.forEach((dot, i) => dot.setAttribute("aria-label", `Sertifikat ${i + 1} dari ${total}: ${data[i].title}`));
+
         /* ---- STATE ----
 
            `activeIndex` = kartu yang menghadap depan, SELALU di
@@ -578,81 +575,52 @@
            Hanya menyentuh transform, opacity dan visibility. */
 
         function render() {
-
+            if (destroyed) return;
             applyRingTransform();
-
+            const active = cards[frontIndex()];
+            const flippedActive = active.slot.classList.contains("is-flipped");
+            const moveFocus = ring.contains(document.activeElement) &&
+                (!active.slot.contains(document.activeElement) ||
+                 (flippedActive ? active.front : active.back).contains(document.activeElement));
             cards.forEach(function (card) {
-
                 const rel = normalizeAngle(card.index * step + angle);
-                const opacity = faceOpacity(rel, fade);
+                const distance = Math.abs(rel) / step;
+                let opacity = distance <= VISIBLE_NEIGHBORS + 0.5 ? faceOpacity(rel, fade) : 0;
+                if (reducedMotion.matches && Math.abs(rel) > 90) opacity = 0;
                 const visible = opacity > HIDDEN_OPACITY;
-
-                /* PENTING: opacity dipasang di kedua MUKA kartu,
-                   tidak pernah di .cert-slot.
-
-                   .cert-slot memegang transform-style: preserve-3d.
-                   Opacity pecahan di elemen ber-preserve-3d memaksa
-                   transform-style-nya jadi flat (CSS Transforms
-                   Level 2), yang menggepengkan .cert-flip dan kedua
-                   muka ke satu bidang dan melumpuhkan
-                   backface-visibility — kartu yang membelakangi
-                   kita jadi ikut tergambar dan menumpuk. Muka kartu
-                   adalah daun, jadi meredupkannya aman.
-
-                   visibility ikut disetel supaya kartu yang sudah
-                   benar-benar hilang berhenti jadi lapisan yang
-                   masih dicat compositor. Transisi visibility di
-                   CSS menahan nilai "visible" selama fade berjalan,
-                   jadi menghilang tetap halus dan muncul kembali
-                   tetap seketika. */
-
-                const value = opacity.toFixed(3);
-                const shown = opacity > 0 ? "visible" : "hidden";
-
-                /* Lewat 90 derajat, muka depan kartu sudah
-                   membelakangi kita dan yang menghadap justru sisi
-                   BELAKANG, sehingga isinya terbaca terbalik seperti
-                   cermin. Ini cuma terjadi saat kartunya sedikit:
-                   dengan 3 kartu, tetangganya duduk tepat di 120
-                   derajat.
-
-                   Yang disembunyikan hanya ISI sisi belakang, bukan
-                   kartunya. Permukaan gelapnya tetap tergambar, jadi
-                   kartu samping masih hadir sebagai kedalaman, tanpa
-                   teks cermin. */
-
-                card.slot.classList.toggle(
-                    "is-reversed",
-                    Math.abs(rel) > 90
-                );
-
+                const isActive = card.index === frontIndex();
+                card.slot.classList.toggle("is-reversed", Math.abs(rel) > 90);
+                card.slot.classList.toggle("is-active", isActive);
+                // Only the active card participates in input and the accessibility tree.
+                card.slot.style.pointerEvents = isActive ? "auto" : "none";
+                card.slot.style.zIndex = isActive ? "3" : visible ? "2" : "1";
+                card.slot.inert = !isActive;
+                card.slot.setAttribute("aria-hidden", isActive ? "false" : "true");
+                card.slot.tabIndex = -1;
+                const flipped = card.slot.classList.contains("is-flipped");
+                card.front.inert = !isActive || flipped;
+                card.back.inert = !isActive || !flipped;
+                card.front.setAttribute("aria-hidden", !isActive || flipped ? "true" : "false");
+                card.back.setAttribute("aria-hidden", !isActive || !flipped ? "true" : "false");
+                card.flipButton.tabIndex = isActive && !flipped ? 0 : -1;
+                card.closeButton.tabIndex = isActive && flipped ? 0 : -1;
+                card.link.tabIndex = isActive && flipped && card.hasLink ? 0 : -1;
+                card.frontText.tabIndex = isActive && !flipped && card.frontText.scrollHeight > card.frontText.clientHeight + 1 ? 0 : -1;
+                card.backInner.tabIndex = isActive && flipped ? 0 : -1;
                 card.faces.forEach(function (face) {
-                    face.style.opacity = value;
-                    face.style.visibility = shown;
+                    const selected = face === (flipped ? card.back : card.front);
+                    const shown = visible && (!reducedMotion.matches || selected);
+                    face.style.opacity = shown ? opacity.toFixed(3) : "0";
+                    face.style.visibility = shown ? "visible" : "hidden";
                 });
-
-                card.slot.style.pointerEvents = visible ? "auto" : "none";
-                card.slot.setAttribute(
-                    "aria-hidden",
-                    visible ? "false" : "true"
-                );
-                card.slot.setAttribute(
-                    "tabindex",
-                    visible ? "0" : "-1"
-                );
             });
-
-            const front = frontIndex();
-
+            // An offscreen target must be made visible before focus can move to it.
+            if (moveFocus) (flippedActive ? active.closeButton : active.flipButton).focus({ preventScroll: true });
+            const announcement = `${frontIndex() + 1} dari ${total}: ${data[frontIndex()].title}`;
+            if (live.textContent !== announcement) live.textContent = announcement;
             dots.forEach(function (dot, i) {
-
-                const active = i === front;
-
-                dot.classList.toggle("is-active", active);
-                dot.setAttribute(
-                    "aria-current",
-                    active ? "true" : "false"
-                );
+                dot.classList.toggle("is-active", i === frontIndex());
+                dot.setAttribute("aria-current", i === frontIndex() ? "true" : "false");
             });
         }
 
@@ -673,11 +641,10 @@
         /* ---- FLIP ---- */
 
         function resetFlips() {
-
             cards.forEach(function (card) {
 
                 card.slot.classList.remove("is-flipped");
-                card.slot.setAttribute("aria-pressed", "false");
+                card.flipButton.setAttribute("aria-expanded", "false");
 
                 /* Hanya tombol yang benar-benar punya href yang
                    ikut tab order — placeholder kosong tidak. */
@@ -692,14 +659,12 @@
 
             const flipped = card.slot.classList.toggle("is-flipped");
 
-            card.slot.setAttribute(
-                "aria-pressed",
+            card.flipButton.setAttribute(
+                "aria-expanded",
                 flipped ? "true" : "false"
             );
 
-            if (card.hasLink) {
-                card.link.tabIndex = flipped ? 0 : -1;
-            }
+            render();
         }
 
 
@@ -767,7 +732,7 @@
            kartu ke sisi depan. */
 
         function rotateBy(delta) {
-
+            if (dragging) endDrag();
             if (delta !== 0) {
                 angle -= delta * step;
                 activeIndex = ((activeIndex + delta) % total + total) % total;
@@ -846,6 +811,7 @@
         let captured = false;
         let pointerId = null;
         let startX = 0;
+        let startY = 0;
         let startAngle = 0;
         let startActive = 0;
         let suppressClick = false;
@@ -892,7 +858,10 @@
            diangkat duluan akan menghentikan drag jari pertama. */
 
         function handlePointerEnd(event) {
-
+            // Touch's implicit capture is transferred from the card to stage.
+            // Its bubbled loss is not the end of the stage's new capture.
+            if (event.type === "lostpointercapture" &&
+                (event.target !== stage || stage.hasPointerCapture(event.pointerId))) return;
             if (pointerId !== null && event.pointerId !== pointerId) {
                 return;
             }
@@ -902,6 +871,10 @@
 
 
         function handlePointerDown(event) {
+            suppressClick = false;
+            if (event.target.closest(".cert-link, .cert-back-inner, button")) return;
+            const scrollRegion = event.target.closest(".cert-front-text");
+            if (scrollRegion && scrollRegion.scrollHeight > scrollRegion.clientHeight + 1) return;
 
             /* Tombol tengah/kanan mouse tidak memutar apa pun. */
             if (event.button !== 0 && event.pointerType === "mouse") {
@@ -948,12 +921,11 @@
                itu — jadi di sinilah tempat yang tepat untuk
                menolkannya, tanpa bergantung pada waktu. */
 
-            suppressClick = false;
-
             dragging = true;
             captured = false;
             pointerId = event.pointerId;
             startX = event.clientX;
+            startY = event.clientY;
             startAngle = angle;
             startActive = activeIndex;
         }
@@ -966,7 +938,10 @@
             }
 
             const dx = event.clientX - startX;
-
+            if (!captured && Math.abs(event.clientY - startY) > Math.max(DRAG_THRESHOLD, Math.abs(dx))) {
+                endDrag();
+                return;
+            }
             if (!captured) {
 
                 if (Math.abs(dx) <= DRAG_THRESHOLD) {
@@ -1027,7 +1002,8 @@
 
                 /* Tombol "LIHAT SERTIFIKAT" — biarkan link
                    bekerja seperti biasa. */
-                if (event.target.closest(".cert-link")) {
+                if (event.target.closest(".cert-link") ||
+                    (event.target.closest(".cert-back-inner, .cert-front-text") && !event.target.closest("button"))) {
                     return;
                 }
 
@@ -1061,7 +1037,13 @@
 
         function handleCarouselKeydown(event) {
 
-            if (event.key === "ArrowLeft") {
+            if (event.key === "Escape" && cards[frontIndex()].slot.classList.contains("is-flipped")) {
+                event.preventDefault();
+                toggleFlip(cards[frontIndex()]);
+            } else if (event.key === "Home" || event.key === "End") {
+                event.preventDefault();
+                goToCard(event.key === "Home" ? 0 : total - 1);
+            } else if (event.key === "ArrowLeft") {
                 event.preventDefault();
                 rotateBy(-1);
             } else if (event.key === "ArrowRight") {
@@ -1094,53 +1076,18 @@
         });
 
 
-        /* =================================================
-           LAYOUT RESPONSIF
-
-           Radius dibaca dari CSS (bukan angka di JS) supaya
-           tiap breakpoint bisa menentukan sendiri seberapa
-           besar lingkarannya.
-
-           Tinggi kartu: --cert-h-base adalah tinggi minimum
-           per breakpoint, tapi kalau ada sisi BELAKANG yang
-           isinya lebih tinggi, --cert-h dinaikkan mengikuti
-           yang paling panjang — supaya teks belakang tidak
-           kepotong diam-diam di layar kecil.
-        ================================================= */
+        /* CSS supplies fixed card dimensions; content scrolls inside each face.
+           Radius follows polygon spacing and the breakpoint's minimum radius. */
 
         function measure() {
-
+            if (destroyed) return;
             const styles = getComputedStyle(section);
-
-            radius = readNumber(styles, "--cert-radius", radius);
-
-            const baseHeight = readNumber(styles, "--cert-h-base", 262);
-
-            /* Kembalikan ke tinggi dasar dulu, supaya pengukuran
-               tidak menumpuk dari hasil pengukuran sebelumnya. */
-            section.style.setProperty("--cert-h", baseHeight + "px");
-
-            let tallest = 0;
-
-            cards.forEach(function (card) {
-
-                const backStyles = getComputedStyle(card.back);
-
-                const padding =
-                    parseFloat(backStyles.paddingTop) +
-                    parseFloat(backStyles.paddingBottom);
-
-                tallest = Math.max(
-                    tallest,
-                    card.backInner.scrollHeight + padding
-                );
-            });
-
-            section.style.setProperty(
-                "--cert-h",
-                Math.max(baseHeight, Math.ceil(tallest)) + "px"
-            );
-
+            const width = ring.offsetWidth;
+            const gap = readNumber(styles, "--cert-gap", 28);
+            const baseRadius = readNumber(styles, "--cert-radius-base", 273);
+            // Tangent polygon spacing keeps adjacent cards apart as the set grows.
+            radius = Math.max(baseRadius, (width + gap) / (2 * Math.tan(Math.PI / total)));
+            section.style.setProperty("--cert-radius", Math.ceil(radius) + "px");
             render();
         }
 
@@ -1287,7 +1234,8 @@
                 dotsWrap.removeChild(dotsWrap.firstChild);
             }
 
-            section.style.removeProperty("--cert-h");
+            section.style.removeProperty("--cert-radius");
+            live.remove();
         }
 
 
@@ -1313,22 +1261,15 @@
     let controller = null;
 
 
-    function build(data) {
+    function build(data, message = "Belum ada sertifikat yang dipublikasikan.") {
 
         if (!refs) {
             return false;
         }
 
-        /* Validasi SEBELUM membongkar apa pun.
+        // Validate before teardown; small sets use a semantic non-carousel view.
 
-           Globe butuh minimal tiga kartu untuk terbaca sebagai
-           globe. Kalau datanya lebih pendek dari itu, permintaan
-           ditolak dan carousel yang sedang tampil dibiarkan utuh —
-           membongkarnya dulu baru menolak akan menyisakan section
-           kosong, yang justru lebih buruk daripada tidak jadi
-           membangun ulang. */
-
-        if (!Array.isArray(data) || data.length < 3) {
+        if (!Array.isArray(data)) {
             return false;
         }
 
@@ -1337,6 +1278,43 @@
             controller = null;
         }
 
+        refs.section.querySelector(".cert-simple")?.remove();
+        const simple = data.length < 3;
+        refs.carousel.hidden = simple;
+        if (simple) {
+            const list = document.createElement("div");
+            list.className = "cert-simple";
+            if (!data.length) {
+                const empty = document.createElement("p");
+                empty.setAttribute("role", "status");
+                empty.textContent = message;
+                list.appendChild(empty);
+            }
+            data.forEach(cert => {
+                const article = document.createElement("article");
+                article.className = "cert-simple-card";
+                [ ["h3", cert.title], ["p", cert.publisher], ["p", cert.year], ["p", cert.subtitle],
+                  ["p", cert.badge], ["p", cert.description] ].forEach(([tag, text]) => {
+                    if (!text) return;
+                    const node = document.createElement(tag);
+                    node.textContent = text;
+                    article.appendChild(node);
+                });
+                if (cert.link) {
+                    try {
+                        const url = new URL(cert.link, window.location.href);
+                        if (["http:", "https:"].includes(url.protocol)) {
+                            const link = document.createElement("a");
+                            link.href = url.href; link.target = "_blank"; link.rel = "noopener noreferrer";
+                            link.textContent = "LIHAT SERTIFIKAT"; article.appendChild(link);
+                        }
+                    } catch { /* Invalid links stay inert. */ }
+                }
+                list.appendChild(article);
+            });
+            refs.section.appendChild(list);
+            return true;
+        }
         controller = initCarousel(refs, data);
 
         return true;
@@ -1368,7 +1346,7 @@
             nextBtn: nextBtn
         };
 
-        build(CERTIFICATES);
+        build([], "Memuat sertifikat...");
 
         /* Pintu masuk untuk fase berikutnya (dan untuk pengujian
            jumlah kartu). Mengikuti pola yang sudah dipakai

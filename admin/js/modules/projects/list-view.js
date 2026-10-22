@@ -1,3 +1,5 @@
+import { COVER_COLUMNS, normalizeCover, missingCoverSchema } from "../../../../js/cms/project-cover.js";
+
 /*
   Projects list (Phase 8A).
 
@@ -148,12 +150,14 @@ export function createProjectList({ onEdit, onChanged }) {
     state.status = "loading";
     renderList();
 
+    async function readProjects() {
+      const query = columns => supabaseClient.from("projects").select(columns)
+        .order("sort_order", { ascending: true }).order("created_at", { ascending: true });
+      const result = await query(`${SELECT_COLUMNS},${COVER_COLUMNS}`);
+      return missingCoverSchema(result.error) ? await query(SELECT_COLUMNS) : result;
+    }
     const [projects, paragraphs, relations, media] = await Promise.all([
-      supabaseClient
-        .from("projects")
-        .select(SELECT_COLUMNS)
-        .order("sort_order", { ascending: true })
-        .order("created_at", { ascending: true }),
+      readProjects(),
 
       supabaseClient
         .from("project_paragraphs")
@@ -623,6 +627,7 @@ export function createProjectList({ onEdit, onChanged }) {
     );
 
     openProjectPreview({
+      ...normalizeCover(row),
       coverUrl,
       coverAlt: row.cover_alt,
       coverPending: false,

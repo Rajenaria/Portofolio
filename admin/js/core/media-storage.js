@@ -21,8 +21,8 @@
     only and its result is never written back.
   - replaceMedia() implements the mandatory safe-replace ordering from
     ADMIN-CMS-SECURITY.md section 55: upload new, verify, commit database,
-    verify, and only then delete the old objects. A failure at any step leaves
-    the previously working media referenced and reachable.
+    verify, and only then delete the old objects. An uncertain database result
+    retains both generations until references can be reconciled.
 */
 
 import { supabaseClient } from "./supabase.js";
@@ -170,30 +170,35 @@ export async function removeObjects(bucket, paths) {
 }
 
 /*
-  Confirms both freshly uploaded objects actually exist in the bucket listing
-  rather than trusting the upload response alone.
+  Verify exact object paths; directory size and listing order are irrelevant.
 */
 async function verifyUploads(bucket, directory, names) {
-  const { data, error } = await supabaseClient.storage
-    .from(bucket)
-    .list(directory, { limit: 100 });
+  for (const name of names) {
+    try {
+      const path = directory ? `${directory}/${name}` : name;
+      const { data, error } = await supabaseClient.storage.from(bucket).info(path);
+      if (error || !data) {
+        throw error || new Error("Image object was not found.");
+      }
+    } catch (error) {
+      throw new MediaStorageError(
+        "Could not verify the uploaded image. Your changes have not been saved.",
+        "VERIFY_FAILED",
+        error
+      );
+    }
+  }
+}
 
-  if (error) {
-    throw new MediaStorageError(
-      "Could not verify the uploaded image. Your changes have not been saved.",
-      "VERIFY_FAILED",
-      error
-    );
+export async function verifyVariantPair({ bucket, desktopPath, mobilePath }) {
+  if (!bucket || !desktopPath || !mobilePath || desktopPath === mobilePath) {
+    throw new MediaStorageError("Both image variants are required.", "VERIFY_FAILED");
   }
 
-  const present = new Set((data || []).map(entry => entry.name));
-  const missing = names.filter(name => !present.has(name));
-
-  if (missing.length > 0) {
-    throw new MediaStorageError(
-      "The uploaded image could not be confirmed. Your changes have not been saved.",
-      "VERIFY_FAILED"
-    );
+  for (const path of [desktopPath, mobilePath]) {
+    const parts = path.split("/");
+    const name = parts.pop();
+    await verifyUploads(bucket, parts.join("/"), [name]);
   }
 }
 
@@ -243,8 +248,7 @@ export async function uploadVariantPair({
 }
 
 /*
-  Copies one object into another bucket, keeping the same object key so the
-  logical layout is identical in staging and in the public bucket.
+  Copies one object into another bucket without overwriting the destination.
 
   supabase-js 2.112.3 supports a server-side cross-bucket copy
   (destinationBucket), which is preferred: the bytes never travel through the
@@ -288,8 +292,8 @@ async function copyObject(fromBucket, fromPath, toBucket, toPath) {
   from: { bucket, desktopPath, mobilePath }
 
   Copies both variants into toBucket and verifies they are really there before
-  reporting success. A failure on the second object removes the first, so a
-  half-promoted pair never exists in the public bucket.
+  reporting success. A failed copy attempts cleanup of the new objects;
+  cleanup failures may leave unreferenced files for later reconciliation.
 
   Resolves with { bucket, desktopPath, mobilePath, method }.
 */
@@ -299,25 +303,25 @@ export async function promoteVariantPair({ from, toBucket = MEDIA_BUCKET }) {
   }
 
   if (from.bucket === toBucket) {
+    await verifyVariantPair(from);
     return { ...from, method: "already-public" };
   }
 
+  // A failed attempt may leave a public copy behind. Fresh keys keep retry
+  // independent of that copy and prevent cleanup from touching older media.
+  const directory = from.desktopPath.split("/").slice(0, -1).join("/");
+  const paths = buildVariantPaths(directory);
   const created = [];
   let method = "copy";
 
   try {
-    method = await copyObject(from.bucket, from.desktopPath, toBucket, from.desktopPath);
-    created.push(from.desktopPath);
+    method = await copyObject(from.bucket, from.desktopPath, toBucket, paths.desktopPath);
+    created.push(paths.desktopPath);
 
-    await copyObject(from.bucket, from.mobilePath, toBucket, from.mobilePath);
-    created.push(from.mobilePath);
+    await copyObject(from.bucket, from.mobilePath, toBucket, paths.mobilePath);
+    created.push(paths.mobilePath);
 
-    const dir = from.desktopPath.split("/").slice(0, -1).join("/");
-
-    await verifyUploads(toBucket, dir, [
-      from.desktopPath.split("/").pop(),
-      from.mobilePath.split("/").pop()
-    ]);
+    await verifyVariantPair({ bucket: toBucket, ...paths });
   } catch (error) {
     await removeObjects(toBucket, created);
     throw error;
@@ -325,8 +329,8 @@ export async function promoteVariantPair({ from, toBucket = MEDIA_BUCKET }) {
 
   return {
     bucket: toBucket,
-    desktopPath: from.desktopPath,
-    mobilePath: from.mobilePath,
+    desktopPath: paths.desktopPath,
+    mobilePath: paths.mobilePath,
     method
   };
 }
@@ -338,12 +342,12 @@ export async function promoteVariantPair({ from, toBucket = MEDIA_BUCKET }) {
   commit:   async ({ bucket, desktopPath, mobilePath }) => void
             Must throw if the database write did not apply.
 
-  Order of operations (all failures leave the old media referenced):
+  Order of operations (uncertain commits retain the old media objects):
 
     1. upload new desktop
     2. upload new mobile
     3. verify both exist            -> failure removes new objects
-    4. commit database              -> failure removes new objects
+    4. commit database              -> uncertain outcome retains both generations
     5. delete old objects           -> failure is only a warning
 
   Resolves with { paths, cleanupWarning }.
@@ -370,14 +374,13 @@ export async function replaceMedia({
       mobilePath: uploadedPaths.mobilePath
     });
   } catch (error) {
-    // Database did not accept the new references: undo the uploads so the
-    // bucket does not accumulate objects nothing points at.
-    await removeObjects(bucket, [
-      uploadedPaths.desktopPath,
-      uploadedPaths.mobilePath
-    ]);
-
-    throw error;
+    // A lost acknowledgement does not prove the database rejected the commit.
+    // Neither generation is safe to delete until the reference is reconciled.
+    throw new MediaStorageError(
+      "The save could not be confirmed. Image files have been retained; reload before retrying.",
+      "COMMIT_UNCONFIRMED",
+      error
+    );
   }
 
   let cleanupWarning = null;

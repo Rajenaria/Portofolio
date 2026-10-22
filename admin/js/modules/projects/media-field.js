@@ -1,3 +1,5 @@
+import { applyCover } from "../../../../js/cms/project-cover.js";
+
 /*
   Project media field (Phase 8B).
 
@@ -54,6 +56,7 @@ export function createProjectMediaField({
   emptyText,
   current,
   compact = false,
+  layout = null,
   onChange
 }) {
   const root = el("div", compact ? "media-field media-field-compact" : "media-field");
@@ -65,6 +68,10 @@ export function createProjectMediaField({
   }
 
   const previewSlot = el("div", "media-field-preview");
+  if (layout) previewSlot.classList.add("project-cover-preview");
+  function styleCover(img) {
+    if (layout) applyCover(img, layout);
+  }
   const statusSlot = el("div", "media-field-status");
   const actions = el("div", "media-field-actions");
 
@@ -107,6 +114,7 @@ export function createProjectMediaField({
       pendingUrl = URL.createObjectURL(pending.desktop.optimized.blob);
 
       const img = el("img", "media-field-image");
+      styleCover(img);
       img.src = pendingUrl;
       img.alt = t("projMedia.replacementPreview");
       append(previewSlot, img);
@@ -141,6 +149,7 @@ export function createProjectMediaField({
     }
 
     const img = el("img", "media-field-image");
+    styleCover(img);
     img.src = url;
     img.alt = t("projMedia.currentLabel");
     img.loading = "lazy";
@@ -312,6 +321,12 @@ export function createProjectMediaField({
 
   return {
     element: root,
+
+    setLayout(value) {
+      layout = value;
+      const img = previewSlot.querySelector("img");
+      if (img) styleCover(img);
+    },
 
     hasPending: () => Boolean(pending),
 

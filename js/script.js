@@ -102,6 +102,8 @@ updateMainNavbar();
     ===================================== */
 
     function openMobileMenu() {
+        menu.inert = false;
+        menu.setAttribute("aria-hidden", "false");
 
         nav.classList.add(
             "is-mobile-open"
@@ -128,6 +130,9 @@ updateMainNavbar();
     ===================================== */
 
     function closeMobileMenu() {
+        if (menu.contains(document.activeElement)) toggle.focus({preventScroll: true});
+        menu.inert = true;
+        menu.setAttribute("aria-hidden", "true");
 
         nav.classList.remove(
             "is-mobile-open"
@@ -148,6 +153,9 @@ updateMainNavbar();
     }
 
 
+
+    menu.inert = true;
+    menu.setAttribute("aria-hidden", "true");
 
     /* =====================================
        TOGGLE
@@ -310,6 +318,10 @@ function updateNavbarScroll() {
 
 const revealElements =
     document.querySelectorAll(".reveal");
+
+revealElements.forEach(element => {
+    element.addEventListener("focusin", () => element.classList.add("reveal-active"));
+});
 
 
 if (
@@ -700,8 +712,18 @@ function updateAboutSlider() {
     }
 
 
-    aboutTrack.style.transition =
-        "transform 0.7s cubic-bezier(0.22, 1, 0.36, 1)";
+    aboutSlides.forEach((slide, index) => {
+        const active = index === aboutIndex;
+        if (!active && slide.contains(document.activeElement)) {
+            aboutNext?.focus({preventScroll: true});
+        }
+        slide.inert = !active;
+        slide.setAttribute("aria-hidden", String(!active));
+        slide.setAttribute("role", "group");
+        slide.setAttribute("aria-label", `Slide ${index + 1} dari ${aboutSlides.length}`);
+    });
+    aboutTrack.style.transition = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "none" : "transform 0.7s cubic-bezier(0.22, 1, 0.36, 1)";
 
 
     aboutTrack.style.transform =
@@ -715,6 +737,7 @@ function updateAboutSlider() {
                 "active",
                 index === aboutIndex
             );
+            dot.setAttribute("aria-current", String(index === aboutIndex));
 
         }
     );
@@ -722,6 +745,15 @@ function updateAboutSlider() {
 }
 
 
+
+aboutSlider?.addEventListener("keydown", event => {
+    if (event.altKey || event.ctrlKey || event.metaKey ||
+        event.target.closest("input,textarea,select,.about-org-gallery")) return;
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    event.preventDefault();
+    aboutIndex = (aboutIndex + (event.key === "ArrowRight" ? 1 : -1) + aboutSlides.length) % aboutSlides.length;
+    updateAboutSlider();
+});
 
 /* =========================================
    ABOUT NEXT
@@ -1271,8 +1303,12 @@ if (
 
     function updateOrganizationSlider() {
 
-        orgTrack.style.transition =
-            "transform 0.55s cubic-bezier(0.22, 1, 0.36, 1)";
+        Array.from(orgPhotos).forEach((photo, index) => {
+            photo.inert = index !== orgIndex;
+            photo.setAttribute("aria-hidden", String(index !== orgIndex));
+        });
+        orgTrack.style.transition = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+            ? "none" : "transform 0.55s cubic-bezier(0.22, 1, 0.36, 1)";
 
 
         orgTrack.style.transform =
@@ -1292,6 +1328,7 @@ if (
                     "active",
                     index === orgIndex
                 );
+                dot.setAttribute("aria-current", String(index === orgIndex));
 
             }
         );
@@ -1684,6 +1721,7 @@ updateAboutSlider();
     let isDragging = false;
 
     let startX = 0;
+    let startY = 0;
 
     let startScrollLeft = 0;
 
@@ -1713,7 +1751,7 @@ updateAboutSlider();
     projectGrid.addEventListener(
         "pointerdown",
         (event) => {
-
+            suppressClickUntil = 0;
 
             /*
                 PENTING:
@@ -1780,6 +1818,8 @@ updateAboutSlider();
             startX =
                 event.clientX;
 
+
+            startY = event.clientY;
 
             startScrollLeft =
                 projectGrid.scrollLeft;
@@ -1856,6 +1896,11 @@ updateAboutSlider();
                 mouse / jari bergerak.
             */
 
+            if (!hasDragged && Math.abs(event.clientY - startY) > Math.abs(event.clientX - startX) &&
+                Math.abs(event.clientY - startY) > 6) {
+                stopDragging(event);
+                return;
+            }
             dragDistance =
                 event.clientX -
                 startX;
@@ -1904,6 +1949,7 @@ updateAboutSlider();
     ===================================== */
 
     function stopDragging(event) {
+        if (event?.type === "lostpointercapture" && event.target !== projectGrid) return;
 
 
         if (!isDragging) {
@@ -2022,6 +2068,11 @@ updateAboutSlider();
 
 
 
+    projectGrid.addEventListener("lostpointercapture", stopDragging);
+    window.addEventListener("pointerup", stopDragging);
+    window.addEventListener("pointercancel", stopDragging);
+    window.addEventListener("blur", () => stopDragging());
+
     /* =====================================
        POINTER CANCEL
     ===================================== */
@@ -2082,7 +2133,7 @@ updateAboutSlider();
             */
 
             if (
-                performance.now() <
+                event.detail !== 0 && performance.now() <
                 suppressClickUntil
             ) {
 
@@ -2124,6 +2175,7 @@ updateAboutSlider();
                 )
             ) {
 
+                event.preventDefault();
                 projectGrid.scrollLeft +=
                     event.deltaX;
 
@@ -2226,6 +2278,7 @@ updateAboutSlider();
                 clone.classList.add(
                     "project-card-clone"
                 );
+                clone.classList.remove("is-current");
 
 
                 clone.setAttribute(
@@ -2329,6 +2382,7 @@ updateAboutSlider();
         if (loopEnabled) {
 
             buildClones();
+            if (carouselReady) updateMotionControl();
 
             if (carouselReady) {
                 startLoop();
@@ -2346,6 +2400,7 @@ updateAboutSlider();
         */
 
         projectGrid.scrollLeft = 0;
+        if (carouselReady) updateMotionControl();
 
     }
 
@@ -2370,23 +2425,14 @@ updateAboutSlider();
 
     let previousTime = null;
 
-    /*
-        Watchdog: pada sebagian browser mobile,
-        pointerup/pointercancel tidak selalu
-        terpicu di elemen ini kalau sentuhan
-        dialihkan browser jadi native scroll
-        halaman (misalnya scroll vertikal yang
-        jarinya sempat menyentuh area carousel).
-
-        Tanpa ini, carousel bisa "macet" pause
-        selamanya karena resume() tidak pernah
-        dipanggil. Watchdog memaksa resume
-        setelah jeda singkat kalau tidak ada
-        sinyal release yang masuk.
-    */
-
-    let pauseWatchdog = null;
-
+    let pointerHeld = false;
+    let hovered = false;
+    let userPaused = false;
+    const interactionArea = projectGrid.closest("#portfolio") || projectGrid;
+    function isPaused() {
+        return paused || pointerHeld || hovered || userPaused ||
+            interactionArea.contains(document.activeElement) || document.hidden;
+    }
 
     /*
         Cache lebar total set asli
@@ -2503,6 +2549,18 @@ updateAboutSlider();
         evaluateLoopMode
     );
 
+    // The loader/scrollbar can resize the strip without a window resize event.
+    if ("ResizeObserver" in window) {
+        let observedWidth = projectGrid.clientWidth;
+        const sizeObserver = new ResizeObserver(() => {
+            if (Math.abs(projectGrid.clientWidth - observedWidth) < 1) return;
+            observedWidth = projectGrid.clientWidth;
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(evaluateLoopMode, 150);
+        });
+        sizeObserver.observe(projectGrid);
+    }
+
 
 
     /* =====================================
@@ -2567,11 +2625,81 @@ updateAboutSlider();
        REDUCED MOTION
     ===================================== */
 
-    const prefersReducedMotion =
-        window.matchMedia &&
-        window.matchMedia(
-            "(prefers-reduced-motion: reduce)"
-        ).matches;
+    const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let prefersReducedMotion = motionQuery.matches;
+    const controls = document.createElement("div");
+    controls.className = "project-carousel-controls";
+    controls.setAttribute("role", "group");
+    controls.setAttribute("aria-label", "Navigasi project");
+    function control(text, label, action) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "project-carousel-control";
+        button.textContent = text;
+        button.setAttribute("aria-label", label);
+        button.addEventListener("click", action);
+        controls.appendChild(button);
+        return button;
+    }
+    let navigationIndex = 0;
+    function goTo(index) {
+        if (!originalCards.length) return;
+        navigationIndex = (index + originalCards.length) % originalCards.length;
+        pause();
+        const card = originalCards[navigationIndex];
+        const target = projectGrid.scrollLeft + card.getBoundingClientRect().left -
+            projectGrid.getBoundingClientRect().left - projectGrid.clientLeft;
+        projectGrid.scrollTo({left: target, behavior: prefersReducedMotion ? "auto" : "smooth"});
+        originalCards.forEach((item, i) => item.classList.toggle("is-current", i === navigationIndex));
+    }
+    const previousButton = control("\u2190", "Project sebelumnya", () => goTo((paused ? navigationIndex : nearestIndex()) - 1));
+    const motionButton = control("Jeda", "Jeda gerakan otomatis project", () => {
+        userPaused = !userPaused;
+        updateMotionControl();
+        resume();
+    });
+    const nextButton = control("\u2192", "Project berikutnya", () => goTo((paused ? navigationIndex : nearestIndex()) + 1));
+    function updateMotionControl() {
+        motionButton.textContent = userPaused ? "Lanjutkan" : "Jeda";
+        motionButton.setAttribute("aria-label", userPaused ? "Lanjutkan gerakan otomatis project" : "Jeda gerakan otomatis project");
+        motionButton.setAttribute("aria-pressed", String(userPaused));
+        motionButton.disabled = prefersReducedMotion || !loopEnabled;
+        previousButton.disabled = nextButton.disabled = originalCards.length < 2;
+        controls.hidden = originalCards.length === 0;
+    }
+    function nearestIndex() {
+        let nearest = 0, distance = Infinity;
+        const left = projectGrid.getBoundingClientRect().left;
+        originalCards.forEach((card, index) => {
+            const offset = cachedOriginalWidth > 0 ? Math.floor(projectGrid.scrollLeft / cachedOriginalWidth) * cachedOriginalWidth : 0;
+            const value = Math.abs(card.getBoundingClientRect().left - left + offset);
+            if (value < distance) { nearest = index; distance = value; }
+        });
+        return nearest;
+    }
+    (document.getElementById("projectScrollIndicator") || projectGrid).after(controls);
+    projectGrid.tabIndex = 0;
+    projectGrid.setAttribute("role", "region");
+    projectGrid.setAttribute("aria-label", "Daftar project; gunakan tombol panah untuk navigasi");
+    projectGrid.addEventListener("keydown", event => {
+        if (event.altKey || event.ctrlKey || event.metaKey ||
+            event.target.closest("input,textarea,select")) return;
+        const index = nearestIndex();
+        const targets = {ArrowLeft: index - 1, ArrowRight: index + 1, Home: 0, End: originalCards.length - 1};
+        if (!(event.key in targets)) return;
+        event.preventDefault();
+        goTo(targets[event.key]);
+    });
+    motionQuery.addEventListener("change", () => {
+        prefersReducedMotion = motionQuery.matches;
+        if (prefersReducedMotion) {
+            projectGrid.scrollTo({left: projectGrid.scrollLeft, behavior: "instant"});
+        }
+        previousTime = null;
+        updateMotionControl();
+        startLoop();
+    });
+    updateMotionControl();
 
 
 
@@ -2590,7 +2718,7 @@ updateAboutSlider();
             carousel yang tidak punya apa-apa untuk digulir.
         */
 
-        if (!isSectionVisible || !loopEnabled) {
+        if (!isSectionVisible || !loopEnabled || prefersReducedMotion || isPaused()) {
 
             isLoopRunning = false;
 
@@ -2618,10 +2746,10 @@ updateAboutSlider();
         previousTime = time;
 
 
-        if (!paused) {
+        if (!isPaused()) {
 
             projectGrid.scrollLeft +=
-                speed * delta;
+                speed * Math.min(delta, 0.05);
 
 
             /*
@@ -2657,7 +2785,7 @@ updateAboutSlider();
         if (
             isLoopRunning ||
             prefersReducedMotion ||
-            !loopEnabled
+            !loopEnabled || isPaused()
         ) {
 
             return;
@@ -2677,74 +2805,41 @@ updateAboutSlider();
        PAUSE ON USER INTERACTION
     ===================================== */
 
+    let pauseWatchdog = null;
     function pause() {
-
         paused = true;
-
-
-        clearTimeout(
-            pauseWatchdog
-        );
-
-        pauseWatchdog =
-            setTimeout(
-                resume,
-                2500
-            );
-
+        clearTimeout(pauseWatchdog);
+        pauseWatchdog = setTimeout(resume, 2500);
     }
-
-
     function resume() {
-
         paused = false;
-
         previousTime = null;
-
-
-        clearTimeout(
-            pauseWatchdog
-        );
-
+        clearTimeout(pauseWatchdog);
+        startLoop();
     }
-
-
-    projectGrid.addEventListener(
-        "mouseenter",
-        pause
-    );
-
-
-    projectGrid.addEventListener(
-        "mouseleave",
-        resume
-    );
-
-
-    projectGrid.addEventListener(
-        "pointerdown",
-        pause
-    );
-
-
-    projectGrid.addEventListener(
-        "pointerup",
-        resume
-    );
-
-
-    projectGrid.addEventListener(
-        "pointercancel",
-        resume
-    );
-
-
-    projectGrid.addEventListener(
-        "pointerleave",
-        resume
-    );
-
-
+    interactionArea.addEventListener("pointerenter", event => {
+        if (event.pointerType === "mouse") { hovered = true; previousTime = null; }
+    });
+    interactionArea.addEventListener("pointerleave", event => {
+        if (event.pointerType === "mouse") { hovered = false; resume(); }
+    });
+    interactionArea.addEventListener("focusin", () => {
+        previousTime = null;
+        const card = document.activeElement.closest(".project-card:not(.project-card-clone)");
+        if (card && loopEnabled && projectGrid.scrollLeft >= cachedOriginalWidth) {
+            projectGrid.scrollLeft %= cachedOriginalWidth;
+        }
+    });
+    interactionArea.addEventListener("focusout", () => queueMicrotask(resume));
+    projectGrid.addEventListener("pointerdown", () => { pointerHeld = true; });
+    function releasePointer() { pointerHeld = false; navigationIndex = nearestIndex(); resume(); }
+    window.addEventListener("pointerup", releasePointer);
+    window.addEventListener("pointercancel", releasePointer);
+    projectGrid.addEventListener("lostpointercapture", event => {
+        if (event.target === projectGrid) releasePointer();
+    });
+    window.addEventListener("blur", releasePointer);
+    document.addEventListener("visibilitychange", releasePointer);
 
     /* =====================================
        START
@@ -2955,30 +3050,11 @@ updateAboutSlider();
                             scrollLeft tiap frame dan
                             "melawan" smooth scroll ini
                             sampai lompatannya tidak
-                            pernah sampai. pause() punya
-                            watchdog yang melanjutkan
-                            auto-scroll lagi setelah
-                            2,5 detik.
+                            pernah sampai. pause() memberi jeda sementara; hover, fokus, dan
+                            pilihan pengguna tetap menahan autoplay.
                         */
 
-                        pause();
-
-
-                        const target =
-                            projectGrid.scrollLeft +
-                            (
-                                card.getBoundingClientRect().left -
-                                projectGrid.getBoundingClientRect().left
-                            );
-
-
-                        projectGrid.scrollTo({
-                            left: target,
-                            behavior:
-                                prefersReducedMotion
-                                    ? "auto"
-                                    : "smooth"
-                        });
+                        goTo(cardIndexForBar(index));
 
                     }
                 );
@@ -3036,6 +3112,7 @@ updateAboutSlider();
                 cachedOriginalWidth = 0;
 
                 loopEnabled = false;
+                updateMotionControl();
 
                 return;
 

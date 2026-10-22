@@ -1,3 +1,5 @@
+import { COVER_COLUMNS, missingCoverSchema } from "../../../../js/cms/project-cover.js";
+
 /*
   Projects route (Phase 8A core, Phase 8B media).
 
@@ -25,6 +27,7 @@ import { el, append, clear, pageHeader } from "../../core/dom.js";
 import { confirmDialog, closeAllModals } from "../../core/modal.js";
 import { toast } from "../../core/toast.js";
 import { t } from "../../core/i18n.js";
+import { registerNavigationGuard } from "../../core/navigation-guard.js";
 
 import { createProjectList } from "./list-view.js";
 import { createProjectEditor } from "./editor-view.js";
@@ -48,7 +51,6 @@ async function render(container, { signal }) {
 
   let listView = null;
   let editorView = null;
-  let bypassNavigationGuard = false;
 
   /* ---------------- unsaved-changes guards ---------------- */
 
@@ -56,41 +58,7 @@ async function render(container, { signal }) {
     return Boolean(editorView && editorView.isDirty());
   }
 
-  function handleBeforeUnload(event) {
-    if (!isDirty()) {
-      return;
-    }
-
-    event.preventDefault();
-    event.returnValue = "";
-  }
-
-  async function handleNavigationCapture(event) {
-    if (bypassNavigationGuard || !isDirty()) {
-      return;
-    }
-
-    const link = event.target.closest
-      ? event.target.closest(".sidebar-link[data-route]")
-      : null;
-
-    if (!link || link.dataset.route === "projects") {
-      return;
-    }
-
-    event.preventDefault();
-    event.stopPropagation();
-
-    if (!(await confirmUnsaved())) {
-      return;
-    }
-
-    bypassNavigationGuard = true;
-    link.click();
-  }
-
-  window.addEventListener("beforeunload", handleBeforeUnload);
-  document.addEventListener("click", handleNavigationCapture, true);
+  const releaseNavigationGuard = registerNavigationGuard(isDirty, confirmUnsaved);
 
   async function confirmUnsaved() {
     return await confirmDialog({
@@ -164,9 +132,18 @@ async function render(container, { signal }) {
         .order("name", { ascending: true })
     ];
 
+    let coverSchemaAvailable = true;
+    async function readProject() {
+      let result = await supabaseClient.from("projects").select(`${PROJECT_COLUMNS},${COVER_COLUMNS}`).eq("id", id).maybeSingle();
+      if (missingCoverSchema(result.error)) {
+        coverSchemaAvailable = false;
+        result = await supabaseClient.from("projects").select(PROJECT_COLUMNS).eq("id", id).maybeSingle();
+      }
+      return result;
+    }
     if (id) {
       requests.push(
-        supabaseClient.from("projects").select(PROJECT_COLUMNS).eq("id", id).maybeSingle(),
+        readProject(),
         supabaseClient
           .from("project_paragraphs")
           .select("id, content, sort_order")
@@ -215,6 +192,7 @@ async function render(container, { signal }) {
 
     editorView = createProjectEditor({
       record,
+      coverSchemaAvailable,
       paragraphs,
       media,
       technologies,
@@ -237,8 +215,7 @@ async function render(container, { signal }) {
   showList();
 
   return () => {
-    window.removeEventListener("beforeunload", handleBeforeUnload);
-    document.removeEventListener("click", handleNavigationCapture, true);
+    releaseNavigationGuard();
     teardownViews();
     closeAllModals();
   };

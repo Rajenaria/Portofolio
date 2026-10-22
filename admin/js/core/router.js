@@ -12,6 +12,7 @@
 */
 
 import { clear } from "./dom.js";
+import { requestLeave } from "./navigation-guard.js";
 
 function parseHash(rawHash) {
   const hash = String(rawHash || "");
@@ -43,6 +44,7 @@ export function createRouter({
   let activeName = null;
   let activeCleanup = null;
   let activeAbort = null;
+  let navigationVersion = 0;
 
   function replaceHash(name) {
     const target = `#/${name}`;
@@ -127,11 +129,16 @@ export function createRouter({
     }
   }
 
-  function handleHashChange() {
+  async function handleHashChange() {
     const name = resolve();
-
+    const version = ++navigationVersion;
+    if (name !== activeName && activeName && !await requestLeave()) {
+      if (version === navigationVersion) replaceHash(activeName);
+      return;
+    }
+    if (version !== navigationVersion || !started) return;
     replaceHash(name);
-    renderRoute(name);
+    await renderRoute(name);
   }
 
   function start() {
@@ -150,6 +157,7 @@ export function createRouter({
     }
 
     started = false;
+    navigationVersion += 1;
     window.removeEventListener("hashchange", handleHashChange);
 
     teardownActive();
@@ -166,10 +174,12 @@ export function createRouter({
     window.location.hash = `#/${name}`;
   }
 
-  function reload() {
-    if (activeName) {
-      renderRoute(activeName, { force: true });
-    }
+  async function reload({ guardApproved = false } = {}) {
+    const name = activeName;
+    if (!name || (!guardApproved && !await requestLeave())) return false;
+    if (!started || name !== activeName) return false;
+    await renderRoute(name, { force: true });
+    return true;
   }
 
   return {

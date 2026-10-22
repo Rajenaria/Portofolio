@@ -1,3 +1,4 @@
+import { requestLeave } from "./js/core/navigation-guard.js";
 import {
   signIn,
   signOut,
@@ -380,6 +381,7 @@ document
   document
     .getElementById("mfa-signout")
     .addEventListener("click", async () => {
+      if (!await requestLeave()) return;
       await signOut();
       showScreen("login");
     });
@@ -390,7 +392,7 @@ document
     A language change re-renders the current route so every string the
     modules produced is regenerated. Nothing is translated in place.
   */
-  onLanguageChange(() => {
+  onLanguageChange((code, options) => {
     applyStaticTranslations();
 
     if (adminShell) {
@@ -398,7 +400,7 @@ document
     }
 
     if (adminRouter) {
-      adminRouter.reload();
+      adminRouter.reload(options);
     }
   });
 
@@ -408,6 +410,7 @@ document
     "click",
     async () => {
 
+      if (!await requestLeave()) return;
       await signOut();
 
       showScreen("login");
