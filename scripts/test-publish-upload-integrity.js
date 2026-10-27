@@ -27,6 +27,12 @@ const lifecycleSource = section("  let publishRecoveryNeeded", "  async function
 const publishSource = section("  async function publish()", "  function refreshStatusUi()");
 const saveSource = section("  async function save(", "  function applyServerState(");
 const persistSource = section("  async function persistMedia(", "  let publishRecoveryNeeded");
+const categoryRefreshSource = section("  async function refreshCategories()", "  manageCategories.addEventListener");
+const categoriesSource = read("admin/js/modules/projects/categories.js");
+const categoryLoaderSource = categoriesSource
+  .slice(categoriesSource.indexOf("export async function loadProjectCategories()"),
+    categoriesSource.indexOf("function isRevisionConflict("))
+  .replace(/^export /m, "");
 
 const results = [];
 const pairOf = row => ({
@@ -51,8 +57,10 @@ function fixture(faults = [], options = {}) {
     mobilePath: "projects/p/cover/original-mobile.webp"
   };
   const db = {
+    categories: [{ id: "category-1", name: "Synthetic category", is_active: true, revision: 1 }],
     project: {
       id: "p", status: "draft", published_at: null, updated_at: "initial",
+      card_category: "Synthetic category",
       deleted_at: null, cover_bucket: cover.bucket,
       cover_desktop_path: cover.desktopPath, cover_mobile_path: cover.mobilePath
     },
@@ -159,6 +167,15 @@ function fixture(faults = [], options = {}) {
         then(resolve, reject) { return execute().then(resolve, reject); }
       };
       async function execute() {
+        if (table === "project_categories") {
+          assert.equal(operation, "select", "Publication must not mutate categories.");
+          assert.equal(projection, "id,name,is_active,revision,projects(count)");
+          events.push("category-read");
+          if (fails("category-read")) return error("category read");
+          return { data: copy(db.categories).map(row => ({
+            ...row, projects: [{ count: row.name === db.project.card_category ? 1 : 0 }]
+          })), error: null };
+        }
         const rows = table === "projects" ? [db.project] : db.media;
         let found = rows.filter(row => Object.entries(filters).every(([key, value]) => row[key] === value));
         if (operation === "select") {
@@ -217,6 +234,12 @@ function fixture(faults = [], options = {}) {
     fetch() { throw new Error("Network is forbidden."); },
     supabaseClient: client,
     state: { id: "p", status: "draft", publishedAt: null },
+    root: { isConnected: true }, destroyed: false, categoryRefreshVersion: 0,
+    categories: copy(db.categories),
+    baselineForm: JSON.stringify({ cardCategory: "Synthetic category" }),
+    // Only the select DOM is doubled; loader and ID-preserving refresh are real.
+    categoryOptions: value => { ctx.fields.cardCategory.value = value || ""; },
+    markDirty: () => events.push("category-refreshed"),
     busy: false, loadedMedia: copy(db.media),
     baselineMedia: snapshot(),
     coverField: {
@@ -235,13 +258,14 @@ function fixture(faults = [], options = {}) {
         }));
       }
     },
+    caseStudyEditor: { refreshMedia: () => events.push("case-study-media-refreshed") },
     setBusy: value => { ctx.busy = value; },
     toast: (message, level) => events.push("toast:" + level + ":" + message),
     t: key => key, refreshStatusUi() {}, syncSlugLock() {},
     resetBaseline: () => { ctx.baselineMedia = snapshot(); },
     onSaved: null,
     validate: () => !fails("validate"),
-    currentValues: () => ({}), slugLocked: () => true,
+    currentValues: () => ({ card_category: ctx.fields.cardCategory.value }), slugLocked: () => true,
     persistParagraphs: async () => { if (fails("paragraphs")) throw Error("paragraphs"); },
     persistTechnologies: async () => { if (fails("technologies")) throw Error("technologies"); },
     applyServerState: row => {
@@ -249,18 +273,22 @@ function fixture(faults = [], options = {}) {
       ctx.state.publishedAt = row.published_at;
     },
     resetBaselineFormOnly() {}, friendlyError: () => "synthetic error",
-    heading: { textContent: "" }, fields: { title: { value: "Synthetic project" } },
+    heading: { textContent: "" }, fields: {
+      title: { value: "Synthetic project" },
+      cardCategory: { value: "Synthetic category", setError: message => events.push("category-error:" + message) }
+    },
     trimmed: value => value.trim(), firstSaveMessage: () => "saved",
     targetBucket: () => ctx.state.status === "published" ? "portfolio-media" : "portfolio-staging",
     reloadMedia: async () => {
       if (fails("reload-media")) throw Error("reload media");
       ctx.loadedMedia = copy(db.media);
       ctx.documentationManager.setSavedMedia(ctx.loadedMedia);
+      ctx.caseStudyEditor.refreshMedia();
     }
   };
   vm.createContext(ctx);
   vm.runInContext(mediaSource, ctx);
-  vm.runInContext(lifecycleSource + persistSource + saveSource + publishSource, ctx);
+  vm.runInContext(categoryLoaderSource + categoryRefreshSource + lifecycleSource + persistSource + saveSource + publishSource, ctx);
   return {
     ctx, db, objects, events, activeDeletes,
     missing: () => references().filter(key => !objects.has(key)),
@@ -294,6 +322,49 @@ function intact(f) {
 }
 
 (async () => {
+  await test("save/category-refresh-failure-and-retry", async () => {
+    const f = fixture(["category-read"]);
+    const before = [...f.objects.keys()];
+    assert.equal(await f.ctx.save(), false);
+    assert.equal(f.db.project.status, "draft");
+    assert(f.events.some(event => event.startsWith("category-error:")));
+    assert.deepEqual([...f.objects.keys()], before);
+    intact(f);
+    f.heal();
+    await f.ctx.publish();
+    assert.equal(f.db.project.status, "published");
+    intact(f);
+  });
+
+  await test("save/category-rename-preserves-id-and-requires-review", async () => {
+    const f = fixture();
+    const id = f.db.categories[0].id;
+    f.db.categories[0].name = "Renamed synthetic category";
+    // Mirror the existing category FK's ON UPDATE CASCADE, not a new relation.
+    f.db.project.card_category = f.db.categories[0].name;
+    assert.equal(await f.ctx.save(), false);
+    assert.equal(f.ctx.fields.cardCategory.value, f.db.categories[0].name);
+    assert.equal(f.ctx.categories[0].id, id);
+    assert.equal(JSON.parse(f.ctx.baselineForm).cardCategory, f.db.categories[0].name);
+    assert.equal(f.db.project.status, "draft");
+    assert.equal(f.ctx.fields.title.value, "Synthetic project");
+    intact(f);
+    await f.ctx.publish();
+    assert.equal(f.db.project.status, "published");
+    assert.equal(f.db.project.card_category, f.db.categories[0].name);
+    intact(f);
+  });
+
+  await test("save/category-loader-contract-and-case-study-refresh", async () => {
+    const f = fixture();
+    assert.equal(await f.ctx.save(), true);
+    assert.equal(f.ctx.categories[0].usage, 1);
+    assert(f.events.includes("category-read"));
+    assert(f.events.includes("case-study-media-refreshed"));
+    assert.equal(f.db.project.card_category, f.ctx.fields.cardCategory.value);
+    intact(f);
+  });
+
   const faultCases = [
     [],
     ["save-parent"], ["paragraphs"], ["technologies"], ["reload-media"],

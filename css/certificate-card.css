@@ -1,0 +1,154 @@
+/* Certificate faces shared by the public renderer and the live Admin preview.
+   Carousel transforms, drag and perspective remain in style.css. */
+.certificates, .cert-preview {
+    --cert-w: min(330px, calc(100vw - 72px));
+    --cert-h-base: 490px;
+    --cert-h: var(--cert-h-base);
+    --cert-accent: #2997ff;
+}
+.certificates .cert-face, .cert-preview .cert-preview-face {
+    box-sizing: border-box;
+    border-radius: 24px;
+    border: 1px solid rgba(41,151,255,.65);
+    background: radial-gradient(ellipse at 0 0,#202a34 0,transparent 54%), linear-gradient(150deg,#11161b,#080b0e 75%,#122132);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.05);
+    filter: none;
+    overflow: hidden;
+    font-family: -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+.certificates .cert-face-front, .cert-preview .cert-preview-front {
+    display: flex; flex-direction: column; justify-content: flex-start;
+    align-items: stretch; padding: 30px 26px; gap: 24px;
+}
+.certificates .cert-face-front::before, .cert-preview .cert-preview-front::before {
+    content: ""; position: absolute; top: 0; left: 50%; width: 54px; height: 4px;
+    margin-left: -27px; border-radius: 0 0 3px 3px; background: var(--cert-accent);
+}
+.certificates .cert-face-front::after, .cert-preview .cert-preview-front::after {
+    content: ""; position: absolute; inset: 68% -20% -22%; border-radius: 50% 0 0 0;
+    background: linear-gradient(145deg,rgba(0,113,227,.18),rgba(41,151,255,.02));
+    border-top: 1px solid rgba(41,151,255,.35); pointer-events: none;
+}
+.cert-category-icon-wrap, .cert-preview .cert-preview-icon-wrap {
+    width: 80px; height: 80px; flex: 0 0 80px; align-self: center;
+    display: grid; place-items: center; padding: 12px; box-sizing: border-box;
+    border-radius: 18px; border: 1px solid #394553; background: linear-gradient(145deg,#242c35,#171b20);
+    position: relative; z-index: 1;
+}
+.cert-category-icon-wrap .cert-icon { font-size: 42px; color: var(--cert-accent); }
+.cert-preview .cert-preview-icon { margin: 0; width: 42px; height: 42px; object-fit: contain; }
+.certificates .cert-front-text, .cert-preview .cert-preview-front-text {
+    min-height: 0; overflow: hidden; display: flex; flex-direction: column;
+    gap: 12px; position: relative; z-index: 1; flex: 1; align-items: stretch;
+}
+.certificates .cert-year, .cert-preview .cert-preview-year {
+    color: #38b5ff; font-size: 12px; line-height: 1.5; font-weight: 600;
+    margin: 0; text-transform: uppercase; letter-spacing: .6px;
+}
+.certificates .cert-title, .cert-preview .cert-preview-title,
+.certificates .cert-back-title, .cert-preview .cert-preview-back-title {
+    margin: 0; color: #f5f7fa; font-size: 24px; line-height: 1.22; font-weight: 600;
+    letter-spacing: normal; overflow-wrap: anywhere; display: -webkit-box;
+    -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden;
+}
+.certificates .cert-publisher, .cert-preview .cert-preview-publisher,
+.certificates .cert-back-subtitle, .cert-preview .cert-preview-back-subtitle {
+    color: #b9c3d0; font-size: 13px; line-height: 1.5; font-weight: 400;
+    text-transform: none; letter-spacing: 0; margin: 0; overflow-wrap: anywhere;
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
+}
+.certificates .cert-face-back, .cert-preview .cert-preview-back { padding: 22px; }
+.certificates .cert-back-inner, .cert-preview .cert-preview-back-inner {
+    overflow: hidden; min-height: 0; height: 100%; width: 100%; display: flex;
+    flex-direction: column; gap: 10px; align-items: stretch;
+}
+.certificates .cert-back-inner > *, .cert-preview .cert-preview-back-inner > * { flex-shrink: 0; max-width: 100%; }
+.certificates .cert-details-heading, .cert-preview .cert-preview-details-heading {
+    margin: 0; padding: 0; color: #54b7ff; font-size: 11px; line-height: 1.5;
+    font-weight: 400; letter-spacing: 1px; text-transform: uppercase;
+}
+.certificates .cert-back-title, .cert-preview .cert-preview-back-title { font-size: 20px; }
+.certificates .cert-details-list, .cert-preview .cert-preview-details { margin: 0; display: grid; gap: 0; }
+.cert-details-list > div, .cert-preview-details > div { padding: 9px 0; border-bottom: 1px solid #28313b; min-width: 0; }
+.cert-details-list dt, .cert-preview-details dt { color: #a3afbe; font-size: 11px; line-height: 1.4; font-weight: 400; }
+.cert-details-list dd, .cert-preview-details dd {
+    color: #f5f7fa; font-size: 13px; font-weight: 400; line-height: 1.45; margin: 2px 0 0;
+    overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
+}
+.certificates .cert-link, .cert-preview .cert-preview-link {
+    margin-top: auto; min-height: 44px; border-radius: 24px; border: 1px solid #8294a7;
+    padding: 10px 12px; width: 100%; display: flex; align-items: center; gap: 10px;
+    justify-content: center; box-sizing: border-box; font-size: 11px; font-weight: 600;
+    letter-spacing: .8px; line-height: 1.5; color: #f5f7fa; background: transparent;
+    text-decoration: none;
+}
+.certificates .cert-link.is-empty, .cert-preview .cert-preview-link.is-empty { opacity: .4; pointer-events: none; border-style: dashed; }
+.certificates .cert-link:hover, .cert-preview .cert-preview-link[href]:hover { border-color: var(--cert-accent); background: rgba(41,151,255,.08); }
+.certificates .cert-slot:focus-visible .cert-face { outline: 2px solid #54b7ff; outline-offset: 3px; }
+.certificates .cert-slot:focus { outline: none; }
+.cert-preview .cert-preview-face { position: relative; width: var(--cert-w); height: var(--cert-h); min-height: var(--cert-h); max-height: var(--cert-h); margin: 0 auto; }
+.cert-preview .cert-preview-accent-line { display: none; }
+.cert-preview, .cert-preview-body .cert-preview { grid-template-columns: repeat(auto-fit,minmax(min(100%,330px),1fr)); gap: 24px; }
+.cert-preview-column { min-width: 0; }
+.cert-preview > .form-help { grid-column: 1 / -1; margin: 0; }
+.cert-simple { display: flex; justify-content: center; align-items: flex-start; gap: 28px; flex-wrap: wrap; margin: 28px auto 0; }
+.cert-simple .cert-slot { position: relative; top: auto; left: auto; margin: 0; width: var(--cert-w); height: var(--cert-h); transform: none; perspective: 1400px; flex: 0 0 var(--cert-w); }
+.cert-simple .cert-face { opacity: 1; visibility: visible; }
+@media (max-width: 650px) {
+    .certificates .cert-face-front, .cert-preview .cert-preview-front { padding: 24px 20px; gap: 20px; }
+    .certificates .cert-face-back, .cert-preview .cert-preview-back { padding: 20px; }
+    .certificates .cert-title, .cert-preview .cert-preview-title { font-size: 21px; }
+    .certificates .cert-back-title, .cert-preview .cert-preview-back-title { font-size: 18px; }
+    .cert-category-icon-wrap, .cert-preview .cert-preview-icon-wrap { width: 72px; height: 72px; flex-basis: 72px; }
+    .certificates .cert-publisher, .cert-preview .cert-preview-publisher,
+    .certificates .cert-back-subtitle, .cert-preview .cert-preview-back-subtitle { font-size: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .cert-simple .cert-face { backface-visibility: visible; }
+    .cert-simple .cert-flip,.cert-simple .cert-face-back { transform: none; transition: none; }
+    .cert-simple .cert-face[aria-hidden="true"] { visibility: hidden; }
+}
+
+.certificates .cert-link-label { font: inherit; letter-spacing: inherit; }
+.certificates .cert-link-icon { font-size: 18px; }
+.cert-preview .cert-preview-link::after { content: "\2197"; font-size: 18px; line-height: 1; }
+
+.cert-preview .cert-preview-face { max-width: 100%; }
+
+/* Public back face: keep the CTA outside the readable overflow area.
+   Scope to the actual section without changing shared Admin preview styles. */
+.certificates-section .cert-back-inner {
+    overflow: hidden;
+}
+.certificates-section .cert-back-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+}
+.certificates-section .cert-back-content::-webkit-scrollbar { display: none; }
+.certificates-section .cert-back-content > * { flex-shrink: 0; max-width: 100%; }
+.certificates-section .cert-details-heading,
+.certificates-section .cert-details-list { margin: 0; }
+.certificates-section .cert-details-heading { color: #54b7ff; }
+.certificates-section .cert-details-list dd {
+    display: block;
+    -webkit-line-clamp: unset;
+    overflow: visible;
+}
+.certificates-section .cert-back-content:focus-visible {
+    outline: 2px solid var(--cert-accent);
+    outline-offset: -2px;
+}
+.certificates-section .cert-link {
+    flex-shrink: 0;
+    width: 100%;
+    min-height: 44px;
+    margin-top: 0;
+    padding: 10px 12px;
+}

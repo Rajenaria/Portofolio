@@ -290,8 +290,8 @@
         slot.setAttribute("tabindex", "0");
         slot.setAttribute(
             "aria-label",
-            "Sertifikat: " + cert.title + " — " + cert.publisher +
-            ". Buka detail."
+            "Certificate: " + cert.title + " — " + cert.publisher +
+            ". View details."
         );
 
         /* ---- FLIP: hanya rotateY(0/180deg). ---- */
@@ -310,6 +310,10 @@
         icon.setAttribute("icon", cert.icon);
         icon.setAttribute("aria-hidden", "true");
 
+        const iconWrap = document.createElement("div");
+        iconWrap.className = "cert-category-icon-wrap";
+        iconWrap.appendChild(icon);
+        const issuerCategory = [cert.publisher, cert.categoryLabel].filter(Boolean).join(" \u00b7 ");
         const frontText = document.createElement("div");
         frontText.className = "cert-front-text";
 
@@ -320,18 +324,15 @@
         const title = document.createElement("h3");
         title.className = "cert-title";
         title.textContent = cert.title;
+        title.title = cert.title;
 
         const publisher = document.createElement("p");
         publisher.className = "cert-publisher";
-        publisher.textContent = cert.publisher;
+        publisher.textContent = issuerCategory;
+        publisher.title = issuerCategory;
 
-        frontText.append(year, title, publisher);
-        const flipButton = document.createElement("button");
-        flipButton.type = "button";
-        flipButton.className = "cert-flip-button";
-        flipButton.textContent = "Buka detail";
-        flipButton.setAttribute("aria-label", "Buka detail sertifikat " + cert.title);
-        front.append(icon, frontText, flipButton);
+        frontText.append(...(cert.year ? [year] : []), title, publisher);
+        front.append(iconWrap, frontText);
 
 
         /* ---------------- SISI BELAKANG ---------------- */
@@ -339,11 +340,15 @@
         const back = document.createElement("div");
         back.className = "cert-face cert-face-back";
         back.id = "cert-details-" + index;
-        flipButton.setAttribute("aria-controls", back.id);
-        flipButton.setAttribute("aria-expanded", "false");
+        slot.setAttribute("aria-controls", back.id);
+        slot.setAttribute("aria-keyshortcuts", "Enter Space");
 
         const backInner = document.createElement("div");
         backInner.className = "cert-back-inner";
+
+        const backContent = document.createElement("div");
+        backContent.className = "cert-back-content";
+        backContent.tabIndex = 0;
 
         const backTitle = document.createElement("h3");
         backTitle.className = "cert-back-title";
@@ -351,32 +356,28 @@
 
         const backSubtitle = document.createElement("p");
         backSubtitle.className = "cert-back-subtitle";
-        backSubtitle.textContent = cert.subtitle;
+        backSubtitle.textContent = issuerCategory;
+        backSubtitle.title = issuerCategory;
 
-        const closeButton = document.createElement("button");
-        closeButton.type = "button";
-        closeButton.className = "cert-flip-button";
-        closeButton.textContent = "Tutup detail";
-        closeButton.setAttribute("aria-label", "Tutup detail sertifikat " + cert.title);
-        backInner.append(closeButton, backTitle, backSubtitle);
-        backInner.setAttribute("role", "region");
-        backInner.setAttribute("aria-label", "Detail sertifikat " + cert.title);
+        const detailsHeading = document.createElement("p");
+        detailsHeading.className = "cert-details-heading"; detailsHeading.textContent = "Certificate Details";
+        backTitle.title = cert.title;
+        backContent.append(detailsHeading, backTitle, backSubtitle);
+        backContent.setAttribute("role", "region");
+        backContent.setAttribute("aria-label", "Certificate details: " + cert.title);
         frontText.setAttribute("role", "region");
-        frontText.setAttribute("aria-label", "Informasi sertifikat " + cert.title);
+        frontText.setAttribute("aria-label", "Certificate information: " + cert.title);
 
-        if (cert.badge) {
-            const badge = document.createElement("span");
-            badge.className = "cert-badge";
-            badge.textContent = cert.badge;
-            backInner.appendChild(badge);
-        }
-
-        if (cert.description) {
-            const desc = document.createElement("p");
-            desc.className = "cert-back-desc";
-            desc.textContent = cert.description;
-            backInner.appendChild(desc);
-        }
+        const details = document.createElement("dl"); details.className = "cert-details-list";
+        [["Period",cert.year],["Credential ID",cert.credentialId],["Grade / Result",cert.badge]].forEach(([label,value]) => {
+            if (!value) return;
+            const row = document.createElement("div");
+            const term = document.createElement("dt"); term.textContent = label;
+            const content = document.createElement("dd"); content.textContent = value; content.title = value;
+            row.append(term,content); details.appendChild(row);
+        });
+        backContent.appendChild(details);
+        backInner.appendChild(backContent);
 
         /* ---- TOMBOL "LIHAT SERTIFIKAT" ----
            Tombolnya SELALU dirender, termasuk saat `link` di
@@ -419,7 +420,7 @@
 
         const linkLabel = document.createElement("span");
         linkLabel.className = "cert-link-label";
-        linkLabel.textContent = "LIHAT SERTIFIKAT";
+        linkLabel.textContent = "VIEW CERTIFICATE";
 
         const linkIcon = document.createElement("iconify-icon");
         linkIcon.className = "cert-link-icon";
@@ -439,7 +440,7 @@
             link.tabIndex = -1;
             link.setAttribute(
                 "aria-label",
-                "Lihat sertifikat " + cert.title + " (tab baru)"
+                "View certificate " + cert.title + " (opens in a new tab)"
             );
 
         } else {
@@ -452,7 +453,7 @@
                kembali walau tombol kosong ini yang tersentuh. */
             link.classList.add("is-empty");
             link.setAttribute("aria-hidden", "true");
-            link.title = "Link sertifikat belum diisi";
+            link.title = "Certificate link is not available";
         }
 
         backInner.appendChild(link);
@@ -465,7 +466,7 @@
         /* `faces` dipakai render(): peredupan dipasang di kedua
            muka kartu, bukan di slot — lihat catatan di render(). */
         return {
-            slot, flip, front, frontText, flipButton, closeButton, back, backInner, link, hasLink, index,
+            slot, flip, front, frontText, back, backInner, link, hasLink, index,
             faces: [front, back]
         };
     }
@@ -480,7 +481,7 @@
         dot.dataset.index = String(index);
         dot.setAttribute(
             "aria-label",
-            "Tampilkan sertifikat: " + cert.title
+            "Show certificate: " + cert.title
         );
 
         return dot;
@@ -528,7 +529,7 @@
         live.setAttribute("aria-live", "polite");
         live.setAttribute("aria-atomic", "true");
         carousel.appendChild(live);
-        dots.forEach((dot, i) => dot.setAttribute("aria-label", `Sertifikat ${i + 1} dari ${total}: ${data[i].title}`));
+        dots.forEach((dot, i) => dot.setAttribute("aria-label", `Certificate ${i + 1} of ${total}: ${data[i].title}`));
 
         /* ---- STATE ----
 
@@ -596,17 +597,16 @@
                 card.slot.style.zIndex = isActive ? "3" : visible ? "2" : "1";
                 card.slot.inert = !isActive;
                 card.slot.setAttribute("aria-hidden", isActive ? "false" : "true");
-                card.slot.tabIndex = -1;
+                card.slot.tabIndex = isActive ? 0 : -1;
                 const flipped = card.slot.classList.contains("is-flipped");
                 card.front.inert = !isActive || flipped;
                 card.back.inert = !isActive || !flipped;
                 card.front.setAttribute("aria-hidden", !isActive || flipped ? "true" : "false");
                 card.back.setAttribute("aria-hidden", !isActive || !flipped ? "true" : "false");
-                card.flipButton.tabIndex = isActive && !flipped ? 0 : -1;
-                card.closeButton.tabIndex = isActive && flipped ? 0 : -1;
+                card.slot.setAttribute("aria-label", `${data[card.index].title}. ${flipped ? "Details" : "Front"}. Press Enter or Space to flip.`);
                 card.link.tabIndex = isActive && flipped && card.hasLink ? 0 : -1;
-                card.frontText.tabIndex = isActive && !flipped && card.frontText.scrollHeight > card.frontText.clientHeight + 1 ? 0 : -1;
-                card.backInner.tabIndex = isActive && flipped ? 0 : -1;
+                card.frontText.tabIndex = -1;
+                card.backInner.tabIndex = -1;
                 card.faces.forEach(function (face) {
                     const selected = face === (flipped ? card.back : card.front);
                     const shown = visible && (!reducedMotion.matches || selected);
@@ -615,7 +615,7 @@
                 });
             });
             // An offscreen target must be made visible before focus can move to it.
-            if (moveFocus) (flippedActive ? active.closeButton : active.flipButton).focus({ preventScroll: true });
+            if (moveFocus) active.slot.focus({ preventScroll: true });
             const announcement = `${frontIndex() + 1} dari ${total}: ${data[frontIndex()].title}`;
             if (live.textContent !== announcement) live.textContent = announcement;
             dots.forEach(function (dot, i) {
@@ -644,7 +644,6 @@
             cards.forEach(function (card) {
 
                 card.slot.classList.remove("is-flipped");
-                card.flipButton.setAttribute("aria-expanded", "false");
 
                 /* Hanya tombol yang benar-benar punya href yang
                    ikut tab order — placeholder kosong tidak. */
@@ -658,11 +657,6 @@
         function toggleFlip(card) {
 
             const flipped = card.slot.classList.toggle("is-flipped");
-
-            card.flipButton.setAttribute(
-                "aria-expanded",
-                flipped ? "true" : "false"
-            );
 
             render();
         }
@@ -872,9 +866,7 @@
 
         function handlePointerDown(event) {
             suppressClick = false;
-            if (event.target.closest(".cert-link, .cert-back-inner, button")) return;
-            const scrollRegion = event.target.closest(".cert-front-text");
-            if (scrollRegion && scrollRegion.scrollHeight > scrollRegion.clientHeight + 1) return;
+            if (event.target.closest(".cert-link, button")) return;
 
             /* Tombol tengah/kanan mouse tidak memutar apa pun. */
             if (event.button !== 0 && event.pointerType === "mouse") {
@@ -1002,8 +994,7 @@
 
                 /* Tombol "LIHAT SERTIFIKAT" — biarkan link
                    bekerja seperti biasa. */
-                if (event.target.closest(".cert-link") ||
-                    (event.target.closest(".cert-back-inner, .cert-front-text") && !event.target.closest("button"))) {
+                if (event.target.closest(".cert-link")) {
                     return;
                 }
 
@@ -1013,6 +1004,7 @@
                 }
 
                 activate(card);
+                card.slot.focus({preventScroll:true});
             });
 
 
@@ -1159,6 +1151,7 @@
         reducedMotion.addEventListener("change", render);
 
         measure();
+        const stopHint = attachFlipHint(section, () => toggleFlip(cards[frontIndex()]), () => { resetFlips(); render(); });
 
 
         /* =================================================
@@ -1180,6 +1173,7 @@
             }
 
             destroyed = true;
+            stopHint();
 
             if (frame) {
                 cancelAnimationFrame(frame);
@@ -1258,10 +1252,37 @@
        atas. */
 
     let refs = null;
+    let hintConsumed = false;
+    let userInteracted = false;
+    let cancelHint = null;
+    function attachFlipHint(section, flip, reset) {
+        let observer = null, startTimer = 0, endTimer = 0, running = false;
+        const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+        function stop() {
+            clearTimeout(startTimer); clearTimeout(endTimer); observer?.disconnect();
+            if (running) { running = false; reset(); }
+        }
+        cancelHint = stop;
+        function visible(entries) {
+            if (!entries.some(entry => entry.isIntersecting) || hintConsumed || userInteracted || motion.matches) return;
+            hintConsumed = true; observer?.disconnect();
+            startTimer = setTimeout(() => {
+                if (userInteracted || motion.matches) return;
+                running = true; flip();
+                endTimer = setTimeout(() => { running = false; reset(); }, 1500);
+            }, 500);
+        }
+        if (!hintConsumed && !userInteracted && !motion.matches && "IntersectionObserver" in window) {
+            observer = new IntersectionObserver(visible,{threshold:0.35}); observer.observe(section.querySelector(".cert-slot.is-active") || section);
+        }
+        motion.addEventListener("change",stop);
+        return () => { stop(); motion.removeEventListener("change",stop); if (cancelHint === stop) cancelHint = null; };
+    }
+
     let controller = null;
 
 
-    function build(data, message = "Belum ada sertifikat yang dipublikasikan.") {
+    function build(data, message = "No certificates have been published yet.") {
 
         if (!refs) {
             return false;
@@ -1290,29 +1311,34 @@
                 empty.textContent = message;
                 list.appendChild(empty);
             }
-            data.forEach(cert => {
-                const article = document.createElement("article");
-                article.className = "cert-simple-card";
-                [ ["h3", cert.title], ["p", cert.publisher], ["p", cert.year], ["p", cert.subtitle],
-                  ["p", cert.badge], ["p", cert.description] ].forEach(([tag, text]) => {
-                    if (!text) return;
-                    const node = document.createElement(tag);
-                    node.textContent = text;
-                    article.appendChild(node);
-                });
-                if (cert.link) {
-                    try {
-                        const url = new URL(cert.link, window.location.href);
-                        if (["http:", "https:"].includes(url.protocol)) {
-                            const link = document.createElement("a");
-                            link.href = url.href; link.target = "_blank"; link.rel = "noopener noreferrer";
-                            link.textContent = "LIHAT SERTIFIKAT"; article.appendChild(link);
-                        }
-                    } catch { /* Invalid links stay inert. */ }
+            const cards = data.map((cert,index) => {
+                const card = buildCard(cert,index,0); card.slot.style.transform = "none";
+                card.slot.classList.add("is-active");
+                function show(flipped, focus = false) {
+                    card.slot.classList.toggle("is-flipped",flipped);
+                    card.front.inert = flipped; card.back.inert = !flipped;
+                    card.front.setAttribute("aria-hidden",String(flipped)); card.back.setAttribute("aria-hidden",String(!flipped));
+                    card.slot.setAttribute("aria-label",`${cert.title}. ${flipped ? "Details" : "Front"}. Press Enter or Space to flip.`);
+                    card.link.tabIndex = flipped && card.hasLink ? 0 : -1;
+                    if (focus) card.slot.focus({preventScroll:true});
                 }
-                list.appendChild(article);
+                card.slot.addEventListener("click",event => {
+                    if (!event.target.closest(".cert-link")) show(!card.slot.classList.contains("is-flipped"),true);
+                });
+                card.slot.addEventListener("keydown",event => {
+                    if (event.key === "Escape") show(false,true);
+                    else if (event.target === card.slot && ["Enter"," "].includes(event.key)) {
+                        event.preventDefault(); show(!card.slot.classList.contains("is-flipped"),true);
+                    }
+                });
+                show(false); list.appendChild(card.slot);
+                return {card,show};
             });
             refs.section.appendChild(list);
+            if (cards.length) {
+                const stopHint = attachFlipHint(refs.section, () => cards[0].show(true), () => cards.forEach(item => item.show(false)));
+                controller = { destroy() { stopHint(); list.remove(); } };
+            }
             return true;
         }
         controller = initCarousel(refs, data);
@@ -1336,6 +1362,9 @@
             return;
         }
 
+        const interacted = () => { userInteracted = true; cancelHint?.(); };
+        section.addEventListener("pointerdown",interacted,{capture:true});
+        section.addEventListener("keydown",interacted,{capture:true});
         refs = {
             section: section,
             carousel: carousel,
@@ -1346,7 +1375,7 @@
             nextBtn: nextBtn
         };
 
-        build([], "Memuat sertifikat...");
+        build([], "Loading certificates...");
 
         /* Pintu masuk untuk fase berikutnya (dan untuk pengujian
            jumlah kartu). Mengikuti pola yang sudah dipakai

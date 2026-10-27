@@ -274,7 +274,7 @@ function buildCard(project, mediaQuery) {
     const link = document.createElement("a");
     link.className = "project-link";
     link.setAttribute("href", detailHref(project.slug));
-    link.textContent = "Lihat Project →";
+    link.textContent = "View Project →";
     content.appendChild(link);
 
     card.appendChild(content);

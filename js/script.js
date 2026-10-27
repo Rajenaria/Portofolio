@@ -13,53 +13,20 @@ const mainNav =
     );
 
 
+let mainNavbarExpanded = !!mainNav?.classList.contains("is-expanded");
+
 function updateMainNavbar() {
-
-    if (!mainNav) {
-        return;
+    if (!mainNav) return;
+    // Separate enter/exit thresholds prevent wheel/scroll-anchor jitter.
+    const y = Math.max(0, window.scrollY);
+    const expanded = mainNavbarExpanded ? y > 60 : y > 80;
+    if (expanded !== mainNavbarExpanded) {
+        mainNavbarExpanded = expanded;
+        mainNav.classList.toggle("is-expanded", expanded);
     }
-
-
-    /*
-        Saat masih dekat bagian atas:
-        navbar kecil / floating.
-
-        Setelah scroll 80px:
-        navbar melebar.
-    */
-
-    if (
-        window.scrollY > 80
-    ) {
-
-        mainNav.classList.add(
-            "is-expanded"
-        );
-
-    }
-
-    else {
-
-        mainNav.classList.remove(
-            "is-expanded"
-        );
-
-    }
-
 }
 
-
-/* SCROLL */
-
-window.addEventListener(
-    "scroll",
-    updateMainNavbar,
-    {
-        passive: true
-    }
-);
-
-
+// Both navbar states share the existing handlePageScroll RAF below.
 /* INITIAL */
 
 updateMainNavbar();
@@ -118,7 +85,7 @@ updateMainNavbar();
 
         toggle.setAttribute(
             "aria-label",
-            "Tutup menu navigasi"
+            "Close navigation menu"
         );
 
     }
@@ -147,7 +114,7 @@ updateMainNavbar();
 
         toggle.setAttribute(
             "aria-label",
-            "Buka menu navigasi"
+            "Open navigation menu"
         );
 
     }
@@ -277,7 +244,7 @@ updateMainNavbar();
 
             if (
                 window.innerWidth >
-                650
+                1024
             ) {
 
                 closeMobileMenu();
@@ -296,28 +263,27 @@ const navbar =
     document.querySelector("nav");
 
 
+let navbarScrolled = !!navbar?.classList.contains("nav-scrolled");
+
 function updateNavbarScroll() {
-
-    if (!navbar) {
-        return;
+    if (!navbar) return;
+    const y = Math.max(0, window.scrollY);
+    const scrolled = navbarScrolled ? y > 28 : y > 40;
+    if (scrolled !== navbarScrolled) {
+        navbarScrolled = scrolled;
+        navbar.classList.toggle("nav-scrolled", scrolled);
     }
-
-
-    navbar.classList.toggle(
-        "nav-scrolled",
-        window.scrollY > 40
-    );
-
 }
-
-
 
 /* =========================================
    2. SCROLL REVEAL
 ========================================= */
 
 const revealElements =
-    document.querySelectorAll(".reveal");
+    document.querySelectorAll(
+        ".reveal, #about .about-slide-one .simple-about-visual, " +
+        "#about .about-slide-one .simple-about-content > *"
+    );
 
 revealElements.forEach(element => {
     element.addEventListener("focusin", () => element.classList.add("reveal-active"));
@@ -370,6 +336,7 @@ if (
             revealObserver.observe(
                 element
             );
+            element.classList.add("reveal");
 
         }
     );
@@ -417,6 +384,7 @@ function handlePageScroll() {
     window.requestAnimationFrame(
         () => {
 
+            updateMainNavbar();
             updateNavbarScroll();
 
 
@@ -720,7 +688,7 @@ function updateAboutSlider() {
         slide.inert = !active;
         slide.setAttribute("aria-hidden", String(!active));
         slide.setAttribute("role", "group");
-        slide.setAttribute("aria-label", `Slide ${index + 1} dari ${aboutSlides.length}`);
+        slide.setAttribute("aria-label", `Slide ${index + 1} of ${aboutSlides.length}`);
     });
     aboutTrack.style.transition = window.matchMedia("(prefers-reduced-motion: reduce)").matches
         ? "none" : "transform 0.7s cubic-bezier(0.22, 1, 0.36, 1)";
@@ -1260,7 +1228,7 @@ if (
 
                 dot.setAttribute(
                     "aria-label",
-                    `Dokumentasi ${index + 1} dari ${orgPhotos.length}`
+                    `Activity photo ${index + 1} of ${orgPhotos.length}`
                 );
 
 
@@ -2630,7 +2598,7 @@ updateAboutSlider();
     const controls = document.createElement("div");
     controls.className = "project-carousel-controls";
     controls.setAttribute("role", "group");
-    controls.setAttribute("aria-label", "Navigasi project");
+    controls.setAttribute("aria-label", "Project navigation");
     function control(text, label, action) {
         const button = document.createElement("button");
         button.type = "button";
@@ -2652,16 +2620,16 @@ updateAboutSlider();
         projectGrid.scrollTo({left: target, behavior: prefersReducedMotion ? "auto" : "smooth"});
         originalCards.forEach((item, i) => item.classList.toggle("is-current", i === navigationIndex));
     }
-    const previousButton = control("\u2190", "Project sebelumnya", () => goTo((paused ? navigationIndex : nearestIndex()) - 1));
-    const motionButton = control("Jeda", "Jeda gerakan otomatis project", () => {
+    const previousButton = control("\u2190", "Previous project", () => goTo((paused ? navigationIndex : nearestIndex()) - 1));
+    const motionButton = control("Pause", "Pause automatic project scrolling", () => {
         userPaused = !userPaused;
         updateMotionControl();
         resume();
     });
-    const nextButton = control("\u2192", "Project berikutnya", () => goTo((paused ? navigationIndex : nearestIndex()) + 1));
+    const nextButton = control("\u2192", "Next project", () => goTo((paused ? navigationIndex : nearestIndex()) + 1));
     function updateMotionControl() {
-        motionButton.textContent = userPaused ? "Lanjutkan" : "Jeda";
-        motionButton.setAttribute("aria-label", userPaused ? "Lanjutkan gerakan otomatis project" : "Jeda gerakan otomatis project");
+        motionButton.textContent = userPaused ? "Resume" : "Pause";
+        motionButton.setAttribute("aria-label", userPaused ? "Resume automatic project scrolling" : "Pause automatic project scrolling");
         motionButton.setAttribute("aria-pressed", String(userPaused));
         motionButton.disabled = prefersReducedMotion || !loopEnabled;
         previousButton.disabled = nextButton.disabled = originalCards.length < 2;
@@ -2680,7 +2648,7 @@ updateAboutSlider();
     (document.getElementById("projectScrollIndicator") || projectGrid).after(controls);
     projectGrid.tabIndex = 0;
     projectGrid.setAttribute("role", "region");
-    projectGrid.setAttribute("aria-label", "Daftar project; gunakan tombol panah untuk navigasi");
+    projectGrid.setAttribute("aria-label", "Project list; use the arrow buttons to navigate");
     projectGrid.addEventListener("keydown", event => {
         if (event.altKey || event.ctrlKey || event.metaKey ||
             event.target.closest("input,textarea,select")) return;
@@ -3351,150 +3319,94 @@ const particleData = [
     });
 
 
-    /* =====================================
-       POINTER INTERACTION
-    ===================================== */
+    /* Pointer repulsion keeps its existing motion, but has no idle RAF. */
+    const particleMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const particleEvents = new AbortController();
+    const particleOptions = { passive: true, signal: particleEvents.signal };
+    let particleFrame = 0, particleLast = 0, particlesVisible = false;
+    let particlesSuspended = false;
+    const canAnimateParticles = () => particlesVisible && !particlesSuspended &&
+        !document.hidden && fullLayout.matches && !particleMotion.matches;
 
-    guestbook.addEventListener(
-        "pointermove",
-        (event) => {
-
-            const rect =
-                guestbook.getBoundingClientRect();
-
-
-            particles.forEach((particle) => {
-
-                const particleRect =
-                    particle.element.getBoundingClientRect();
-
-
-                const particleX =
-                    particleRect.left +
-                    particleRect.width / 2;
-
-
-                const particleY =
-                    particleRect.top +
-                    particleRect.height / 2;
-
-
-                const dx =
-                    particleX -
-                    event.clientX;
-
-
-                const dy =
-                    particleY -
-                    event.clientY;
-
-
-                const distance =
-                    Math.sqrt(
-                        dx * dx +
-                        dy * dy
-                    );
-
-
-                const radius = 150;
-
-
-                if (distance < radius) {
-
-                    const force =
-                        (radius - distance) /
-                        radius;
-
-
-                    const angle =
-                        Math.atan2(dy, dx);
-
-
-                    const strength =
-                        force * 55;
-
-
-                    particle.targetX =
-                        Math.cos(angle) *
-                        strength;
-
-
-                    particle.targetY =
-                        Math.sin(angle) *
-                        strength;
-
-                } else {
-
-                    particle.targetX = 0;
-                    particle.targetY = 0;
-
-                }
-
-            });
-
-        }
-    );
-
-
-    /* ketika cursor keluar */
-
-    guestbook.addEventListener(
-        "pointerleave",
-        () => {
-
-            particles.forEach(
-                (particle) => {
-
-                    particle.targetX = 0;
-                    particle.targetY = 0;
-
-                }
-            );
-
-        }
-    );
-
-
-    /* =====================================
-       SMOOTH SPRING ANIMATION
-    ===================================== */
-
-    function animateParticles() {
-
-        particles.forEach(
-            (particle) => {
-
-                particle.x +=
-                    (particle.targetX -
-                        particle.x) *
-                    0.09;
-
-
-                particle.y +=
-                    (particle.targetY -
-                        particle.y) *
-                    0.09;
-
-
-                particle.element.style.transform =
-                    `translate3d(
-                        ${particle.x}px,
-                        ${particle.y}px,
-                        0
-                    )`;
-
-            }
-        );
-
-
-        requestAnimationFrame(
-            animateParticles
-        );
-
+    function stopParticles() {
+        cancelAnimationFrame(particleFrame);
+        particleFrame = 0;
+        particleLast = 0;
     }
+    function wakeParticles() {
+        if (!particleFrame && canAnimateParticles() && particles.some(p =>
+            Math.abs(p.targetX - p.x) > .01 || Math.abs(p.targetY - p.y) > .01)) {
+            particleFrame = requestAnimationFrame(animateParticles);
+        }
+    }
+    function clearParticleTargets() {
+        particles.forEach(p => { p.targetX = 0; p.targetY = 0; });
+    }
+    function syncParticles() {
+        if (canAnimateParticles()) { wakeParticles(); return; }
+        stopParticles();
+        clearParticleTargets();
+        particles.forEach(p => {
+            if (p.x || p.y) p.element.style.transform = "translate3d(0,0,0)";
+            p.x = 0; p.y = 0;
+        });
+    }
+    guestbook.addEventListener("pointermove", event => {
+        if (!canAnimateParticles() || event.pointerType === "touch") return;
+        // Read the moving particle geometry together; DOM writes occur in RAF.
+        particles.forEach(particle => {
+            const r = particle.element.getBoundingClientRect();
+            const dx = r.left + r.width / 2 - event.clientX;
+            const dy = r.top + r.height / 2 - event.clientY;
+            const distance = Math.hypot(dx, dy);
+            if (distance < 150) {
+                const strength = (150 - distance) / 150 * 55;
+                const angle = Math.atan2(dy, dx);
+                particle.targetX = Math.cos(angle) * strength;
+                particle.targetY = Math.sin(angle) * strength;
+            } else { particle.targetX = 0; particle.targetY = 0; }
+        });
+        wakeParticles();
+    }, particleOptions);
+    guestbook.addEventListener("pointerleave", () => {
+        clearParticleTargets(); wakeParticles();
+    }, particleOptions);
 
-
-    animateParticles();
+    function animateParticles(time) {
+        particleFrame = 0;
+        if (!canAnimateParticles()) { syncParticles(); return; }
+        const dt = particleLast ? Math.min((time - particleLast) / 1000, .05) : 1 / 60;
+        particleLast = time;
+        const blend = 1 - Math.pow(.91, dt * 60);
+        particles.forEach(p => {
+            const dx = p.targetX - p.x, dy = p.targetY - p.y;
+            p.x = Math.abs(dx) <= .01 ? p.targetX : p.x + dx * blend;
+            p.y = Math.abs(dy) <= .01 ? p.targetY : p.y + dy * blend;
+            p.element.style.transform = `translate3d(${p.x}px,${p.y}px,0)`;
+        });
+        if (particles.some(p => Math.abs(p.targetX - p.x) > .01 ||
+            Math.abs(p.targetY - p.y) > .01)) wakeParticles();
+        else particleLast = 0;
+    }
+    const particleObserver = "IntersectionObserver" in window ? new IntersectionObserver(entries => {
+        particlesVisible = entries.some(entry => entry.isIntersecting);
+        syncParticles();
+    }) : null;
+    if (particleObserver) particleObserver.observe(guestbook);
+    else particlesVisible = true;
+    document.addEventListener("visibilitychange", syncParticles, particleOptions);
+    window.addEventListener("blur", () => { clearParticleTargets(); wakeParticles(); }, particleOptions);
+    particleMotion.addEventListener("change", syncParticles);
+    fullLayout.addEventListener("change", syncParticles);
+    window.addEventListener("pagehide", event => {
+        particlesSuspended = true; syncParticles();
+        if (!event.persisted) {
+            particleObserver?.disconnect(); particleEvents.abort();
+            particleMotion.removeEventListener("change", syncParticles);
+            fullLayout.removeEventListener("change", syncParticles);
+        }
+    }, particleOptions);
+    window.addEventListener("pageshow", () => { particlesSuspended = false; syncParticles(); }, particleOptions);
 
 })();
 /* =========================================

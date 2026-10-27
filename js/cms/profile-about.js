@@ -295,127 +295,15 @@ function heroSlotIsUsable(row) {
 
 function renderHeroMedia(heroRows) {
 
-    const stack = document.getElementById("heroPhotoStack");
+    const picture = document.querySelector("[data-hero-lanyard] .hero-lanyard-front picture");
+    const primary = heroRows.find(row => Number(row.slot_number) === 1 &&
+        row.is_visible !== false && heroSlotIsUsable(row));
 
-    if (!stack) {
-        return;
-    }
-
-    const cards = Array.from(stack.querySelectorAll(".hero-photo-card"));
-
-    if (cards.length === 0) {
-        return;
-    }
-
-    const referenceQuery = mediaQueryFrom(stack.querySelector("picture"));
-
-    /*
-        Slot n maps onto the card at index n-1. Slot numbers are
-        identity, not position: if slot 2 is hidden and slot 3 is
-        visible, slot 3 simply becomes the second rendered card.
-    */
-
-    const bySlot = new Map();
-
-    heroRows.forEach(row => {
-
-        const slot = Number(row.slot_number);
-
-        if (!Number.isInteger(slot) || slot < 1 || slot > cards.length) {
-            return;
-        }
-
-        if (row.is_visible === false) {
-            return;
-        }
-
-        if (!heroSlotIsUsable(row)) {
-            return;
-        }
-
-        bySlot.set(slot, row);
-
-    });
-
-    /*
-        ACTIVATION KEY — SLOT 1.
-
-        Taking over the Hero means deleting cards, so it may only
-        happen when the CMS genuinely owns this section. Slot 1 is
-        the primary photo and is the one slot that can never be
-        hidden, so "slot 1 arrived and is fully configured" is a
-        reliable signal that the Hero has really been set up.
-
-        A merely successful request is NOT enough: production can
-        hold half-filled hero_media rows, and treating those as
-        authoritative would strip the static V1 photos off the page
-        and leave an empty stack.
-    */
-
-    if (!bySlot.has(1)) {
-        return;
-    }
-
-    let rendered = 0;
-
-    cards.forEach((card, index) => {
-
-        const row = bySlot.get(index + 1);
-
-        /*
-            Hidden or unconfigured optional slot: the card is removed
-            outright. No empty shell, no placeholder plate, nothing
-            occupying stack space.
-        */
-
-        if (!row) {
-            card.remove();
-            return;
-        }
-
-        const existing = card.querySelector("picture");
-
-        if (existing) {
-            patchPicture(existing, row);
-        }
-
-        else {
-
-            const picture = buildPicture(row, referenceQuery);
-
-            if (!picture) {
-                card.remove();
-                return;
-            }
-
-            replaceChildren(card, [picture]);
-
-        }
-
-        card.classList.remove("hero-photo-card-placeholder");
-        rendered += 1;
-
-    });
-
-    /*
-        The stack controller captured its card list at DOMContentLoaded,
-        before this module ran. Cards have just been removed, so it has
-        to re-read the DOM, rebuild its ordering and drop the stale
-        references. The hook is idempotent by design.
-    */
-
-    if (typeof window.refreshHeroPhotoStack === "function") {
-        window.refreshHeroPhotoStack();
-    }
-
-    else if (rendered > 0) {
-        // Controller unavailable (script blocked); keep the layout
-        // honest so CSS still knows how many cards it is styling.
-        stack.setAttribute("data-count", String(rendered));
-    }
+    // An absent/incomplete primary leaves the existing static fallback intact.
+    // Legacy slots never become a second source or replace the primary.
+    if (primary && picture) patchPicture(picture, primary);
 
 }
-
 
 /* ---------------------------------------------------------
    ABOUT ME
@@ -669,7 +557,7 @@ async function load() {
             "hero_media",
             "select=slot_number,bucket_name,desktop_path,mobile_path," +
             "alt_text,is_visible" +
-            "&is_visible=is.true&order=slot_number.asc"
+            "&slot_number=eq.1&is_visible=is.true&limit=1"
         ),
         readTable(
             "about_interests",

@@ -19,6 +19,9 @@
 */
 
 const LOCAL_HOSTS = ["127.0.0.1", "localhost", "0.0.0.0", "[::1]", ""];
+// TASK33.2: the main local Admin inspects the verified Production backend.
+// file:// and the unspecified bind hostname retain the isolated local setup.
+const PRODUCTION_PREVIEW_HOSTS = ["127.0.0.1", "localhost", "[::1]"];
 
 const LOCAL = {
   url: "http://127.0.0.1:54321",
@@ -38,7 +41,9 @@ const PRODUCTION = {
 */
 
 const ENVIRONMENT =
-  LOCAL_HOSTS.includes(window.location.hostname) ? LOCAL : PRODUCTION;
+  PRODUCTION_PREVIEW_HOSTS.includes(window.location.hostname)
+    ? PRODUCTION
+    : LOCAL_HOSTS.includes(window.location.hostname) ? LOCAL : PRODUCTION;
 
 export const SUPABASE_URL = ENVIRONMENT.url;
 

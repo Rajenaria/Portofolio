@@ -25,15 +25,18 @@
 import { el, append, clear } from "../../core/dom.js";
 import { openModal, confirmDialog } from "../../core/modal.js";
 import { textField, trimmed, trimmedOrNull, validateText } from "../../core/form.js";
-import { resolveMediaUrl } from "../../core/media-storage.js";
-import { createProjectMediaField } from "./media-field.js";
-import { t } from "../../core/i18n.js";
+import { resolveMediaUrl, newMediaId } from "../../core/media-storage.js";
+import { createProjectMediaField, deriveVariants } from "./media-field.js";
+import { toast } from "../../core/toast.js";
+import { ACCEPTED_MIME_TYPES } from "../../core/image-processor.js";
+import { applyImageCrop } from "../../../../js/cms/project-cover.js";
+import { tIndonesian as t } from "../../core/i18n.js";
 
 export const ALT_TEXT_MAX = 250;
 
 let localIdCounter = 0;
 
-export function createDocumentationManager({ initialMedia = [], onChange }) {
+export function createDocumentationManager({ initialMedia = [], metadata = {}, onChange, onCrop, getCrop = () => ({}) }) {
   const root = el("section", "admin-subsection");
 
   const header = el("div", "subsection-header");
@@ -47,6 +50,26 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
   addButton.type = "button";
   addButton.addEventListener("click", () => openAddDialog());
   append(header, addButton);
+  let adding = false, destroyed = false;
+  const multiple = el("input"); multiple.type = "file"; multiple.multiple = true; multiple.accept = ACCEPTED_MIME_TYPES.join(","); multiple.hidden = true;
+  const batch = el("button","admin-button admin-button-secondary","Tambah Beberapa Gambar"); batch.type = "button";
+  batch.addEventListener("click",() => multiple.click());
+  multiple.addEventListener("change",async () => {
+    if (adding) return;
+    const files = [...multiple.files]; multiple.value = "";
+    if (files.length > 20) { toast("Pilih maksimal 20 gambar dalam satu unggahan.","error"); return; }
+    adding = true; root.inert = true; notify();
+    try {
+      for (const file of files) {
+        const variants = await deriveVariants(file), id = newMediaId();
+        if (destroyed) break;
+        const pair = {desktopFile:variants.desktop.optimized.file,mobileFile:variants.mobile.optimized.file};
+        items.push({id,key:id,isNew:true,bucket:null,desktopPath:null,mobilePath:null,altText:file.name.replace(/\.[^.]+$/,"").slice(0,ALT_TEXT_MAX),sortOrder:items.length,isActive:true,pendingFiles:pair,pendingPreviewUrl:URL.createObjectURL(pair.desktopFile)});
+      }
+    } catch (error) { toast("Sebagian gambar tidak dapat diproses. Gambar yang berhasil tetap tersimpan di editor; periksa sebelum menyimpan.","error"); }
+    finally { adding = false; root.inert = false; render(); notify(); }
+  });
+  append(header,batch,multiple);
 
   const listSlot = el("div", "media-grid-slot");
 
@@ -68,6 +91,8 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
     desktopPath: row.desktop_path,
     mobilePath: row.mobile_path,
     altText: row.alt_text || "",
+    title: metadata[row.id]?.title ?? row.alt_text ?? "",
+    caption: metadata[row.id]?.caption || "",
     sortOrder: Number(row.sort_order) || 0,
     isActive: row.is_active !== false,
     pendingFiles: null,
@@ -77,6 +102,7 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
   let removed = [];
 
   function notify() {
+    if (destroyed) return;
     if (typeof onChange === "function") {
       onChange();
     }
@@ -212,21 +238,6 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
       )
     );
 
-    if (item.desktopPath) {
-      append(
-        body,
-        el(
-          "p",
-          "media-field-detail",
-          `${
-            item.bucket === "portfolio-staging"
-              ? t("projMedia.staged")
-              : t("projMedia.public")
-          } · ${item.desktopPath}`
-        )
-      );
-    }
-
     const actions = el("div", "ordered-actions");
 
     const up = actionButton(
@@ -287,6 +298,7 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
     remove.classList.add("is-danger");
     append(actions, remove);
 
+    if (onCrop) append(actions,actionButton("Atur Posisi","Atur posisi gambar pada Gallery 3D",() => onCrop(item),"crop"));
     append(body, actions);
     append(card, thumb, body);
 
@@ -299,6 +311,7 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
       const img = el("img", "gallery-thumb-image");
       img.src = item.pendingPreviewUrl;
       img.alt = item.altText || t("projMedia.pendingDoc");
+      applyImageCrop(img,getCrop(item.id));
       append(thumb, img);
       return;
     }
@@ -325,6 +338,7 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
     const img = el("img", "gallery-thumb-image");
     img.src = url;
     img.alt = item.altText || t("projMedia.docImage");
+    applyImageCrop(img,getCrop(item.id));
     img.loading = "lazy";
     img.addEventListener("error", () => {
       clear(thumb);
@@ -387,7 +401,7 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
 
     releasePreview(item);
 
-    if (item.id) {
+    if (item.id && !item.isNew) {
       // Existing rows are remembered so the editor can delete their objects.
       removed.push({
         id: item.id,
@@ -408,20 +422,21 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
   }
 
   function openAltDialog(item) {
-    const form = el("form", "modal-form");
+    const form = el("form", "modal-form project-editor-modal-body");
     form.noValidate = true;
 
     const alt = textField({
       id: "documentation-alt",
       label: t("projMedia.altLabel"),
       maxLength: ALT_TEXT_MAX,
-      value: item.altText,
+      value: item.title ?? item.altText,
       help: t("projMedia.altHelp")
     });
 
-    append(form, alt.node);
+    const caption = textField({id:"documentation-caption",label:"Keterangan (opsional)",maxLength:ALT_TEXT_MAX,value:item.caption || "",help:"Judul dan keterangan tampil bersama pada galeri publik; total maksimal 250 karakter."});
+    append(form, alt.node,caption.node);
 
-    const initialValue = alt.value;
+    const initialValue = JSON.stringify([alt.value,caption.value]);
 
     const controller = openModal({
       title: t("projMedia.editAltTitle"),
@@ -436,7 +451,7 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
         { label: t("projMedia.saveAlt"), variant: "primary", onClick: () => apply() }
       ],
       onRequestClose: async () => {
-        if (alt.value === initialValue) {
+        if (JSON.stringify([alt.value,caption.value]) === initialValue) {
           return true;
         }
 
@@ -456,7 +471,7 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
     });
 
     function apply() {
-      const message = validateText(alt.value, {
+      const message = validateText([alt.value.trim(),caption.value.trim()].filter(Boolean).join(" \u2014 "), {
         label: t("projMedia.altLabel"),
         maxLength: ALT_TEXT_MAX
       });
@@ -469,7 +484,7 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
       }
 
       items = items.map(entry =>
-        entry.key === item.key ? { ...entry, altText: trimmed(alt.value) } : entry
+        entry.key === item.key ? { ...entry, title:trimmed(alt.value),caption:trimmed(caption.value),altText:[trimmed(alt.value),trimmed(caption.value)].filter(Boolean).join(" \u2014 ") } : entry
       );
 
       controller.close();
@@ -489,7 +504,7 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
   function openMediaDialog({ mode, item }) {
     const isAdd = mode === "add";
 
-    const form = el("form", "modal-form");
+    const form = el("form", "modal-form project-editor-modal-body");
     form.noValidate = true;
 
     const formError = el("p", "form-error");
@@ -516,11 +531,12 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
       id: "documentation-new-alt",
       label: t("projMedia.altLabel"),
       maxLength: ALT_TEXT_MAX,
-      value: isAdd ? "" : item.altText,
+      value: isAdd ? "" : item.title ?? item.altText,
       help: t("projMedia.altHelp")
     });
 
-    append(form, formError, field.element, alt.node);
+    const caption = textField({id:"documentation-new-caption",label:"Keterangan (opsional)",maxLength:ALT_TEXT_MAX,value:isAdd ? "" : item.caption || ""});
+    append(form, formError, field.element, alt.node,caption.node);
 
     const controller = openModal({
       title: t(isAdd ? "projMedia.addDocTitle" : "projMedia.replaceDocTitle"),
@@ -538,7 +554,7 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
         }
       ],
       onRequestClose: async () => {
-        if (!field.hasPending() && (isAdd ? alt.value === "" : alt.value === item.altText)) {
+        if (!field.hasPending() && (isAdd ? alt.value === "" && caption.value === "" : alt.value === (item.title ?? item.altText) && caption.value === (item.caption || ""))) {
           return true;
         }
 
@@ -556,7 +572,7 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
     async function apply() {
       formError.textContent = "";
 
-      const message = validateText(alt.value, {
+      const message = validateText([alt.value.trim(),caption.value.trim()].filter(Boolean).join(" \u2014 "), {
         label: t("projMedia.altLabel"),
         maxLength: ALT_TEXT_MAX
       });
@@ -583,12 +599,13 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
         focusKey = key;
 
         items = items.concat({
-          id: null,
+          id: newMediaId(),
+          isNew: true,
           key,
           bucket: null,
           desktopPath: null,
           mobilePath: null,
-          altText: trimmed(alt.value),
+          title:trimmed(alt.value),caption:trimmed(caption.value),altText:[trimmed(alt.value),trimmed(caption.value)].filter(Boolean).join(" \u2014 "),
           sortOrder: items.length,
           isActive: true,
           pendingFiles: files,
@@ -608,7 +625,7 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
 
           return {
             ...entry,
-            altText: trimmed(alt.value),
+            title:trimmed(alt.value),caption:trimmed(caption.value),altText:[trimmed(alt.value),trimmed(caption.value)].filter(Boolean).join(" \u2014 "),
             pendingFiles: files || entry.pendingFiles,
             pendingPreviewUrl: files
               ? URL.createObjectURL(files.desktopFile)
@@ -629,14 +646,21 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
     element: root,
 
     getItems: () => items.map(item => ({ ...item })),
+    getDetails: () => Object.fromEntries(items.map(item => [item.id,{title:item.title ?? item.altText,caption:item.caption || ""}])),
     getRemoved: () => removed.slice(),
     count: () => items.length,
+    isProcessing: () => adding,
+    refreshPreviews: () => render(),
+    commitAdded(key,stored) {
+      const item = items.find(entry => entry.key === key); if (!item) return;
+      releasePreview(item); Object.assign(item,stored,{isNew:false,pendingFiles:null,pendingPreviewUrl:null});
+    },
 
     snapshot: () =>
       JSON.stringify({
         items: items.map(item => [
           item.id || null,
-          item.altText,
+          item.altText, item.title, item.caption,
           item.sortOrder,
           item.isActive,
           Boolean(item.pendingFiles)
@@ -648,6 +672,7 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
     setSavedMedia(rows) {
       items.forEach(releasePreview);
 
+      const details = Object.fromEntries(items.map(item => [item.id,{title:item.title ?? item.altText,caption:item.caption || ""}]));
       items = rows.map((row, index) => ({
         id: row.id,
         key: row.id,
@@ -655,6 +680,7 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
         desktopPath: row.desktop_path,
         mobilePath: row.mobile_path,
         altText: row.alt_text || "",
+        title:details[row.id]?.title ?? row.alt_text ?? "", caption:details[row.id]?.caption || "",
         sortOrder: Number(row.sort_order) || index,
         isActive: row.is_active !== false,
         pendingFiles: null,
@@ -666,6 +692,7 @@ export function createDocumentationManager({ initialMedia = [], onChange }) {
     },
 
     destroy() {
+      destroyed = true;
       items.forEach(releasePreview);
     }
   };

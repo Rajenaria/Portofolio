@@ -127,3 +127,25 @@ implement only after approval
 
 If an existing rule in this file no longer fits the project, don't
 silently break it — propose an update to `AGENTS.md` instead.
+
+## Portfolio Maintenance Rules
+
+- **Surgical editing:** change only the code and files genuinely required
+  by the user's request.
+- Preserve the working design, structure, features, animations, Admin
+  system, and database integrations.
+- Do not refactor, migrate, apply mass formatting, or add dependencies
+  unless explicitly requested.
+- **Default ANALYZE ONLY:** audit and investigation requests produce a
+  report only. Do not fix findings until the user clearly requests
+  implementation or gives approval (ACC).
+- If a change requires expanding scope, explain the required work and wait
+  for approval before proceeding with that expansion.
+- Do not run tests, lint, builds, servers, or deployments unless the user
+  requests them.
+- Do not change the production database or user data without explicit
+  permission.
+- After implementation, briefly report the changes and affected files.
+- Do not automatically fix unrelated bugs discovered during other work.
+- Do not read or display secrets or credentials unless there is a
+  legitimate need to do so.

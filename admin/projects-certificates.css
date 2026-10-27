@@ -1,0 +1,132 @@
+/* Scoped content-editor presentation; authentication and the shell are intact. */
+.project-editor-navigation,.cert-preview-controls { display:flex; flex-wrap:wrap; gap:8px; margin:16px 0 24px; }
+.project-editor-navigation .admin-button { font-size:12px; border-radius:980px; }
+.project-editor .admin-subsection { scroll-margin-top:160px; }
+.project-editor-location { margin:0 0 16px; color:var(--admin-text-muted,#6e6e73); font-size:12px; line-height:1.6; }
+.project-editor .admin-subsection .admin-subsection { border:0; padding:16px 0 0; box-shadow:none; background:transparent; }
+.project-editor .subsection-header { flex-wrap:wrap; gap:10px; }
+.project-editor .media-field-preview { aspect-ratio:16/10; overflow:hidden; }
+.project-editor .media-field-preview img { width:100%; height:100%; object-fit:cover; }
+.project-preview-dialog { width:min(1180px,calc(100vw - 32px)); max-width:1180px; }
+.project-preview .cs-page { font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+.project-preview #portfolio { padding:24px; background:transparent; }
+.project-preview #portfolio .cs-grid { grid-template-columns:minmax(0,380px); justify-content:center; }
+.project-preview .cs-page .cs-detail { padding:24px; }
+.cert-preview-controls button[aria-pressed="true"] { color:#0071e3; background:#edf5ff; border-color:#bfdcff; }
+.project-crop-frame { width:100%; position:relative; overflow:hidden; background:#f5f5f7; border:2px solid #0071e3; border-radius:14px; touch-action:none; cursor:grab; }
+.project-crop-frame:active { cursor:grabbing; }
+.project-crop-frame:focus-visible { outline:3px solid #0071e3; outline-offset:4px; }
+.project-crop-frame img { display:block; position:absolute; inset:0; width:100%; height:100%; object-fit:cover; pointer-events:none; user-select:none; }
+.cert-preview.has-face-switch { display:grid; grid-template-columns:minmax(0,1fr); justify-items:center; }
+.cert-preview.has-face-switch > .cert-preview-column[hidden] { display:none; }
+.cert-preview-controls { justify-content:center; }
+/* Keep long labels, controls and action clusters within their own editor. */
+:is(.project-editor,.certificate-editor-view,.project-list-view,.certificate-list-view) :is(.form-field,.form-grid,.admin-subsection,.toolbar-field,.editor-actions,.media-card,.ordered-row,.selector-chip,.selector-option) { min-width:0; }
+:is(.project-editor,.certificate-editor-view,.project-list-view,.certificate-list-view) > * { min-width:0; }
+:is(.project-editor,.certificate-editor-view,.project-list-view,.certificate-list-view) :is(.admin-button,.ordered-action),
+:is(.project-editor-modal,.certificate-preview-dialog,.project-preview-dialog) .admin-button,
+.modal-dialog:has(.project-editor-modal-body) .admin-button,
+.cert-preview-controls .admin-button { min-height:44px; min-width:44px; max-width:100%; padding:9px 14px; white-space:normal; overflow-wrap:anywhere; line-height:1.4; text-align:center; }
+:is(.project-editor,.certificate-editor-view) :is(.admin-input,.admin-select,.admin-textarea) { min-width:0; max-width:100%; }
+:is(.project-editor,.certificate-editor-view) :is(.form-help,.form-label,.document-field-line,.settings-list dd) { overflow-wrap:anywhere; }
+:is(.project-list-view,.certificate-list-view) .toolbar-field { flex:1 1 180px; max-width:100%; }
+.project-editor :is(.editor-actions,.ordered-actions,.media-field-actions),
+.certificate-editor-view :is(.form-actions,.document-field-actions,.cert-status-row) { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+.project-editor .editor-heading { flex:1 1 220px; }
+.project-editor .editor-actions { flex:0 1 auto; }
+.project-editor .ordered-row { flex-wrap:wrap; align-items:flex-start; gap:12px; }
+.project-editor .ordered-actions { flex:1 1 100%; }
+.project-editor .media-grid { grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr)); }
+.project-editor .media-card { flex-wrap:wrap; }
+.project-editor .cs-admin-repeat-actions { gap:8px; }
+.project-editor .cs-admin-repeat-head h4 { min-width:0; overflow-wrap:anywhere; }
+.project-editor .form-field > .admin-button { align-self:flex-start; }
+.project-editor .media-field + .admin-button { margin:12px 0 16px; }
+.project-editor .selector-chip { max-width:100%; }
+.project-editor .selector-chip-label { min-width:0; }
+.project-editor .selector-chip-remove { flex:0 0 44px; width:44px; height:44px; }
+.project-editor .selector-option { min-height:44px; max-width:100%; flex-wrap:wrap; overflow-wrap:anywhere; }
+.certificate-editor-view > .admin-button { align-self:flex-start; }
+.project-editor-navigation { margin:0; }
+.project-editor-advanced summary { cursor:pointer; min-height:44px; padding:12px 0; }
+/* The modal body scrolls; its close actions stay visible outside that region. */
+:is(.project-preview-dialog,.project-editor-modal,.certificate-preview-dialog),
+.modal-dialog:has(.project-editor-modal-body) { min-width:0; max-height:calc(100dvh - 40px); }
+:is(.project-preview-dialog,.project-editor-modal,.certificate-preview-dialog) :is(.modal-header,.modal-footer),
+.modal-dialog:has(.project-editor-modal-body) .modal-footer { flex-shrink:0; flex-wrap:wrap; gap:10px; }
+:is(.project-preview-dialog,.project-editor-modal,.certificate-preview-dialog) .modal-body,
+.modal-dialog:has(.project-editor-modal-body) .modal-body { min-height:0; min-width:0; overscroll-behavior:contain; }
+.project-preview-dialog .modal-header { display:flex; align-items:center; justify-content:space-between; }
+.project-preview-dialog .modal-title { min-width:0; overflow-wrap:anywhere; }
+.project-preview-label { margin:24px 0 12px; font-size:16px; font-weight:600; }
+.project-preview-empty { padding:16px; margin:0; color:var(--admin-text-secondary); background:var(--admin-surface-subtle); border-radius:var(--radius-md); font-size:13px; line-height:1.6; }
+.project-preview .cs-banner > .project-preview-empty { display:grid; align-content:center; height:100%; text-align:center; }
+.project-preview .cs-page :where(button,input,select,textarea) { font-family:inherit; }
+.cert-preview.has-face-switch { gap:16px; width:100%; }
+.cert-preview.has-face-switch > .cert-preview-column { width:100%; max-width:330px; }
+.cert-preview-controls { width:100%; margin:0; gap:8px; }
+.cert-preview-controls .admin-button { flex:1 1 0; }
+.cert-preview-caption { text-align:center; }
+.row-menu.row-menu-floating { position:fixed; right:auto; z-index:90; min-width:0; width:max-content; overflow-y:auto; overscroll-behavior:contain; }
+.row-menu-floating .row-menu-item { min-height:44px; min-width:0; max-width:100%; white-space:normal; overflow-wrap:anywhere; }
+:is(.project-list-view,.certificate-list-view) .row-actions .icon-button { width:44px; height:44px; }
+.project-category-dialog { width:min(620px,100%); max-width:620px; max-height:calc(100dvh - 40px); overflow:hidden; }
+.project-category-dialog .modal-body { min-height:0; overscroll-behavior:contain; }
+.project-category-dialog :is(.modal-header,.modal-footer) { flex-shrink:0; }
+.project-category-dialog .modal-footer { flex-wrap:wrap; }
+.project-category-dialog .modal-footer .admin-button { min-height:44px; max-width:100%; white-space:normal; }
+.project-category-manager { display:flex; flex-direction:column; gap:18px; min-width:0; }
+.project-category-manager .field-error { margin:0; }
+.project-category-actions { display:flex; flex-wrap:wrap; align-items:center; gap:10px; min-width:0; }
+.project-category-manager .admin-button { min-height:44px; min-width:44px; max-width:100%; white-space:normal; overflow-wrap:anywhere; padding:9px 14px; line-height:1.4; }
+.project-category-manager :is(.admin-input,.form-field) { min-width:0; width:100%; }
+.project-category-list { display:flex; flex-direction:column; gap:12px; }
+.project-category-row { display:flex; flex-wrap:wrap; align-items:center; gap:12px; padding:16px; border:1px solid var(--admin-border-soft); border-radius:var(--radius-md); }
+.project-category-copy { flex:1 1 180px; min-width:0; overflow-wrap:anywhere; }
+.project-category-copy .form-help { margin:4px 0 0; }
+.project-category-confirm { flex:1 1 100%; display:flex; flex-wrap:wrap; gap:10px; }
+.project-category-confirm p { flex-basis:100%; margin:0; }
+/* Category-only scroll lock: clip does not create a new sticky scroll ancestor. */
+html.has-category-modal { overflow:hidden; }
+html.has-category-modal.category-modal-gutter { scrollbar-gutter:stable; }
+html.has-category-modal body.has-modal-open { overflow:clip; }
+.modal-overlay:has(> .project-category-dialog) { overflow:hidden; z-index:100; }
+.project-category-dialog .modal-body { overflow-y:auto; flex:1 1 auto; }
+.project-category-dialog .modal-footer { padding-top:12px; padding-bottom:16px; }
+.project-category-manager { gap:14px; }
+.project-category-manager > .form-help { margin:0; }
+.project-category-form { padding:16px; border:1px solid var(--admin-border-soft); border-radius:var(--radius-md); }
+.project-category-row { display:grid; grid-template-columns:minmax(0,1fr) auto; padding:12px; }
+.project-category-row-actions { flex-wrap:nowrap; gap:8px; }
+.project-category-manager .project-category-icon { width:40px; min-width:40px; height:40px; min-height:40px; padding:9px; border-radius:var(--radius-md); color:var(--admin-text-secondary); }
+.project-category-icon svg { display:block; width:20px; height:20px; flex-shrink:0; }
+.project-category-manager .project-category-icon.is-delete:is(:hover,:focus-visible) { color:var(--admin-danger); border-color:var(--admin-danger); }
+.project-category-confirm { grid-column:1 / -1; }
+@media(max-width:650px) {
+ .modal-overlay:has(> .project-category-dialog) { padding:12px; }
+ .project-category-dialog { max-height:calc(100dvh - 24px); }
+ .project-category-dialog :is(.modal-header,.modal-body,.modal-footer) { padding-left:16px; padding-right:16px; }
+ .project-category-row { gap:8px; }
+}
+@media(max-width:1023px) {
+ .project-editor .editor-header { position:static; }
+ .project-editor .admin-subsection { scroll-margin-top:76px; }
+}
+@media(max-width:650px) {
+ .project-preview-dialog { width:calc(100vw - 16px); }
+ .project-preview #portfolio,.project-preview .cs-page .cs-detail { padding:12px; }
+ .project-editor-navigation { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+ .project-editor .editor-header { align-items:flex-start; }
+ .project-editor .editor-actions { width:100%; }
+ .project-editor .editor-actions .admin-button { flex:1 1 140px; }
+ :is(.project-editor,.certificate-editor-view) .admin-subsection { padding:20px 16px; }
+ .project-editor .media-card { flex-direction:column; }
+ .project-editor .subsection-header > .admin-button { flex:1 1 160px; }
+ .project-editor .cs-admin-repeat-actions { width:100%; flex-wrap:wrap; }
+ .project-editor .cs-admin-repeat-actions .admin-button { flex:1 1 auto; }
+ :is(.project-editor-modal,.certificate-preview-dialog,.project-preview-dialog) .modal-footer .admin-button,
+ .modal-dialog:has(.project-editor-modal-body) .modal-footer .admin-button { flex:1 1 120px; }
+ :is(.project-preview-dialog,.project-editor-modal,.certificate-preview-dialog) :is(.modal-header,.modal-body,.modal-footer),
+ .modal-dialog:has(.project-editor-modal-body) :is(.modal-header,.modal-body,.modal-footer) { padding-left:16px; padding-right:16px; }
+}
+@media(prefers-reduced-motion:reduce) { .project-editor *,.project-preview * { scroll-behavior:auto!important; } }

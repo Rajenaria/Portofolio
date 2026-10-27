@@ -1,4 +1,5 @@
 import { COVER_COLUMNS, missingCoverSchema } from "../../../../js/cms/project-cover.js";
+import { CMS_UPGRADE_READY, CMS_UPGRADE_NOTICE } from "../../../../js/cms/backend-compatibility.js";
 
 /*
   Projects route (Phase 8A core, Phase 8B media).
@@ -26,11 +27,12 @@ import { supabaseClient } from "../../core/supabase.js";
 import { el, append, clear, pageHeader } from "../../core/dom.js";
 import { confirmDialog, closeAllModals } from "../../core/modal.js";
 import { toast } from "../../core/toast.js";
-import { t } from "../../core/i18n.js";
+import { tIndonesian as t } from "../../core/i18n.js";
 import { registerNavigationGuard } from "../../core/navigation-guard.js";
 
 import { createProjectList } from "./list-view.js";
 import { createProjectEditor } from "./editor-view.js";
+import { loadProjectCategories } from "./categories.js";
 
 export const projectsRoute = {
   name: "projects",
@@ -41,9 +43,15 @@ export const projectsRoute = {
 // The cover columns must be selected here: the editor rebuilds the cover field
 // from them, so leaving them out would make a saved cover disappear on reopen.
 const PROJECT_COLUMNS =
-  "id, slug, title, card_category, short_description, detail_title_main, detail_title_highlight, detail_intro, role, project_date, project_type, about_heading, cover_bucket, cover_desktop_path, cover_mobile_path, cover_alt, github_url, demo_url, featured, sort_order, status, published_at, archived_at, deleted_at, created_at, updated_at";
+  "id, slug, title, card_category, short_description, detail_title_main, detail_title_highlight, detail_intro, role, project_date, project_type, about_heading, cover_bucket, cover_desktop_path, cover_mobile_path, cover_alt, github_url, demo_url, featured, sort_order, status, published_at, archived_at, deleted_at, created_at, updated_at, case_study";
 
 async function render(container, { signal }) {
+  if (!CMS_UPGRADE_READY) {
+    const notice = el("p", "empty-state", CMS_UPGRADE_NOTICE);
+    notice.setAttribute("role", "status");
+    append(container, pageHeader({title:"Projects",subtitle:"Pengelolaan sementara tidak tersedia"}), notice);
+    return () => {};
+  }
   const headerSlot = el("div", "route-header-slot");
   const viewSlot = el("div", "route-view-slot");
 
@@ -127,9 +135,10 @@ async function render(container, { signal }) {
     const requests = [
       supabaseClient
         .from("technologies")
-        .select("id, name, slug, is_active, show_in_public_stack, public_group, sort_order")
+        .select("id, name, icon_key, slug, is_active, show_in_public_stack, public_group, sort_order")
         .order("sort_order", { ascending: true })
-        .order("name", { ascending: true })
+        .order("name", { ascending: true }),
+      loadProjectCategories().then(data => ({data})).catch(error => ({error}))
     ];
 
     let coverSchemaAvailable = true;
@@ -172,7 +181,7 @@ async function render(container, { signal }) {
 
     const failure = results.find(result => result.error);
 
-    if (failure || (id && !results[1].data)) {
+    if (failure || (id && !results[2].data)) {
       console.error(failure ? failure.error : "project not found");
       toast(t("proj.errOpen"), "error");
       showList();
@@ -180,12 +189,13 @@ async function render(container, { signal }) {
     }
 
     const technologies = results[0].data || [];
-    const record = id ? results[1].data : null;
-    const paragraphs = id ? results[2].data || [] : [];
+    const categories = results[1].data || [];
+    const record = id ? results[2].data : null;
+    const paragraphs = id ? results[3].data || [] : [];
     const selectedTechnologyIds = id
-      ? (results[3].data || []).map(row => row.technology_id)
+      ? (results[4].data || []).map(row => row.technology_id)
       : [];
-    const media = id ? results[4].data || [] : [];
+    const media = id ? results[5].data || [] : [];
 
     teardownViews();
     renderHeader({ inEditor: true });
@@ -196,6 +206,7 @@ async function render(container, { signal }) {
       paragraphs,
       media,
       technologies,
+      categories,
       selectedTechnologyIds,
       onDirtyChange: () => {},
       onSaved: () => {},

@@ -1641,12 +1641,6 @@ body.has-modal-open {
 
 /* ---- media field ---- */
 
-.hero-slots {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 16px;
-}
-
 .hero-slot {
   min-width: 0;
   padding: 16px;
@@ -1680,26 +1674,6 @@ body.has-modal-open {
 */
 .hero-slot .media-field-header {
   display: none;
-}
-
-.hero-slot-status:empty {
-  display: none;
-}
-
-.hero-slot-status {
-  margin-top: 10px;
-}
-
-/*
-  Hidden slot: dim the stored thumbnail so the state is obvious at a glance,
-  but never replace it. The owner still has to be able to tell WHICH photo is
-  parked in this slot, and the image is still replaceable while hidden — so
-  only the preview is dimmed, not the controls.
-*/
-.hero-slot.is-hidden-slot .media-field-preview,
-.preview-photo.is-hidden-slot .preview-photo-image {
-  opacity: 0.45;
-  filter: grayscale(0.35);
 }
 
 .media-field {
@@ -1962,6 +1936,11 @@ body.has-modal-open {
   gap: 2px;
 }
 
+.hero-primary-preview {
+  width: min(100%, 320px);
+  margin-inline: auto;
+}
+
 .preview-photo-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
@@ -1998,12 +1977,6 @@ body.has-modal-open {
 @media (min-width: 700px) {
   .form-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 900px) {
-  .hero-slots {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -3966,15 +3939,11 @@ a.admin-button {
   gap: 20px;
 }
 
-/* ---- profile hero slots ---- */
+/* ---- primary Hero photo ---- */
 
 .hero-slot {
   background: var(--admin-surface-subtle);
   border-radius: var(--radius-lg);
-}
-
-.hero-slot.is-hidden-slot {
-  background: var(--admin-surface-sunken);
 }
 
 /* ---- refinements after the first visual review ---- */
@@ -4241,4 +4210,42 @@ a.admin-button {
 .sidebar-brand .lang-switch-inline .lang-switch-option:hover,
 .sidebar-brand .lang-switch-inline .lang-switch-option.is-active {
   color: var(--rail-text);
+}
+
+/* CV controls use the existing Admin surfaces and buttons. */
+#profile-tab-cv .cv-tab-icon { color: currentColor; }
+.cv-management {
+  display: grid;
+  gap: 22px;
+  min-width: 0;
+}
+.cv-management > *,
+.cv-management .cv-metadata > div { min-width: 0; }
+.cv-management .cv-header { display: grid; gap: 8px; }
+.cv-management .cv-header .subsection-title,
+.cv-management .form-help { margin: 0; }
+.cv-management .form-help,
+.cv-management .settings-value {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.cv-management .cv-current { display: grid; gap: 14px; }
+.cv-management .cv-metadata {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1.5fr);
+  gap: 16px;
+  margin: 0;
+}
+.cv-management .cv-metadata dt { margin-bottom: 5px; font-size: 12px; }
+.cv-management .cv-metadata dd { margin: 0; font-size: 14px; line-height: 1.5; }
+.cv-management .cv-current .link-button { justify-self: start; min-height: 44px; }
+.cv-management .cv-upload { display: grid; gap: 10px; }
+.cv-management .cv-picker-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.cv-management .cv-selected-file { flex: 1 1 180px; min-width: 0; }
+.cv-management .admin-button { min-height: 44px; white-space: normal; }
+.cv-management .cv-actions { gap: 12px; }
+.cv-management > [role="status"]:empty { display: none; }
+@media (max-width: 650px) {
+  .cv-management .cv-metadata { grid-template-columns: minmax(0, 1fr); }
+  .cv-management .cv-actions { flex-direction: column; align-items: stretch; }
 }

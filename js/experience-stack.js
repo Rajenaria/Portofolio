@@ -36,16 +36,16 @@ import { readTable, filled } from "./cms/client.js";
                 number: "01",
                 type: "LABORATORY",
                 title: "RnEST Laboratory",
-                role: "Laboratory Assistant — Koordinator PDD",
+                role: "Laboratory Assistant — PDD Coordinator",
                 location: "Telkom University",
                 description:
-                    "Melaksanakan riset dan pengembangan dalam bidang robotika " +
-                    "dan embedded systems, menyusun modul praktikum Teknik Digital " +
-                    "dan Mikroprosesor, serta membimbing mahasiswa dalam kegiatan " +
-                    "praktikum. Selain itu, bertanggung jawab sebagai Koordinator " +
-                    "Divisi PDD dalam pengelolaan desain, dokumentasi, pengumuman, " +
-                    "dan media sosial laboratorium.",
-                tags: ["Embedded System", "Robotics", "Microprocessor", "Documentation"],
+                    "Conducted research and development in robotics " +
+                    "and embedded systems, developed lab modules for Digital Electronics " +
+                    "and Microprocessors, and guided students during " +
+                    "lab sessions. Also served as PDD Coordinator, " +
+                    "managing the laboratory's design, documentation, announcements, " +
+                    "and social media.",
+                tags: ["Embedded Systems", "Robotics", "Microprocessor", "Documentation"],
             },
             {
                 id: 2,
@@ -55,11 +55,11 @@ import { readTable, filled } from "./cms/client.js";
                 role: "UI/UX Development",
                 location: "Bandung",
                 description:
-                    "Merancang dan mengembangkan antarmuka aplikasi mulai dari " +
-                    "pembuatan wireframe, prototipe interaktif, hingga design system. " +
-                    "Turut berkontribusi dalam pengembangan UI/UX SIKESPADU UNPAD, " +
-                    "termasuk dashboard, fitur input nilai, dan navigasi pengguna, " +
-                    "serta beberapa aplikasi internal klien.",
+                    "Designed and developed application interfaces, from " +
+                    "wireframes and interactive prototypes to design systems. " +
+                    "Contributed to the UI/UX development of SIKESPADU UNPAD, " +
+                    "including dashboards, grade entry, and user navigation, " +
+                    "as well as several internal client applications.",
                 tags: ["Figma", "UI/UX", "Wireframe", "Prototype", "Design System"],
             },
             {
@@ -70,11 +70,11 @@ import { readTable, filled } from "./cms/client.js";
                 role: "AI & Computer Vision Development",
                 location: "Bandung",
                 description:
-                    "Melakukan riset dan pengembangan model YOLOv8 untuk " +
-                    "mendeteksi truk overload berdasarkan karakteristik kendaraan " +
-                    "dari citra video. Mengembangkan pipeline real-time object " +
-                    "detection menggunakan Python dan OpenCV serta membuat " +
-                    "prototype IoT menggunakan Arduino, LED indikator, dan buzzer.",
+                    "Researched and developed a YOLOv8 model to " +
+                    "detect overloaded trucks based on vehicle characteristics " +
+                    "in video footage. Developed a real-time object " +
+                    "detection pipeline using Python and OpenCV, and built an " +
+                    "IoT prototype with Arduino, indicator LEDs, and a buzzer.",
                 tags: ["Python", "YOLOv8", "OpenCV", "Arduino", "Computer Vision"],
             },
             {
@@ -82,15 +82,15 @@ import { readTable, filled } from "./cms/client.js";
                 number: "04",
                 type: "MARKETING",
                 title: "JAFFAR INDO COMODITY",
-                role: "Executive Marketing & Distributor Albens",
+                role: "Marketing Executive & Albens Distributor",
                 location: "Bandung",
                 description:
-                    "Menyusun materi presentasi untuk kebutuhan promosi dan strategi " +
-                    "pemasaran, mengembangkan market plan untuk memperluas jangkauan " +
-                    "produk, serta merancang strategi pemasaran khusus wilayah Bandung " +
-                    "guna meningkatkan penetrasi pasar dan penjualan. Selain itu, " +
-                    "bertanggung jawab dalam pengelolaan distribusi produk Albens " +
-                    "di wilayah Bandung dan sekitarnya.",
+                    "Created presentation materials for promotions and marketing " +
+                    "strategies, developed market plans to expand product " +
+                    "reach, and designed marketing strategies for Bandung " +
+                    "to improve market penetration and sales. Also " +
+                    "managed the distribution of Albens products " +
+                    "in Bandung and the surrounding areas.",
                 tags: ["Marketing Strategy", "Market Planning", "Presentation", "Distribution"],
             },
         ];

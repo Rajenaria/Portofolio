@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en" class="portfolio-home">
 
 <head>
 
@@ -10,7 +10,8 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>Rajendra Aria Nismara</title>
+    <title>Rajendra Aria Nismara | Computer Engineering Portfolio</title>
+    <meta name="description" content="Explore the projects, experience, skills, and achievements of Rajendra Aria Nismara in computer engineering, embedded systems, AI, and UI/UX design.">
 
     <!-- INITIAL LOADER
          The overlay styling is inlined so the very first paint already shows
@@ -39,7 +40,7 @@
     <!-- MAIN CSS -->
     <link
         rel="stylesheet"
-        href="css/style.css?v=28"
+        href="css/style.css?v=43"
     >
 
     <!-- DEVICON -->
@@ -53,6 +54,11 @@
         src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"
     ></script>
 
+    <link rel="stylesheet" href="css/certificate-card.css?v=20">
+    <link rel="stylesheet" href="css/projects-case-study.css?v=28.10">
+    <link rel="stylesheet" href="css/hero-gradient-ascii.css?v=1">
+    <link rel="stylesheet" href="css/hero-lanyard.css?v=3">
+    <link rel="icon" href="/favicon.ico" type="image/x-icon" sizes="16x16 32x32 48x48 64x64">
 </head>
 <body>
 
@@ -95,15 +101,15 @@
      FLOATING / EXPANDING NAVBAR
 ========================================= -->
 
-<a class="skip-link" href="#mainContent">Lewati navigasi ke konten utama</a>
+<a class="skip-link" href="#mainContent">Skip to main content</a>
 
-<nav class="portfolio-nav" id="mainNav" aria-label="Navigasi utama">
+<nav class="portfolio-nav" id="mainNav" aria-label="Main navigation">
 
     <div class="portfolio-nav-inner">
 
         <!-- LOGO -->
         <a href="#home" class="portfolio-nav-logo">
-            Portofolio Rajendra
+            Rajendra's Portfolio
         </a>
 
 
@@ -111,23 +117,23 @@
         <div class="portfolio-nav-links">
 
             <a href="#home">
-                Beranda
+                Home
             </a>
 
             <a href="#about">
-                Tentang Saya
+                About Me
             </a>
 
             <a href="#experience">
-                Pengalaman
+                Experience
             </a>
 
             <a href="#education">
-                Pendidikan
+                Education
             </a>
 
             <a href="#certificates">
-                Sertifikat
+                Certificates
             </a>
 
             <a href="#portfolio">
@@ -143,7 +149,7 @@
             id="mobileNavToggle"
             aria-controls="mobileNavMenu"
             type="button"
-            aria-label="Buka menu navigasi"
+            aria-label="Open navigation menu"
             aria-expanded="false"
         >
             <span></span>
@@ -157,7 +163,7 @@
             href="#contact"
             class="portfolio-nav-contact"
         >
-            Kontak
+            Contact
 
             <span>
                 ↗
@@ -178,27 +184,27 @@
 
         <a href="#home">
             <span>01</span>
-            Beranda
+            Home
         </a>
 
         <a href="#about">
             <span>02</span>
-            Tentang Saya
+            About Me
         </a>
 
         <a href="#experience">
             <span>03</span>
-            Pengalaman
+            Experience
         </a>
 
         <a href="#education">
             <span>04</span>
-            Pendidikan
+            Education
         </a>
 
         <a href="#certificates">
             <span>05</span>
-            Sertifikat
+            Certificates
         </a>
 
         <a href="#portfolio">
@@ -210,7 +216,7 @@
             href="#contact"
             class="mobile-nav-contact"
         >
-            Kontak
+            Contact
             <span>↗</span>
         </a>
 
@@ -225,6 +231,10 @@
 <main id="mainContent" tabindex="-1">
 
 <section id="home" class="simple-hero">
+
+    <div class="hero-gradient-ascii" aria-hidden="true">
+        <canvas aria-hidden="true"></canvas>
+    </div>
 
     <div class="simple-hero-container">
 
@@ -253,7 +263,7 @@
 
 
             <h2>
-                Fresh Graduate Computer Engineering
+                Computer Engineering Graduate
             </h2>
 
 
@@ -299,8 +309,8 @@
 
             </div>
             <div id="cvStatus" class="cv-status" role="status" aria-live="polite" hidden></div>
-            <button id="cvRetry" class="simple-hero-button simple-project-button" type="button" hidden>Coba muat CV lagi</button>
-            <noscript><p>Aktifkan JavaScript untuk memeriksa CV terbaru.</p></noscript>
+            <button id="cvRetry" class="simple-hero-button simple-project-button" type="button" hidden>Try loading the CV again</button>
+            <noscript><p>Enable JavaScript to check for the latest CV.</p></noscript>
 
 
         </div>
@@ -313,25 +323,17 @@
 
         <div class="simple-hero-visual">
 
-            <div class="simple-hero-photo">
-
-                <div
-                    class="hero-photo-stage"
-                    id="heroPhotoStage"
-                >
-
-                    <div
-                        class="hero-photo-stack"
-                        id="heroPhotoStack"
-                    >
-
-                        <button
-                            type="button"
-                            class="hero-photo-card is-top"
-                            data-photo-index="0"
-                        >
-
-                            <picture>
+            <div class="simple-hero-photo hero-lanyard" data-hero-lanyard>
+                <svg class="hero-lanyard-strap" viewBox="0 0 500 625" aria-hidden="true" focusable="false">
+                    <path class="lanyard-strap-shadow" d="M 216 8 C 200 60 236 85 245 128 M 284 8 C 300 60 264 85 255 128"></path>
+                    <path class="lanyard-strap-band" d="M 216 8 C 200 60 236 85 245 128 M 284 8 C 300 60 264 85 255 128"></path>
+                    <path class="lanyard-strap-stitch" d="M 216 8 C 200 60 236 85 245 128 M 284 8 C 300 60 264 85 255 128"></path>
+                </svg>
+                <span class="hero-lanyard-anchor" aria-hidden="true"></span>
+                <button type="button" class="hero-photo-card hero-lanyard-card"
+                    aria-label="Move the hanging photo card" aria-describedby="heroLanyardHelp">
+                    <span class="hero-lanyard-front">
+                        <picture>
 
                                 <source
                                     media="(max-width: 650px)"
@@ -348,29 +350,11 @@
                                 >
 
                             </picture>
-
-                        </button>
-
-                        <button
-                            type="button"
-                            class="hero-photo-card hero-photo-card-placeholder"
-                            data-photo-index="1"
-                        >
-                            <span>02</span>
-                        </button>
-
-                        <button
-                            type="button"
-                            class="hero-photo-card hero-photo-card-placeholder"
-                            data-photo-index="2"
-                        >
-                            <span>03</span>
-                        </button>
-
-                    </div>
-
-                </div>
-
+                    </span>
+                    <span class="hero-lanyard-metal" aria-hidden="true"></span>
+                    <span class="hero-lanyard-gloss" aria-hidden="true"></span>
+                </button>
+                <p id="heroLanyardHelp" class="hero-lanyard-help">Drag the photo card, or use the arrow keys to move it gently. Press Escape to center it.</p>
             </div>
 
         </div>
@@ -384,7 +368,7 @@
     <a
         href="#about"
         class="simple-hero-scroll"
-        aria-label="Scroll ke Tentang Saya"
+        aria-label="Scroll to About Me"
     >
 
         <span>
@@ -403,7 +387,7 @@
 
 <section id="about" class="about-full">
 
-    <div class="about-full-slider" id="aboutFullSlider" role="region" aria-roledescription="carousel" aria-label="Tentang saya">
+    <div class="about-full-slider" id="aboutFullSlider" role="region" aria-roledescription="carousel" aria-label="About me">
 
         <div class="about-full-track" id="aboutFullTrack">
 
@@ -481,7 +465,7 @@
                 <span></span>
 
                 <p>
-                    TENTANG SAYA
+                    ABOUT ME
                 </p>
 
             </div>
@@ -491,7 +475,7 @@
             <!-- TITLE -->
 
             <h2>
-                Mahasiswa Teknik Komputer &
+                Computer Engineering Student &
                 <span>
                     Tech Enthusiast.
                 </span>
@@ -503,10 +487,8 @@
 
             <p class="simple-about-lead">
 
-                Saya adalah Rajendra Aria Nismara,
-                mahasiswa Teknik Komputer di Telkom University
-                dengan ketertarikan pada berbagai bidang
-                teknologi dan pengembangan digital.
+                I am Rajendra Aria Nismara, a Computer Engineering student at Telkom University with
+                an interest in technology and digital development.
 
             </p>
 
@@ -516,14 +498,10 @@
 
             <p class="simple-about-description">
 
-                Saya memiliki ketertarikan pada embedded systems,
-                artificial intelligence, computer vision,
-                software dan web development, serta UI/UX design.
-
-                Saya senang mengeksplorasi bagaimana sebuah ide
-                dapat dikembangkan menjadi solusi atau prototype
-                melalui kombinasi pemrograman, perangkat keras,
-                dan desain antarmuka.
+                My interests include embedded systems, artificial intelligence, computer vision,
+                software and web development, and UI/UX design. I enjoy exploring how ideas can
+                become solutions or prototypes through a combination of programming, hardware, and
+                interface design.
 
             </p>
 
@@ -536,7 +514,7 @@
             <div class="simple-about-interest">
 
                 <p class="simple-about-small-title">
-                    AREA OF INTEREST
+                    AREAS OF INTEREST
                 </p>
 
 
@@ -617,7 +595,7 @@
 
                                         <img
                                             src="assets/images/experience/himpunan 1.jpeg"
-                                            alt="Dokumentasi kegiatan organisasi"
+                                            alt="Organization activity photo"
                                             loading="lazy"
                                             decoding="async"
                                         >
@@ -641,7 +619,7 @@
 
                                         <img
                                             src="assets/images/experience/himpunan 4.jpeg"
-                                            alt="Dokumentasi kegiatan organisasi"
+                                            alt="Organization activity photo"
                                             loading="lazy"
                                             decoding="async"
                                         >
@@ -665,7 +643,7 @@
 
                                         <img
                                             src="assets/images/experience/aslab 1.jpeg"
-                                            alt="Dokumentasi kegiatan organisasi"
+                                            alt="Organization activity photo"
                                             loading="lazy"
                                             decoding="async"
                                         >
@@ -688,7 +666,7 @@
 
                                         <img
                                             src="assets/images/experience/aslab 2.jpeg"
-                                            alt="Dokumentasi kegiatan organisasi"
+                                            alt="Organization activity photo"
                                             loading="lazy"
                                             decoding="async"
                                         >
@@ -711,7 +689,7 @@
 
                                         <img
                                             src="assets/images/experience/marketing 1.jpeg"
-                                            alt="Dokumentasi kegiatan organisasi"
+                                            alt="Organization activity photo"
                                             loading="lazy"
                                             decoding="async"
                                         >
@@ -737,7 +715,7 @@
                                 class="about-org-button"
                                 id="aboutOrgPrev"
                                 type="button"
-                                aria-label="Dokumentasi sebelumnya"
+                                aria-label="Previous activity photo"
                             >
                                 ←
                             </button>
@@ -747,7 +725,7 @@
                                 class="about-org-button"
                                 id="aboutOrgNext"
                                 type="button"
-                                aria-label="Dokumentasi berikutnya"
+                                aria-label="Next activity photo"
                             >
                                 →
                             </button>
@@ -779,26 +757,24 @@
 
 
                         <h2>
-                            Pengalaman yang Membentuk
-                            <span>Cara Saya Bekerja.</span>
+                            Experiences That Shape
+                            <span>How I Work.</span>
                         </h2>
 
 
                         <p class="about-description">
 
-                            Selain mengembangkan kemampuan teknis,
-                            saya juga aktif dalam berbagai kegiatan organisasi,
-                            laboratorium, kepanitiaan, dan aktivitas profesional.
+                            Alongside developing my technical skills, I take part in student organizations,
+                            laboratory work, event committees, and professional activities.
 
                         </p>
 
 
                         <p class="about-description">
 
-                            Pengalaman tersebut membantu saya mengembangkan
-                            kemampuan komunikasi, leadership, koordinasi,
-                            teamwork, problem solving, serta tanggung jawab
-                            dalam menyelesaikan pekerjaan bersama tim.
+                            These experiences have strengthened my communication, leadership, coordination,
+                            teamwork, and problem-solving skills, as well as my sense of responsibility when
+                            working with a team.
 
                         </p>
 
@@ -811,7 +787,7 @@
                                 </strong>
 
                                 <span>
-                                    Koordinasi dan tanggung jawab tim
+                                    Team coordination and accountability
                                 </span>
                             </div>
 
@@ -822,7 +798,7 @@
                                 </strong>
 
                                 <span>
-                                    Presentasi dan kolaborasi
+                                    Presentations and collaboration
                                 </span>
                             </div>
 
@@ -833,7 +809,7 @@
                                 </strong>
 
                                 <span>
-                                    Bekerja dalam berbagai lingkungan
+                                    Working across diverse environments
                                 </span>
                             </div>
 
@@ -871,15 +847,13 @@
             </div>
 
             <h2>
-                Teknologi yang Pernah
-                <span>Saya Gunakan.</span>
+                Technologies I Have
+                <span>Worked With.</span>
             </h2>
 
             <p class="about-tech-description">
-                Beberapa bahasa pemrograman, teknologi,
-                development tools, database, dan software yang pernah
-                saya gunakan dalam pembelajaran, project, desain,
-                maupun pengembangan prototype.
+                Programming languages, technologies, development tools, databases, and software I
+                have used for learning, projects, design, and prototyping.
             </p>
 
         </div>
@@ -1153,7 +1127,7 @@
             class="about-navigation about-navigation-prev"
             id="aboutFullPrev"
             type="button"
-            aria-label="Slide sebelumnya"
+            aria-label="Previous slide"
         >
             ←
         </button>
@@ -1163,7 +1137,7 @@
             class="about-navigation about-navigation-next"
             id="aboutFullNext"
             type="button"
-            aria-label="Slide berikutnya"
+            aria-label="Next slide"
         >
             →
         </button>
@@ -1178,21 +1152,21 @@
 
             <button
                 class="about-navigation-dot active"
-                data-about-index="0" aria-label="Slide tentang saya 1 dari 3"
+                data-about-index="0" aria-label="About me slide 1 of 3"
                 type="button"
             ></button>
 
 
             <button
                 class="about-navigation-dot"
-                data-about-index="1" aria-label="Slide tentang saya 2 dari 3"
+                data-about-index="1" aria-label="About me slide 2 of 3"
                 type="button"
             ></button>
 
 
             <button
                 class="about-navigation-dot"
-                data-about-index="2" aria-label="Slide tentang saya 3 dari 3"
+                data-about-index="2" aria-label="About me slide 3 of 3"
                 type="button"
             ></button>
 
@@ -1222,17 +1196,16 @@
             <div class="experience-intro">
 
                 <p class="experience-label">
-                    PENGALAMAN
+                    EXPERIENCE
                 </p>
 
                 <h2>
-                    Pengalaman yang Membentuk Saya
+                    Experiences That Shaped Me
                 </h2>
 
                 <p class="experience-description">
-                    Berbagai pengalaman teknis, profesional, dan organisasi
-                    yang membantu saya mengembangkan kemampuan di bidang teknologi,
-                    komunikasi, kerja sama tim, dan problem solving.
+                    Technical, professional, and organizational experiences that have helped me develop
+                    my skills in technology, communication, teamwork, and problem solving.
                 </p>
 
             </div>
@@ -1269,15 +1242,15 @@
         <div class="education-modern-heading">
 
             <p class="education-modern-label">
-                PENDIDIKAN
+                EDUCATION
             </p>
 
             <h2>
-                Riwayat Pendidikan
+                Education Background
             </h2>
 
             <p class="education-modern-description">
-                Pendidikan yang telah dan sedang saya tempuh.
+                My past and current education.
             </p>
 
         </div>
@@ -1300,7 +1273,7 @@
 
                     <img
                         src="assets/images/education/SMA.png"
-                        alt="Logo SMA Pasundan 1 Bandung"
+                        alt="SMA Pasundan 1 Bandung logo"
                         class="education-logo logo-sma"
                         loading="lazy"
                         decoding="async"
@@ -1335,7 +1308,7 @@
 
                     <img
                         src="assets/images/education/Logo Telkom Only.png"
-                        alt="Logo Telkom University"
+                        alt="Telkom University logo"
                         class="education-logo logo-telkom"
                         loading="lazy"
                         decoding="async"
@@ -1351,7 +1324,7 @@
                     </h3>
 
                     <p>
-                        S1 Teknik Komputer | 2022 — 2026
+                        Bachelor's Degree in Computer Engineering 2022 — 2026
                     </p>
 
                 </div>
@@ -1380,23 +1353,22 @@
         <div class="certificates-heading">
 
             <p class="certificates-label">
-                SERTIFIKAT
+                CERTIFICATES
             </p>
 
             <h2>
-                Sertifikat &amp; Penghargaan
+                Certificates &amp; Awards
             </h2>
 
             <p class="certificates-description">
-                Sertifikat, hak cipta, dan pencapaian akademik yang
-                pernah saya raih.
+                My certificates, registered copyrights, and academic achievements.
             </p>
 
         </div>
 
 
         <p class="certificates-hint">
-            (Geser untuk memutar &middot; klik kartu depan untuk detail)
+            (Drag to rotate &middot; click the front card for details)
         </p>
 
 
@@ -1416,7 +1388,7 @@
             id="certificatesCarousel"
             role="group"
             aria-roledescription="carousel"
-            aria-label="Daftar sertifikat dan penghargaan"
+            aria-label="Certificates and awards"
         >
 
             <div
@@ -1442,7 +1414,7 @@
                     class="cert-nav cert-nav-prev"
                     id="certPrev"
                     type="button"
-                    aria-label="Sertifikat sebelumnya"
+                    aria-label="Previous certificate"
                 >
                     <iconify-icon
                         icon="tabler:chevron-left"
@@ -1454,7 +1426,7 @@
                 <div
                     class="cert-dots"
                     id="certDots"
-                    aria-label="Pilih sertifikat"
+                    aria-label="Select a certificate"
                 ></div>
 
 
@@ -1462,7 +1434,7 @@
                     class="cert-nav cert-nav-next"
                     id="certNext"
                     type="button"
-                    aria-label="Sertifikat berikutnya"
+                    aria-label="Next certificate"
                 >
                     <iconify-icon
                         icon="tabler:chevron-right"
@@ -1481,487 +1453,26 @@
      PORTFOLIO
 ========================= -->
 
-<section id="portfolio" class="portfolio">
-
-    <div class="portfolio-container">
-
-
-        <!-- =================================
-             HEADING
-        ================================== -->
-
-        <div class="portfolio-heading">
-
-            <p class="portfolio-label">
-                PORTFOLIO
-            </p>
-
-            <h2>
-                Project yang Pernah Saya Kerjakan
-            </h2>
-
-            <p class="portfolio-description">
-                Beberapa project yang saya kerjakan dalam bidang
-                Artificial Intelligence, Computer Vision,
-                Embedded Systems, dan UI/UX Design.
-            </p>
-
-        </div>
-
-
-        <!-- =================================
-             HORIZONTAL PROJECT SCROLLER
-        ================================== -->
-
-        <div
-            class="project-scroll-wrapper"
-            id="projectScrollWrapper"
-        >
-
-            <div
-                class="project-grid"
-                id="projectGrid"
-            >
-
-
-                <!-- =================================
-                     PROJECT 01
-                ================================== -->
-
-                <article class="project-card">
-
-                    <div class="project-image">
-
-                        <picture>
-
-                            <source
-                                media="(max-width: 650px)"
-                                srcset="assets/images/projects/web-mobile.webp"
-                                type="image/webp"
-                            >
-
-                            <img
-                                src="assets/images/projects/web.png"
-                                alt="Web Project"
-                                draggable="false"
-                                loading="lazy"
-                                decoding="async"
-                            >
-
-                        </picture>
-
-                    </div>
-
-
-                    <div class="project-content">
-
-                        <p class="project-category">
-                            UI/UX DESIGN
-                        </p>
-
-                        <h3>
-                            Football Club Website
-                        </h3>
-
-                        <p class="project-text">
-                            Prototype interaktif website klub sepak bola yang menyajikan
-                            jadwal pertandingan, squad pemain, berita, Man of the Match,
-                            serta alur pembelian tiket dan merchandise.
-                        </p>
-
-
-                        <div class="project-tech">
-
-                            <span>Figma</span>
-                            <span>UI/UX</span>
-                            <span>User Flow</span>
-
-                        </div>
-
-
-                        <a
-                            href="projects/project-football-club.html"
-                            class="project-link"
-                        >
-                            Lihat Project →
-                        </a>
-
-                    </div>
-
-                </article>
-
-
-
-                <!-- =================================
-                     PROJECT 02
-                ================================== -->
-
-                <article class="project-card">
-
-                    <div class="project-image">
-
-                        <picture>
-
-                            <source
-                                media="(max-width: 650px)"
-                                srcset="assets/images/projects/ticket-mobile.webp"
-                                type="image/webp"
-                            >
-
-                            <img
-                                src="assets/images/projects/ticket.png"
-                                alt="SIKESPADU UNPAD"
-                                draggable="false"
-                                loading="lazy"
-                                decoding="async"
-                            >
-
-                        </picture>
-
-                    </div>
-
-
-                    <div class="project-content">
-
-                        <p class="project-category">
-                            UI/UX DESIGN
-                        </p>
-
-                        <h3>
-                            SIKESPADU UNPAD
-                        </h3>
-
-                        <p class="project-text">
-                            Perancangan antarmuka sistem akademik terpadu,
-                            termasuk dashboard, fitur input nilai,
-                            serta navigasi pengguna.
-                        </p>
-
-
-                        <div class="project-tech">
-
-                            <span>Figma</span>
-                            <span>UI Design</span>
-                            <span>Prototype</span>
-
-                        </div>
-
-
-                        <a
-                            href="#"
-                            class="project-link"
-                        >
-                            Lihat Project →
-                        </a>
-
-                    </div>
-
-                </article>
-
-
-
-                <!-- =================================
-                     PROJECT 03
-                ================================== -->
-
-                <article class="project-card">
-
-                    <div class="project-image">
-
-                        <picture>
-
-                            <source
-                                media="(max-width: 650px)"
-                                srcset="assets/images/projects/project-3-mobile.webp"
-                                type="image/webp"
-                            >
-
-                            <img
-                                src="assets/images/projects/project 3.png"
-                                alt="E-Commerce Application"
-                                draggable="false"
-                                loading="lazy"
-                                decoding="async"
-                            >
-
-                        </picture>
-
-                    </div>
-
-
-                    <div class="project-content">
-
-                        <p class="project-category">
-                            UI/UX • PRODUCT DESIGN
-                        </p>
-
-                        <h3>
-                            E-Commerce Application
-                        </h3>
-
-                        <p class="project-text">
-                            Perancangan UI/UX aplikasi e-commerce mulai
-                            dari wireframe, prototipe interaktif,
-                            hingga pembuatan design system.
-                        </p>
-
-
-                        <div class="project-tech">
-
-                            <span>Figma</span>
-                            <span>Wireframe</span>
-                            <span>Design System</span>
-
-                        </div>
-
-
-                        <a
-                            href="projects/project-ecommerce.html"
-                            class="project-link"
-                        >
-                            Lihat Project →
-                        </a>
-
-                    </div>
-
-                </article>
-
-
-
-                <!-- =================================
-                     PROJECT 04
-                ================================== -->
-
-                <article class="project-card">
-
-                    <div
-                        class="project-image project-placeholder-image"
-                    >
-
-                        <span>
-                            04
-                        </span>
-
-                    </div>
-
-
-                    <div class="project-content">
-
-                        <p class="project-category">
-                            COMING SOON
-                        </p>
-
-                        <h3>
-                            Project 04
-                        </h3>
-
-                        <p class="project-text">
-                            Project berikutnya akan ditambahkan
-                            pada bagian ini.
-                        </p>
-
-
-                        <div class="project-tech">
-
-                            <span>
-                                Coming Soon
-                            </span>
-
-                        </div>
-
-
-                        <a
-                            href="#"
-                            class="project-link"
-                        >
-                            Lihat Project →
-                        </a>
-
-                    </div>
-
-                </article>
-
-
-
-                <!-- =================================
-                     PROJECT 05
-                ================================== -->
-
-                <article class="project-card">
-
-                    <div
-                        class="project-image project-placeholder-image"
-                    >
-
-                        <span>
-                            05
-                        </span>
-
-                    </div>
-
-
-                    <div class="project-content">
-
-                        <p class="project-category">
-                            COMING SOON
-                        </p>
-
-                        <h3>
-                            Project 05
-                        </h3>
-
-                        <p class="project-text">
-                            Project berikutnya akan ditambahkan
-                            pada bagian ini.
-                        </p>
-
-
-                        <div class="project-tech">
-
-                            <span>
-                                Coming Soon
-                            </span>
-
-                        </div>
-
-
-                        <a
-                            href="#"
-                            class="project-link"
-                        >
-                            Lihat Project →
-                        </a>
-
-                    </div>
-
-                </article>
-
-
-
-                <!-- =================================
-                     PROJECT 06
-                ================================== -->
-
-                <article class="project-card">
-
-                    <div
-                        class="project-image project-placeholder-image"
-                    >
-
-                        <span>
-                            06
-                        </span>
-
-                    </div>
-
-
-                    <div class="project-content">
-
-                        <p class="project-category">
-                            COMING SOON
-                        </p>
-
-                        <h3>
-                            Project 06
-                        </h3>
-
-                        <p class="project-text">
-                            Project berikutnya akan ditambahkan
-                            pada bagian ini.
-                        </p>
-
-
-                        <div class="project-tech">
-
-                            <span>
-                                Coming Soon
-                            </span>
-
-                        </div>
-
-
-                        <a
-                            href="#"
-                            class="project-link"
-                        >
-                            Lihat Project →
-                        </a>
-
-                    </div>
-
-                </article>
-
-
+<section id="portfolio" class="cs-projects" lang="en" aria-labelledby="projects-heading">
+    <div class="cs-container">
+        <div class="cs-header">
+            <div>
+                <p class="cs-eyebrow">Portfolio</p>
+                <h2 id="projects-heading">Projects I Have Worked On</h2>
+                <p>A selection of projects, with a closer look at the process, technologies, and work behind each one.</p>
             </div>
-            <!-- END PROJECT GRID -->
-
         </div>
-        <!-- END PROJECT SCROLL WRAPPER -->
-
-
-
-        <!-- =================================
-             PROJECT SCROLL INDICATOR
-        ================================== -->
-
-        <div
-            class="project-scroll-indicator"
-            id="projectScrollIndicator"
-        >
-
-            <button
-                class="project-scroll-bar is-active"
-                data-scroll-index="0"
-                type="button"
-                aria-label="Project bagian pertama"
-            ></button>
-
-
-            <button
-                class="project-scroll-bar"
-                data-scroll-index="1"
-                type="button"
-                aria-label="Project bagian tengah"
-            ></button>
-
-
-            <button
-                class="project-scroll-bar"
-                data-scroll-index="2"
-                type="button"
-                aria-label="Project bagian terakhir"
-            ></button>
-
-        </div>
-
-
-
-        <!-- =================================
-             DRAG / SWIPE HINT
-        ================================== -->
-
-        <div class="horizontal-slide-hint">
-
-            <span class="hint-desktop">
-                DRAG TO EXPLORE
-            </span>
-
-            <span class="hint-mobile">
-                SWIPE TO EXPLORE
-            </span>
-
-
-            <div class="horizontal-slide-hint-line">
-
-                <span></span>
-
+        <div class="cs-filter-bar">
+            <div class="cs-mobile-category">
+                <label for="projects-category">Project Category</label>
+                <select id="projects-category" aria-controls="projects-grid" disabled><option value="">Loading categories...</option></select>
             </div>
-
+            <div id="projects-filters" class="cs-filters" role="group" aria-label="Filter projects by category"></div>
+            <p id="projects-count" class="cs-count" role="status">Loading projects...</p>
         </div>
-
-
+        <div id="projects-grid" class="cs-grid" tabindex="-1" aria-live="polite"><p class="cs-empty">Loading projects...</p></div>
+        <nav id="projects-pagination" class="cs-pagination" aria-label="Projects pagination" hidden></nav>
     </div>
-
 </section>
 <!-- =========================================================
      CONTACT + GUESTBOOK
@@ -2008,17 +1519,16 @@
                     <span class="contact-guestbook-accent"></span>
 
                     <p class="contact-guestbook-label">
-                        KONTAK
+                        CONTACT
                     </p>
 
                     <h2>
-                        Hubungi Saya.
+                        Get in Touch.
                     </h2>
 
                     <p class="contact-guestbook-description">
-                        Punya pertanyaan, ingin berdiskusi,
-                        atau tertarik untuk berkolaborasi?
-                        Jangan ragu untuk menghubungi saya.
+                        Have a question, an idea to discuss, or a collaboration in mind? Feel free to get in
+                        touch.
                     </p>
 
                 </div>
@@ -2137,8 +1647,7 @@
                     <span class="contact-guestbook-note-dot"></span>
 
                     <p>
-                        Terbuka untuk diskusi,
-                        kolaborasi, dan kesempatan baru.
+                        Open to conversations, collaborations, and new opportunities.
                     </p>
 
                 </div>
@@ -2170,13 +1679,11 @@
                     </p>
 
                     <h2>
-                        Tinggalkan Pesan.
+                        Leave a Message.
                     </h2>
 
                     <p>
-                        Punya feedback, pesan,
-                        atau sekadar ingin menyapa?
-                        Tulis pesan kamu di sini.
+                        Have feedback, a message, or just want to say hello? Leave a note here.
                     </p>
 
                 </div>
@@ -2204,7 +1711,7 @@
                                 type="text"
                                 id="guestbookName"
                                 name="name"
-                                placeholder="Nama kamu"
+                                placeholder="Your name"
                                 minlength="2"
                                 maxlength="30"
                                 autocomplete="name"
@@ -2218,7 +1725,7 @@
                                 class="guestbook-v2-submit"
                             >
 
-                                Kirim
+                                Send
 
                                 <span>
                                     →
@@ -2237,7 +1744,7 @@
                             <textarea
                                 id="guestbookMessage"
                                 name="message"
-                                placeholder="Tulis pesan atau komentar..."
+                                placeholder="Write a message or comment..."
                                 minlength="3"
                                 maxlength="500"
                                 rows="5"
@@ -2293,11 +1800,11 @@
             </div>
 
             <h4>
-                Belum ada pesan.
+                No messages yet.
             </h4>
 
             <p>
-                Jadilah orang pertama yang meninggalkan pesan.
+                Be the first to leave a message.
             </p>
 
         </div>
@@ -2310,7 +1817,7 @@
     <div
         class="guestbook-slider-dots"
         id="guestbookSliderDots"
-        aria-label="Navigasi komentar"
+        aria-label="Comment navigation"
     ></div>
 
 </div>
@@ -2352,10 +1859,8 @@
 
 
                 <p class="footer-description">
-                    Computer Engineering graduate yang tertarik pada
-                    embedded systems, artificial intelligence,
-                    computer vision, software development,
-                    dan UI/UX design.
+                    A Computer Engineering graduate interested in embedded systems, artificial
+                    intelligence, computer vision, software development, and UI/UX design.
                 </p>
 
 
@@ -2535,7 +2040,7 @@
             <div class="footer-column">
 
                 <p class="footer-column-title">
-                    Focus Area
+                    Focus Areas
                 </p>
 
 
@@ -2577,19 +2082,19 @@
                 <div class="footer-links">
 
                     <a href="#home">
-                        Beranda
+                        Home
                     </a>
 
                     <a href="#about">
-                        Tentang Saya
+                        About Me
                     </a>
 
                     <a href="#experience">
-                        Pengalaman
+                        Experience
                     </a>
 
                     <a href="#education">
-                        Pendidikan
+                        Education
                     </a>
 
                     <a href="#portfolio">
@@ -2597,7 +2102,7 @@
                     </a>
 
                     <a href="#contact">
-                        Kontak
+                        Contact
                     </a>
 
                 </div>
@@ -2656,16 +2161,17 @@
 
 </footer>
 
-    <script src="js/script.js?v=3"></script>
-    <script src="js/hero-photo-stack.js?v=2" defer></script>
+    <script src="js/script.js?v=5"></script>
+    <script src="js/hero-lanyard.js?v=4" type="module"></script>
+    <script src="js/hero-gradient-ascii.js?v=2" type="module"></script>
     <script src="js/experience-stack.js?v=2" type="module"></script>
     <script src="js/certificates.js?v=15" defer></script>
 
     <!-- PUBLIC CMS INTEGRATION (read-only, patches the static content above) -->
-    <script src="js/cms/profile-about.js?v=3" type="module"></script>
+    <script src="js/cms/profile-about.js?v=4" type="module"></script>
     <script src="js/cms/cv.js?v=1" type="module"></script>
     <script src="js/cms/technologies.js?v=2" type="module"></script>
-    <script src="js/cms/projects.js?v=2" type="module"></script>
+    <script src="js/cms/projects-grid.js?v=29" type="module"></script>
     <script src="js/cms/certificates.js?v=2" type="module"></script>
 
 </body>

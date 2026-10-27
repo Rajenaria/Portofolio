@@ -13,14 +13,25 @@ function enable(href) {
     links.forEach(link => { link.href = href; link.removeAttribute("aria-disabled"); link.removeAttribute("tabindex"); });
     if (status) { status.hidden = true; status.textContent = ""; }
 }
-links.forEach(link => link.addEventListener("click", event => {
-    if (link.getAttribute("aria-disabled") === "true") event.preventDefault();
+links.forEach(link => link.addEventListener("click", async event => {
+    event.preventDefault();
+    if (busy || link.getAttribute("aria-disabled") === "true") return;
+    const current = await loadCv();
+    if (!current) return;
+    // Use a separate anchor so starting the download cannot trigger this check again.
+    const download = document.createElement("a");
+    download.href = current.href;
+    if (current.staticFile) download.setAttribute("download", "");
+    download.hidden = true;
+    document.body.appendChild(download);
+    download.click();
+    download.remove();
 }));
 async function loadCv() {
     if (busy || !links.length) return;
     busy = true;
     if (retry) retry.hidden = true;
-    disable("Memeriksa CV terbaru...");
+    disable("Checking for the latest CV...");
     try {
         let row, legacy = false;
         try {
@@ -42,8 +53,9 @@ async function loadCv() {
             links.forEach(link => link.removeAttribute("download"));
             enable(`${CMS_URL}/functions/v1/cv-document?v=${encodeURIComponent(row.cv_version)}`);
         }
+        return { href: links[0].href, staticFile: links[0].hasAttribute("download") };
     } catch {
-        disable("CV belum dapat dimuat. Silakan coba lagi.");
+        disable("The CV could not be loaded. Please try again.");
         if (retry) retry.hidden = false;
     } finally { busy = false; }
 }

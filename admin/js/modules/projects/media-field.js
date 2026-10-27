@@ -34,7 +34,7 @@ import { openModal } from "../../core/modal.js";
 import { createImagePicker } from "../../core/image-picker.js";
 import { processImage, formatBytes } from "../../core/image-processor.js";
 import { resolveMediaUrl } from "../../core/media-storage.js";
-import { t } from "../../core/i18n.js";
+import { tIndonesian as t } from "../../core/i18n.js";
 
 export const DESKTOP_MAX_DIMENSION = 2000;
 export const MOBILE_MAX_DIMENSION = 1200;
@@ -242,7 +242,7 @@ export function createProjectMediaField({
     let picker = null;
     let controller = null;
 
-    const holder = el("div", "media-replace-body");
+    const holder = el("div", "media-replace-body project-editor-modal-body");
 
     append(
       holder,

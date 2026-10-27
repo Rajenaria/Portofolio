@@ -303,7 +303,7 @@ export function createImagePicker(options = {}) {
     append(
       box,
       el("p", "image-picker-error-text", error.message),
-      el("p", "form-help", options.helperText || HELPER_TEXT),
+      el("p", "form-help", options.helperText || helperText()),
       browseButton(t("picker.chooseAnother"))
     );
 

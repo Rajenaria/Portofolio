@@ -20,7 +20,7 @@
 */
 
 import { el, append, clear } from "../../core/dom.js";
-import { t } from "../../core/i18n.js";
+import { tIndonesian as t } from "../../core/i18n.js";
 
 export function createTechnologySelector({
   technologies = [],
@@ -203,8 +203,7 @@ export function createTechnologySelector({
   return {
     element: root,
     getSelectedIds: () => selected.slice(),
-    getSelectedNames: () =>
-      selected.map(id => (byId.get(id) ? byId.get(id).name : "")).filter(Boolean),
+    getSelectedTechnologies: () => selected.map(id => byId.get(id)).filter(Boolean).map(row => ({...row})),
     snapshot: () => JSON.stringify(selected),
     setSavedIds(ids) {
       selected = ids.filter(id => byId.has(id));

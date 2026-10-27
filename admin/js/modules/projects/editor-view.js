@@ -1,54 +1,22 @@
-import { normalizeCover, validCover, missingCoverSchema } from "../../../../js/cms/project-cover.js";
+import { titleFieldsForSave } from "./legacy-title.js";
+import { normalizeCover, validCover, missingCoverSchema, PROJECT_DETAIL_FRAME_RATIO } from "../../../../js/cms/project-cover.js";
+import { requireCmsUpgrade } from "../../../../js/cms/backend-compatibility.js";
 
-﻿/*
-  Project editor (Phase 8A core, Phase 8B media).
-
-  The form is grouped the way the owner thinks about a project:
-
-      BASIC INFORMATION   title, slug, category, short description, featured
-      PROJECT DETAILS     detail headings, role, type, date, intro, links
-      ABOUT PARAGRAPHS    the ordered body text of the detail page
-      MEDIA               cover image and alt text
-      DOCUMENTATION       the ordered gallery
-      TECHNOLOGIES        the chip selector
-      VISIBILITY          status and the record's own timeline
-
-  The paragraph, gallery and technology editors stay their own components, so
-  they follow their group rather than nesting inside it — one frame each, never
-  a panel inside a panel.
-
-  Full-page editor inside the Admin shell. It writes only columns that exist in
-  public.projects, plus the staged paragraph list, technology relationships,
-  the cover columns and the project_media rows.
-
-  MEDIA (Phase 8B)
-  ----------------
-  Every image change is staged in memory and only touches Storage on Save or
-  Publish. A Draft writes into the private portfolio-staging bucket; publishing
-  promotes those objects into the public portfolio-media bucket and then clears
-  the staged copies. See persistMedia() and promoteStagedMedia() below.
-
-  STATUS
-  ------
-  Saving never changes status: a published Project stays published when edited.
-  Status only moves through the explicit Publish / Unpublish / Archive / Restore
-  actions in the list.
-
-  SLUG
-  ----
-  Auto-generated from the title for a new Project until the owner edits it by
-  hand. Once the Project has been published at least once (published_at is set)
-  the slug is locked, because the future public URL project.html?slug=<slug>
-  must stay stable (Features doc section 25).
+﻿/* Visual Project editor arranged by public sections. Save/upload, promotion,
+   owner/MFA, slug locking, publication and Trash/Restore contracts are retained.
+   Cover uses existing crop columns; other frame crops and media text use the
+   existing case_study object. Pending media receive stable UUIDs before saving
+   so roadmap/Hero references survive upload and reorder without duplicate rows.
 */
 
 import { supabaseClient } from "../../core/supabase.js";
 import { el, append, clear, statusBadge, updatedAt } from "../../core/dom.js";
 import { toast } from "../../core/toast.js";
-import { t } from "../../core/i18n.js";
+import { tIndonesian as t } from "../../core/i18n.js";
 
 import {
   textField,
+  selectField,
   textareaField,
   checkboxField,
   applyValidation,
@@ -73,14 +41,15 @@ import { createTechnologySelector } from "./technology-selector.js";
 import { createProjectMediaField } from "./media-field.js";
 import { createDocumentationManager } from "./media-manager.js";
 import { openProjectPreview } from "./preview.js";
+import { createCaseStudyEditor } from "./case-study-editor.js";
+import { openCropEditor } from "./crop-editor.js";
+import { loadProjectCategories, openCategoryManager } from "./categories.js";
 
 export const LIMITS = {
   title: 180,
   slug: 140,
   cardCategory: 100,
   shortDescription: 400,
-  detailTitleMain: 180,
-  detailTitleHighlight: 180,
   role: 180,
   projectType: 140,
   aboutHeading: 220,
@@ -133,11 +102,13 @@ export function createProjectEditor({
   paragraphs: initialParagraphs = [],
   media: initialMedia = [],
   technologies = [],
+  categories: initialCategories = [],
   selectedTechnologyIds = [],
   onDirtyChange,
   onSaved,
   onBack
 }) {
+  requireCmsUpgrade();
   const isNew = !record;
 
   const state = {
@@ -150,6 +121,7 @@ export function createProjectEditor({
   };
 
   const root = el("div", "experience-editor project-editor");
+  root.lang = "id";
 
   /* ---------------- header ---------------- */
 
@@ -177,27 +149,27 @@ export function createProjectEditor({
   const previewButton = el(
     "button",
     "admin-button admin-button-secondary",
-    t("common.preview")
+    "Pratinjau Lengkap"
   );
   previewButton.type = "button";
 
   const saveButton = el(
     "button",
     "admin-button admin-button-secondary",
-    t(isNew ? "common.saveDraft" : "common.saveChanges")
+    t(isNew ? "projEditor.saveDraft" : "common.saveChanges")
   );
   saveButton.type = "button";
 
   const publishButton = el(
     "button",
     "admin-button admin-button-primary",
-    t("common.publish")
+    t("projEditor.publish")
   );
   publishButton.type = "button";
 
   append(actions, previewButton, saveButton, publishButton);
   append(header, headingBlock, actions);
-  append(root, back, header);
+  append(root, back, header, el("p","form-help","Kolom bertanda * wajib untuk menyimpan. Sebelum diterbitkan, lengkapi juga kategori, deskripsi singkat dan lengkap, peran, tahun, serta gambar cover. Kolom lainnya opsional."));
 
   /* ---------------- card info ---------------- */
 
@@ -217,10 +189,11 @@ export function createProjectEditor({
       value: record ? record.slug : "",
       help: t("projEditor.fieldSlugHelp")
     }),
-    cardCategory: textField({
+    cardCategory: selectField({
       id: "project-card-category",
       label: t("projEditor.fieldCategory"),
-      maxLength: LIMITS.cardCategory,
+      required: true,
+      options: [],
       value: record ? record.card_category : "",
       help: t("projEditor.fieldCategoryHelp")
     }),
@@ -231,18 +204,6 @@ export function createProjectEditor({
       value: record ? record.short_description : "",
       rows: 3,
       help: t("projEditor.fieldShortHelp")
-    }),
-    detailTitleMain: textField({
-      id: "project-detail-title-main",
-      label: t("projEditor.fieldDetailTitle"),
-      maxLength: LIMITS.detailTitleMain,
-      value: record ? record.detail_title_main : ""
-    }),
-    detailTitleHighlight: textField({
-      id: "project-detail-title-highlight",
-      label: t("projEditor.fieldDetailHighlight"),
-      maxLength: LIMITS.detailTitleHighlight,
-      value: record ? record.detail_title_highlight : ""
     }),
     detailIntro: textareaField({
       id: "project-detail-intro",
@@ -263,14 +224,14 @@ export function createProjectEditor({
       label: t("projEditor.fieldType"),
       maxLength: LIMITS.projectType,
       value: record ? record.project_type : "",
-      help: t("projEditor.fieldRoleHelp")
+      help: "Opsional. Tampil sebagai label pada bagian ringkasan Halaman Project."
     }),
     aboutHeading: textField({
       id: "project-about-heading",
       label: t("projEditor.fieldAbout"),
       maxLength: LIMITS.aboutHeading,
       value: record ? record.about_heading : "",
-      help: t("projEditor.fieldRoleHelp")
+      help: "Opsional. Judul bagian ringkasan; kosongkan untuk memakai judul bawaan website."
     }),
     githubUrl: textField({
       id: "project-github-url",
@@ -293,45 +254,61 @@ export function createProjectEditor({
     })
   };
 
+  let categories = initialCategories;
+  let categoryManager = null;
+  let destroyed = false;
+  let categoryRefreshVersion = 0;
+  function categoryOptions(value) {
+    const select = fields.cardCategory.control;
+    select.replaceChildren();
+    const placeholder = el("option",null,"Pilih kategori project"); placeholder.value = ""; select.append(placeholder);
+    categories.forEach(category => {
+      const option = el("option",null,category.name+(category.is_active ? "" : " — Nonaktif"));
+      option.value = category.name; option.disabled = !category.is_active; select.append(option);
+    });
+    if (value && !categories.some(category => category.name === value)) {
+      const missing = el("option",null,`${value} — Tidak tersedia`); missing.value = value; missing.disabled = true; select.append(missing);
+    }
+    select.value = value || "";
+  }
+  categoryOptions(record?.card_category || "");
+  const manageCategories = el("button","admin-button admin-button-secondary","Kelola Kategori"); manageCategories.type = "button";
+  fields.cardCategory.node.append(manageCategories);
+  fields.cardCategory.control.addEventListener("change",() => { fields.cardCategory.setError(""); markDirty(); });
+  async function refreshCategories() {
+    if (destroyed) return;
+    const version = ++categoryRefreshVersion;
+    const fresh = await loadProjectCategories();
+    if (destroyed || !root.isConnected || version !== categoryRefreshVersion) return;
+    // Read the selection after the request: do not overwrite a choice made
+    // while the closing manager's refresh was still in flight.
+    const previous = categories, value = fields.cardCategory.value;
+    const selectedId = previous.find(row => row.name === value)?.id;
+    categories = fresh;
+    const selected = fresh.find(row => row.id === selectedId);
+    categoryOptions(selected?.name || value);
+    // A committed rename changes the same association, not other unsaved fields.
+    const baseline = JSON.parse(baselineForm);
+    const baselineId = previous.find(row => row.name === baseline.cardCategory)?.id;
+    const renamedBaseline = fresh.find(row => row.id === baselineId);
+    if (renamedBaseline) { baseline.cardCategory = renamedBaseline.name; baselineForm = JSON.stringify(baseline); }
+    markDirty();
+  }
+  manageCategories.addEventListener("click",() => {
+    if (categoryManager || busy) return;
+    categoryManager = openCategoryManager({
+      onChanged:refreshCategories,
+      onClosed:() => {
+        categoryManager = null;
+        refreshCategories().catch(() => fields.cardCategory.setError("Daftar kategori belum dapat dimuat ulang. Coba Kelola Kategori kembali."));
+      }
+    });
+  });
+
   /* ---------------- cover ---------------- */
 
-  const initialCover = normalizeCover(record || {});
-  const coverControls = el("div", "form-grid");
-  const coverFit = el("select", "admin-input");
-  coverFit.id = "project-cover-fit";
-  for (const value of ["cover", "contain"]) {
-    const option = el("option", null, t(`projCover.${value}`));
-    option.value = value;
-    append(coverFit, option);
-  }
-  coverFit.value = initialCover.cover_fit;
-  const coverX = el("input", "admin-input");
-  const coverY = el("input", "admin-input");
-  function coverControl(control, id, label, value) {
-    control.id = id;
-    if (control !== coverFit) {
-      control.type = "number";
-      control.min = "0";
-      control.max = "100";
-      control.step = "1";
-      control.value = String(value);
-    }
-    const field = el("div", "form-field");
-    const caption = el("label", "form-label", t(label));
-    caption.htmlFor = id;
-    append(field, caption, control);
-    append(coverControls, field);
-  }
-  coverControl(coverFit, coverFit.id, "projCover.fit");
-  coverControl(coverX, "project-cover-x", "projCover.x", initialCover.cover_position_x);
-  coverControl(coverY, "project-cover-y", "projCover.y", initialCover.cover_position_y);
-  function coverValues() {
-    return {
-      cover_fit: coverFit.value,
-      cover_position_x: coverX.value === "" ? NaN : Number(coverX.value),
-      cover_position_y: coverY.value === "" ? NaN : Number(coverY.value)
-    };
-  }
+  let coverLayout = { ...normalizeCover(record || {}), cover_fit:"cover" };
+  function coverValues() { return {...coverLayout}; }
   const coverField = createProjectMediaField({
     layout: coverValues(),
     title: t("projEditor.cover"),
@@ -362,31 +339,49 @@ export function createProjectEditor({
   }
 
   const coverSection = group("projEditor.media", "projEditor.mediaHelp");
-  append(
-    coverSection,
-    el("p", "form-help", t("projEditor.coverHelp")),
-    coverControls,
-    el("p", "form-help", t("projCover.help")),
-    coverField.element,
-    fields.coverAlt.node
-  );
+  const cropButton = el("button","admin-button admin-button-secondary","Atur Posisi Cover"); cropButton.type = "button";
+  cropButton.addEventListener("click",async () => {
+    const url = await coverField.resolvePreviewUrl();
+    if (!url) { toast("Tambahkan gambar cover terlebih dahulu.","error"); return; }
+    openCropEditor({url,value:{x:coverLayout.cover_position_x,y:coverLayout.cover_position_y},onSave:position => {
+      coverLayout = {cover_fit:"cover",cover_position_x:Math.round(position.x),cover_position_y:Math.round(position.y)};
+      coverField.setLayout(coverValues()); markDirty();
+    }});
+  });
+  append(coverSection,coverField.element,cropButton,fields.coverAlt.node);
 
   /* ---------------- documentation ---------------- */
 
   const documentationManager = createDocumentationManager({
     initialMedia,
+    metadata: record?.case_study?.media_details,
+    getCrop: id => caseStudyEditor.getGalleryCrop(id),
+    onCrop: async item => {
+      const url = item.pendingPreviewUrl || await resolveMediaUrl(item.bucket,item.desktopPath);
+      if (!url) { toast("Gambar tidak dapat dimuat.","error"); return; }
+      openCropEditor({url,value:caseStudyEditor.getGalleryCrop(item.id),ratio:PROJECT_DETAIL_FRAME_RATIO,onSave:value => { caseStudyEditor.setGalleryCrop(item.id,value); documentationManager.refreshPreviews(); }});
+    },
+    onChange: () => { caseStudyEditor.refreshMedia(); markDirty(); }
+  });
+  const caseStudyEditor = createCaseStudyEditor({
+    value: record?.case_study,
+    getMedia: () => documentationManager.getItems(),
+    getCoverUrl: () => coverField.resolvePreviewUrl(),
     onChange: markDirty
   });
 
-  // project_date is a real `date` column, so a native date input maps to it 1:1.
+  function studyValues() { return {...caseStudyEditor.getValue(),media_details:documentationManager.getDetails()}; }
+
+  // Public UI displays a year; retain an existing full date if its year is unchanged.
   const dateField = el("div", "form-field");
-  const dateLabel = el("label", "form-label", t("projEditor.fieldDate"));
+  const dateLabel = el("label", "form-label", "Tahun project");
   const dateInput = el("input", "admin-input");
-  dateInput.type = "date";
+  dateInput.type = "number"; dateInput.min = "1900"; dateInput.max = "2199"; dateInput.step = "1";
   dateInput.id = "project-date";
   dateLabel.htmlFor = dateInput.id;
-  dateInput.value = record && record.project_date ? record.project_date : "";
-  const dateHelp = el("p", "form-help", t("projEditor.fieldDateHelp"));
+  dateInput.value = record?.project_date?.slice(0,4) || "";
+  function projectDate() { return /^\d{4}$/.test(dateInput.value) ? record?.project_date?.startsWith(dateInput.value+"-") ? record.project_date : dateInput.value+"-01-01" : ""; }
+  const dateHelp = el("p", "form-help", "Tampil sebagai tahun pada kartu dan halaman detail.");
   dateHelp.id = "project-date-help";
   dateInput.setAttribute("aria-describedby", dateHelp.id);
   append(dateField, dateLabel, dateInput, dateHelp);
@@ -401,20 +396,15 @@ export function createProjectEditor({
   const cardSection = group("projEditor.basic", "projEditor.basicHelp");
   const cardGrid = el("div", "form-grid");
   append(cardGrid, fields.title.node, fields.slug.node, fields.cardCategory.node);
-  append(cardSection, cardGrid, fields.shortDescription.node, featured.node);
+  append(cardSection, cardGrid, fields.shortDescription.node, dateField, featured.node);
 
   const detailSection = group("projEditor.details", "projEditor.detailsHelp");
   const detailGrid = el("div", "form-grid");
-  append(
-    detailGrid,
-    fields.detailTitleMain.node,
-    fields.detailTitleHighlight.node,
-    fields.role.node,
-    dateField,
-    fields.projectType.node,
-    fields.aboutHeading.node
-  );
+  append(detailGrid,fields.role.node);
   append(detailSection, detailGrid, fields.detailIntro.node);
+  const advanced = el("details","project-editor-advanced");
+  append(advanced,el("summary","form-subheading","Informasi Tambahan (opsional)"),fields.projectType.node,fields.aboutHeading.node);
+  append(detailSection,advanced);
 
   const paragraphsEditor = createParagraphsEditor({
     initialParagraphs,
@@ -443,16 +433,26 @@ export function createProjectEditor({
     gallery that belongs to it -> technologies -> visibility. Each component
     follows the group it extends.
   */
-  append(
-    root,
-    cardSection,
-    detailSection,
-    paragraphsEditor.element,
-    coverSection,
-    documentationManager.element,
-    technologySelector.element,
-    settingsSection
-  );
+  append(cardSection,coverSection,technologySelector.element);
+  append(detailSection,caseStudyEditor.metadata,paragraphsEditor.element);
+  const editorSections = [
+    ["Kartu Beranda","Tampil pada kartu project di halaman utama.",cardSection],
+    ["Hero dan Metadata","Tampil pada bagian atas Halaman Project beserta ringkasannya.",detailSection],
+    ["Detail Teknis","Tampil pada tab arsitektur, cara kerja, masalah dan solusi, serta fitur di Halaman Project.",caseStudyEditor.element],
+    ["Roadmap","Tampil sebagai tahapan berurutan di Halaman Project.",caseStudyEditor.roadmapElement],
+    ["Galeri Project","Tampil pada galeri 3D dan tampilan layar penuh di Halaman Project.",documentationManager.element],
+    ["Simpan dan Terbitkan","Status publikasi menentukan apakah project tampil di website. Status pengerjaan pada Hero hanya label informasi.",settingsSection]
+  ];
+  const sectionNavigation = el("nav","project-editor-navigation"); sectionNavigation.setAttribute("aria-label","Bagian editor project");
+  editorSections.forEach(([title,help,section],index) => {
+    const heading = section.querySelector("h3,h4"); if (heading) { heading.textContent = title; heading.tabIndex = -1; }
+    section.id = `project-editor-section-${index}`;
+    section.prepend(el("p","project-editor-location",help));
+    const action = el("button","admin-button admin-button-secondary",title); action.type = "button";
+    action.addEventListener("click",() => { section.scrollIntoView({block:"start",behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth"}); heading?.focus({preventScroll:true}); });
+    sectionNavigation.append(action);
+  });
+  root.append(sectionNavigation,...editorSections.map(section => section[2]));
 
   renderSettings();
   syncSlugLock();
@@ -546,18 +546,17 @@ export function createProjectEditor({
       slug: trimmed(fields.slug.value),
       cardCategory: trimmed(fields.cardCategory.value),
       shortDescription: trimmed(fields.shortDescription.value),
-      detailTitleMain: trimmed(fields.detailTitleMain.value),
-      detailTitleHighlight: trimmed(fields.detailTitleHighlight.value),
       detailIntro: trimmed(fields.detailIntro.value),
       role: trimmed(fields.role.value),
-      projectDate: dateInput.value,
+      projectDate: projectDate(),
       projectType: trimmed(fields.projectType.value),
       aboutHeading: trimmed(fields.aboutHeading.value),
       githubUrl: trimmed(fields.githubUrl.value),
       demoUrl: trimmed(fields.demoUrl.value),
       ...coverValues(),
       coverAlt: trimmed(fields.coverAlt.value),
-      featured: featured.value
+      featured: featured.value,
+      case_study: studyValues()
     });
   }
 
@@ -579,6 +578,7 @@ export function createProjectEditor({
       paragraphsEditor.snapshot() !== baselineParagraphs ||
       technologySelector.snapshot() !== baselineTechnologies ||
       documentationManager.snapshot() !== baselineMedia ||
+      documentationManager.isProcessing() ||
       coverField.hasPending()
     );
   }
@@ -595,12 +595,6 @@ export function createProjectEditor({
   Object.values(fields).forEach(field =>
     field.control.addEventListener("input", markDirty)
   );
-  for (const control of [coverFit, coverX, coverY]) {
-    control.addEventListener("input", () => {
-      coverField.setLayout(coverValues());
-      markDirty();
-    });
-  }
   dateInput.addEventListener("input", markDirty);
   featured.control.addEventListener("change", markDirty);
 
@@ -616,11 +610,18 @@ export function createProjectEditor({
   /* ---------------- validation ---------------- */
 
   function validate({ forPublish }) {
+    const category = fields.cardCategory.value;
+    if (!category || !categories.some(row => row.name === category && row.is_active)) {
+      fields.cardCategory.setError("Pilih kategori project yang aktif sebelum menyimpan. Kategori lama yang tidak tersedia tidak diganti otomatis.");
+      fields.cardCategory.focus(); return false;
+    }
+    if (documentationManager.isProcessing()) { toast("Tunggu sampai semua gambar selesai diproses.","error"); return false; }
+    if (!caseStudyEditor.validate()) return false;
     if (!coverSchemaAvailable) {
       toast(t("projCover.schemaMissing"), "error");
       return false;
     }
-    if (!validCover(coverValues()) || !coverX.checkValidity() || !coverY.checkValidity()) {
+    if (!validCover(coverValues()) || !dateInput.checkValidity()) {
       toast(t("projCover.invalid"), "error");
       return false;
     }
@@ -633,19 +634,12 @@ export function createProjectEditor({
       slug: { label: t("projEditor.fieldSlug"), required: true, maxLength: LIMITS.slug },
       cardCategory: {
         label: t("projEditor.fieldCategory"),
+        required: true,
         maxLength: LIMITS.cardCategory
       },
       shortDescription: {
         label: t("projEditor.fieldShort"),
         maxLength: LIMITS.shortDescription
-      },
-      detailTitleMain: {
-        label: t("projEditor.fieldDetailTitle"),
-        maxLength: LIMITS.detailTitleMain
-      },
-      detailTitleHighlight: {
-        label: t("projEditor.fieldDetailHighlight"),
-        maxLength: LIMITS.detailTitleHighlight
       },
       role: { label: t("common.role"), maxLength: LIMITS.role },
       projectType: { label: t("projEditor.fieldType"), maxLength: LIMITS.projectType },
@@ -666,8 +660,6 @@ export function createProjectEditor({
       rules.shortDescription.required = true;
       rules.detailIntro = { label: t("projEditor.fieldIntro"), required: true };
       rules.role.required = true;
-      rules.projectType.required = true;
-      rules.aboutHeading.required = true;
     }
 
     let ok = applyValidation(fields, rules);
@@ -708,10 +700,7 @@ export function createProjectEditor({
       ok = false;
     }
 
-    if (ok && forPublish && paragraphsEditor.count() === 0) {
-      toast(t("projEditor.errNeedParagraph"), "error");
-      ok = false;
-    }
+
 
     /*
       The design baseline requires a cover before publish, because the public
@@ -738,18 +727,18 @@ export function createProjectEditor({
       slug: trimmed(fields.slug.value).toLowerCase(),
       card_category: trimmedOrNull(fields.cardCategory.value),
       short_description: trimmedOrNull(fields.shortDescription.value),
-      detail_title_main: trimmedOrNull(fields.detailTitleMain.value),
-      detail_title_highlight: trimmedOrNull(fields.detailTitleHighlight.value),
+      ...titleFieldsForSave(record, trimmedOrNull(fields.title.value)),
       detail_intro: trimmedOrNull(fields.detailIntro.value),
       role: trimmedOrNull(fields.role.value),
-      project_date: dateInput.value || null,
+      project_date: projectDate() || null,
       project_type: trimmedOrNull(fields.projectType.value),
       about_heading: trimmedOrNull(fields.aboutHeading.value),
       github_url: trimmedOrNull(fields.githubUrl.value),
       demo_url: trimmedOrNull(fields.demoUrl.value),
       ...coverValues(),
       cover_alt: trimmedOrNull(fields.coverAlt.value),
-      featured: featured.value
+      featured: featured.value,
+      case_study: studyValues()
     };
   }
 
@@ -765,14 +754,16 @@ export function createProjectEditor({
 
   function setBusy(next, label) {
     busy = next;
-    for (const control of [coverFit, coverX, coverY]) control.disabled = next;
+    root.inert = next;
+    caseStudyEditor.setBusy(next);
+    cropButton.disabled = next;
     saveButton.disabled = next;
     previewButton.disabled = next;
     back.disabled = next;
     publishButton.disabled = next || state.status === "published";
 
     saveButton.textContent =
-      label || t(state.id ? "common.saveChanges" : "common.saveDraft");
+      label || t(state.id ? "common.saveChanges" : "projEditor.saveDraft");
   }
 
   function syncPublishButton() {
@@ -783,7 +774,7 @@ export function createProjectEditor({
       return;
     }
 
-    publishButton.textContent = t("common.publish");
+    publishButton.textContent = t("projEditor.publish");
     publishButton.disabled = false;
     publishButton.removeAttribute("title");
   }
@@ -1007,6 +998,7 @@ export function createProjectEditor({
 
     loadedMedia = data || [];
     documentationManager.setSavedMedia(loadedMedia);
+    caseStudyEditor.refreshMedia();
   }
 
   /*
@@ -1098,7 +1090,7 @@ export function createProjectEditor({
     for (const item of documentationManager.getItems()) {
       const files = item.pendingFiles;
 
-      if (!item.id) {
+      if (!item.id || item.isNew) {
         const uploaded = await uploadVariantPair({
           bucket,
           directory: `projects/${projectId}/documentation/${newMediaId()}`,
@@ -1111,6 +1103,7 @@ export function createProjectEditor({
         const { data, error } = await supabaseClient
           .from("project_media")
           .insert({
+            id: item.id || newMediaId(),
             project_id: projectId,
             bucket_name: uploaded.bucket,
             desktop_path: uploaded.desktopPath,
@@ -1124,7 +1117,7 @@ export function createProjectEditor({
         if (error || !data || data.length === 0) {
           throw error || new Error("project_media insert did not apply");
         }
-
+        documentationManager.commitAdded(item.key,{id:data[0].id,bucket:uploaded.bucket,desktopPath:uploaded.desktopPath,mobilePath:uploaded.mobilePath});
         continue;
       }
 
@@ -1244,6 +1237,7 @@ export function createProjectEditor({
     coverField.setStored(snapshot.cover.desktopPath ? snapshot.cover : null);
     loadedMedia = snapshot.media;
     documentationManager.setSavedMedia(loadedMedia);
+    caseStudyEditor.refreshMedia();
     publishRecoveryNeeded = false;
     refreshStatusUi();
   }
@@ -1497,11 +1491,24 @@ export function createProjectEditor({
       return false;
     }
 
+    setBusy(true,t("common.loading"));
+    try {
+      const selectedCategory = fields.cardCategory.value;
+      await refreshCategories();
+      if (selectedCategory !== fields.cardCategory.value) {
+        toast("Nama kategori telah berubah. Pilihan tetap terhubung ke kategori yang sama; periksa sebelum menyimpan.");
+        return false;
+      }
+    } catch {
+      fields.cardCategory.setError("Kategori belum dapat diverifikasi. Periksa koneksi dan coba simpan kembali.");
+      return false;
+    } finally { setBusy(false); }
+
     if (!validate({ forPublish })) {
       return false;
     }
 
-    setBusy(true, t(forPublish ? "common.publishing" : "common.saving"));
+    setBusy(true, t(forPublish ? "projEditor.publishing" : "common.saving"));
 
     const payload = currentValues();
 
@@ -1664,7 +1671,7 @@ export function createProjectEditor({
         return;
       }
 
-      setBusy(true, t("common.publishing"));
+      setBusy(true, t("projEditor.publishing"));
       const { warnings } = await promoteStagedMedia(state.id);
       resetBaseline();
       syncSlugLock();
@@ -1693,7 +1700,7 @@ export function createProjectEditor({
     syncPublishButton();
     renderSettings();
     saveButton.textContent = t(
-      state.id ? "common.saveChanges" : "common.saveDraft"
+      state.id ? "common.saveChanges" : "projEditor.saveDraft"
     );
   }
 
@@ -1701,6 +1708,10 @@ export function createProjectEditor({
     if (missingCoverSchema(error)) return t("projCover.schemaMissing");
     const haystack = `${error && error.code} ${error && error.message} ${error &&
       error.details}`.toLowerCase();
+
+    if (haystack.includes("category_invalid") || haystack.includes("projects_card_category_fkey")) {
+      return "Kategori telah berubah, dihapus, atau dinonaktifkan. Buka Kelola Kategori dan pilih kategori aktif kembali. Isi formulir tetap utuh.";
+    }
 
     if (haystack.includes("projects_slug_key") || haystack.includes("duplicate key")) {
       return t("projEditor.errSlugTaken");
@@ -1724,45 +1735,59 @@ export function createProjectEditor({
   saveButton.addEventListener("click", () => save());
   publishButton.addEventListener("click", publish);
 
+  let preparingPreview = false;
   previewButton.addEventListener("click", async () => {
-    // Preview never mutates or clears dirty state.
-    const coverUrl = await coverField.resolvePreviewUrl();
+    if (preparingPreview || busy) return;
+    preparingPreview = true;
+    previewButton.disabled = true;
+    previewButton.textContent = "Menyiapkan Pratinjau…";
+    try {
+      // Preview never mutates or clears dirty state.
+      const coverUrl = await coverField.resolvePreviewUrl();
 
-    const documentation = await Promise.all(
-      documentationManager.getItems().map(async item => ({
-        altText: item.altText,
-        isActive: item.isActive,
-        pending: Boolean(item.pendingFiles) || !item.id,
-        url: item.pendingPreviewUrl
-          ? item.pendingPreviewUrl
-          : await resolveMediaUrl(item.bucket, item.desktopPath)
-      }))
-    );
+      const documentation = await Promise.all(
+        documentationManager.getItems().map(async item => ({
+          id: item.id,
+          altText: item.altText,
+          isActive: item.isActive,
+          url: item.pendingPreviewUrl
+            ? item.pendingPreviewUrl
+            : await resolveMediaUrl(item.bucket, item.desktopPath)
+        }))
+      );
 
-    openProjectPreview({
-      ...coverValues(),
-      coverUrl,
-      coverAlt: trimmed(fields.coverAlt.value),
-      coverPending: coverField.hasPending(),
-      documentation,
-      title: trimmed(fields.title.value),
-      slug: trimmed(fields.slug.value),
-      cardCategory: trimmed(fields.cardCategory.value),
-      shortDescription: trimmed(fields.shortDescription.value),
-      detailTitleMain: trimmed(fields.detailTitleMain.value),
-      detailTitleHighlight: trimmed(fields.detailTitleHighlight.value),
-      detailIntro: trimmed(fields.detailIntro.value),
-      role: trimmed(fields.role.value),
-      projectDate: dateInput.value,
-      projectType: trimmed(fields.projectType.value),
-      aboutHeading: trimmed(fields.aboutHeading.value),
-      githubUrl: trimmed(fields.githubUrl.value),
-      demoUrl: trimmed(fields.demoUrl.value),
-      featured: featured.value,
-      status: state.status,
-      paragraphs: paragraphsEditor.getParagraphs(),
-      technologies: technologySelector.getSelectedNames()
-    });
+      if (!root.isConnected) return;
+      openProjectPreview({
+        ...titleFieldsForSave(record, trimmedOrNull(fields.title.value)),
+        id: state.id,
+        ...coverValues(),
+        coverUrl,
+        coverAlt: trimmed(fields.coverAlt.value),
+        documentation,
+        caseStudy: studyValues(),
+        title: trimmed(fields.title.value),
+        slug: trimmed(fields.slug.value),
+        cardCategory: trimmed(fields.cardCategory.value),
+        shortDescription: trimmed(fields.shortDescription.value),
+        detailIntro: trimmed(fields.detailIntro.value),
+        role: trimmed(fields.role.value),
+        projectDate: projectDate(),
+        projectType: trimmed(fields.projectType.value),
+        aboutHeading: trimmed(fields.aboutHeading.value),
+        githubUrl: trimmed(fields.githubUrl.value),
+        demoUrl: trimmed(fields.demoUrl.value),
+        featured: featured.value,
+        status: state.status,
+        paragraphs: paragraphsEditor.getParagraphs(),
+        technologies: technologySelector.getSelectedTechnologies()
+      });
+    } catch {
+      toast("Pratinjau belum dapat dimuat. Perubahan pada formulir tetap utuh.","error");
+    } finally {
+      preparingPreview = false;
+      previewButton.disabled = busy;
+      previewButton.textContent = "Pratinjau Lengkap";
+    }
   });
 
   return {
@@ -1770,8 +1795,12 @@ export function createProjectEditor({
     isDirty: computeDirty,
     getId: () => state.id,
     destroy() {
+      destroyed = true;
+      categoryManager?.close();
+      categoryManager = null;
       coverField.destroy();
       documentationManager.destroy();
+      caseStudyEditor.destroy();
       clear(root);
     }
   };

@@ -1,0 +1,5 @@
+# These legacy files already store CRLF in HEAD. Recognize the line terminator
+# without converting content; continue checking real trailing spaces and tabs.
+css/style.css whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+js/experience-stack.js whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+js/script.js whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

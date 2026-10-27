@@ -1,4 +1,5 @@
 import { COVER_COLUMNS, normalizeCover, missingCoverSchema } from "../../../../js/cms/project-cover.js";
+import { requireCmsUpgrade } from "../../../../js/cms/backend-compatibility.js";
 
 /*
   Projects list (Phase 8A).
@@ -23,6 +24,7 @@ import { COVER_COLUMNS, normalizeCover, missingCoverSchema } from "../../../../j
 */
 
 import { supabaseClient } from "../../core/supabase.js";
+import { openFloatingRowMenu } from "../../core/floating-row-menu.js";
 
 import {
   el,
@@ -36,7 +38,7 @@ import {
 import { confirmDialog, openModal } from "../../core/modal.js";
 import { toast } from "../../core/toast.js";
 import { textField, trimmed } from "../../core/form.js";
-import { t } from "../../core/i18n.js";
+import { tIndonesian as t } from "../../core/i18n.js";
 
 /* Resolved at call time so a language switch mid-list relabels everything. */
 function rowTitle(row) {
@@ -48,9 +50,10 @@ import { openProjectPreview } from "./preview.js";
 // The cover columns are part of this list because Preview needs them to show
 // the image and Delete Permanently needs them to find the objects to remove.
 const SELECT_COLUMNS =
-  "id, slug, title, card_category, short_description, detail_title_main, detail_title_highlight, detail_intro, role, project_date, project_type, about_heading, cover_bucket, cover_desktop_path, cover_mobile_path, cover_alt, github_url, demo_url, featured, sort_order, status, published_at, archived_at, deleted_at, created_at, updated_at";
+  "id, slug, title, card_category, short_description, detail_title_main, detail_title_highlight, detail_intro, role, project_date, project_type, about_heading, cover_bucket, cover_desktop_path, cover_mobile_path, cover_alt, github_url, demo_url, featured, sort_order, status, published_at, archived_at, deleted_at, created_at, updated_at, case_study";
 
 export function createProjectList({ onEdit, onChanged }) {
+  requireCmsUpgrade();
   const root = el("div", "experience-list-view project-list-view");
 
   const state = {
@@ -71,27 +74,6 @@ export function createProjectList({ onEdit, onChanged }) {
       closeOpenMenu = null;
     }
   }
-
-  function handlePointerDown(event) {
-    if (!closeOpenMenu) {
-      return;
-    }
-
-    const menu = root.querySelector(".row-actions.is-open");
-
-    if (menu && !menu.contains(event.target)) {
-      closeMenu();
-    }
-  }
-
-  function handleKeydown(event) {
-    if (event.key === "Escape" && closeOpenMenu) {
-      closeMenu();
-    }
-  }
-
-  document.addEventListener("pointerdown", handlePointerDown);
-  document.addEventListener("keydown", handleKeydown);
 
   /* ---------------- toolbar ---------------- */
 
@@ -167,7 +149,7 @@ export function createProjectList({ onEdit, onChanged }) {
 
       supabaseClient
         .from("project_technologies")
-        .select("project_id, technology_id, sort_order, technologies(name)")
+        .select("project_id, technology_id, sort_order, technologies(name,icon_key)")
         .order("sort_order", { ascending: true }),
 
       supabaseClient
@@ -198,7 +180,7 @@ export function createProjectList({ onEdit, onChanged }) {
     state.technologiesByProject = new Map();
     (relations.data || []).forEach(row => {
       const list = state.technologiesByProject.get(row.project_id) || [];
-      list.push(row.technologies ? row.technologies.name : "");
+      if (row.technologies) list.push(row.technologies);
       state.technologiesByProject.set(row.project_id, list);
     });
 
@@ -457,100 +439,28 @@ export function createProjectList({ onEdit, onChanged }) {
 
   function buildActionsMenu(row) {
     const wrap = el("div", "row-actions");
-
-    const trigger = el("button", "icon-button", "⋯");
+    const trigger = el("button", "icon-button", "\u22ef");
     trigger.type = "button";
-    trigger.setAttribute("aria-haspopup", "true");
+    trigger.setAttribute("aria-haspopup", "menu");
     trigger.setAttribute("aria-expanded", "false");
-    trigger.setAttribute(
-      "aria-label",
-      t("proj.actionsFor", { title: rowTitle(row) })
-    );
-
-    trigger.addEventListener("click", () => {
-      const isOpen = wrap.classList.contains("is-open");
+    trigger.setAttribute("aria-label", t("proj.actionsFor", { title: rowTitle(row) }));
+    function open(last = false) {
       closeMenu();
-
-      if (!isOpen) {
-        openMenu();
+      closeOpenMenu = openFloatingRowMenu({trigger,last,
+        entries:isTrashView() ? trashEntries(row) : normalEntries(row),
+        onClose:() => { closeOpenMenu = null; }
+      });
+    }
+    trigger.addEventListener("click", () => {
+      if (trigger.getAttribute("aria-expanded") === "true") closeMenu();
+      else open();
+    });
+    trigger.addEventListener("keydown",event => {
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault(); open(event.key === "ArrowUp");
       }
     });
-
-    append(wrap, trigger);
-
-    function openMenu() {
-      const menu = el("div", "row-menu");
-      menu.setAttribute("role", "menu");
-
-      const entries = isTrashView() ? trashEntries(row) : normalEntries(row);
-      const buttons = [];
-
-      entries.forEach(entry => {
-        const button = el("button", "row-menu-item", entry.label);
-        button.type = "button";
-        button.setAttribute("role", "menuitem");
-
-        if (entry.danger) {
-          button.classList.add("is-danger");
-        }
-
-        if (entry.disabled) {
-          button.disabled = true;
-
-          if (entry.hint) {
-            button.title = entry.hint;
-          }
-        } else {
-          button.addEventListener("click", () => {
-            closeMenu();
-            entry.onSelect();
-          });
-        }
-
-        buttons.push(button);
-        append(menu, button);
-      });
-
-      menu.addEventListener("keydown", event => {
-        if (event.key !== "ArrowDown" && event.key !== "ArrowUp") {
-          return;
-        }
-
-        event.preventDefault();
-
-        const enabled = buttons.filter(button => !button.disabled);
-
-        if (enabled.length === 0) {
-          return;
-        }
-
-        const current = enabled.indexOf(document.activeElement);
-        const step = event.key === "ArrowDown" ? 1 : -1;
-        enabled[(current + step + enabled.length) % enabled.length].focus();
-      });
-
-      append(wrap, menu);
-      wrap.classList.add("is-open");
-      trigger.setAttribute("aria-expanded", "true");
-
-      const first = buttons.find(button => !button.disabled);
-
-      if (first) {
-        first.focus();
-      }
-
-      closeOpenMenu = () => {
-        const focusWasInMenu = menu.contains(document.activeElement);
-        menu.remove();
-        wrap.classList.remove("is-open");
-        trigger.setAttribute("aria-expanded", "false");
-
-        if (focusWasInMenu && document.contains(trigger)) {
-          trigger.focus();
-        }
-      };
-    }
-
+    append(wrap,trigger);
     return wrap;
   }
 
@@ -619,25 +529,24 @@ export function createProjectList({ onEdit, onChanged }) {
 
     const documentation = await Promise.all(
       (state.mediaByProject.get(row.id) || []).map(async media => ({
+        id: media.id,
         altText: media.alt_text || "",
         isActive: media.is_active !== false,
-        pending: false,
         url: await resolveMediaUrl(media.bucket_name, media.desktop_path)
       }))
     );
 
     openProjectPreview({
+      id: row.id,
       ...normalizeCover(row),
       coverUrl,
       coverAlt: row.cover_alt,
-      coverPending: false,
       documentation,
+      caseStudy: row.case_study,
       title: row.title,
       slug: row.slug,
       cardCategory: row.card_category,
       shortDescription: row.short_description,
-      detailTitleMain: row.detail_title_main,
-      detailTitleHighlight: row.detail_title_highlight,
       detailIntro: row.detail_intro,
       role: row.role,
       projectDate: row.project_date,
@@ -698,12 +607,6 @@ export function createProjectList({ onEdit, onChanged }) {
     if (!row.detail_intro) missing.push(t("projEditor.fieldIntro"));
     if (!row.role) missing.push(t("common.role"));
     if (!row.project_date) missing.push(t("projEditor.fieldDate"));
-    if (!row.project_type) missing.push(t("projEditor.fieldType"));
-    if (!row.about_heading) missing.push(t("projEditor.fieldAbout"));
-
-    if ((state.paragraphsByProject.get(row.id) || []).length === 0) {
-      missing.push(t("proj.missingParagraph"));
-    }
 
     return missing;
   }
@@ -1046,8 +949,6 @@ export function createProjectList({ onEdit, onChanged }) {
     element: root,
     load,
     destroy() {
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeydown);
       closeMenu();
     }
   };

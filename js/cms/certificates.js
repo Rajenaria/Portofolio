@@ -29,6 +29,7 @@ import {
     filled,
     IS_LOCAL_CMS
 } from "./client.js";
+import { CMS_UPGRADE_READY } from "./backend-compatibility.js";
 
 
 /* ---------------------------------------------------------
@@ -99,7 +100,11 @@ function warn(message, error) {
 
 function certificateLink(row) {
 
-    const document = publicDocumentUrl(row.document_bucket, row.document_path, row.id);
+    // Do not advertise an unverified document endpoint or bypass it with raw
+    // Storage URLs. Existing safe issuer links remain available.
+    const document = CMS_UPGRADE_READY
+        ? publicDocumentUrl(row.document_bucket, row.document_path, row.id)
+        : null;
 
     if (document) {
         return document;
@@ -127,6 +132,8 @@ function toCard(row) {
 
     return {
         id: row.id,
+        categoryLabel: ({education:"Education / Degree",course:"Course / Training",professional:"Professional Certification",language:"Language",copyright:"Copyright / Intellectual Property",competition:"Competition",award:"Award / Achievement",research:"Research / Publication",organization:"Organization / Leadership",internship:"Internship / Work",cybersecurity:"Cybersecurity",networking:"Networking",programming:"Programming / Development",other:"Other"})[row.category] || "Certificate",
+        credentialId: filled(row.credential_id) ? row.credential_id.trim() : "",
         icon: iconFor(row.category),
         year: filled(row.period) ? row.period.trim() : "",
         title: row.title.trim(),
@@ -155,6 +162,7 @@ async function load() {
         "select=id,title,publisher,period,category,issuer_line,badge_text," +
         "description,document_bucket,document_path,document_type,external_url," +
         "status,deleted_at,sort_order,created_at" +
+        (CMS_UPGRADE_READY ? ",credential_id" : "") +
         "&status=eq.published&deleted_at=is.null" +
         "&order=sort_order.asc,created_at.asc"
     );
@@ -204,6 +212,6 @@ async function load() {
 load()
     .catch(error => {
         warn("certificates unavailable", error);
-        window.certificatesCarousel?.rebuild([], "Sertifikat belum dapat dimuat. Silakan coba lagi nanti.");
+        window.certificatesCarousel?.rebuild([], "Certificates could not be loaded. Please try again later.");
     })
     .finally(() => window.portfolioReady?.mark("certificates"));

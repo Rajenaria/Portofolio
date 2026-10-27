@@ -36,7 +36,7 @@
   builder (for the Admin). No CSP change is required for either.
 */
 
-import { t } from "../../core/i18n.js";
+import { tIndonesian as t } from "../../core/i18n.js";
 
 /*
   The `label` on each entry is the English fallback that ships with the table.

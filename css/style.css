@@ -116,6 +116,14 @@ section {
    INNER
 ========================================= */
 
+/* The navbar's animated size/dropdown must not alter page scroll geometry. */
+.portfolio-home #mainNav {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    margin: 0;
+}
+
 .portfolio-nav-inner {
     width: 100%;
 
@@ -411,6 +419,67 @@ nav {
     overflow: hidden;
 
     background-color: #ffffff;
+}
+
+/* Homepage Hero -> About: a solid surface carried by native document scroll. */
+.portfolio-home #mainContent {
+    --hero-about-overlap: 72px;
+    --hero-about-radius: 28px;
+    --hero-about-scroll-gap: 24px;
+}
+
+.portfolio-home #home + #about {
+    margin-top: calc(-1 * var(--hero-about-overlap));
+    z-index: 2;
+    border-radius: var(--hero-about-radius) var(--hero-about-radius) 0 0;
+    box-shadow: 0 -12px 28px -24px rgba(29, 29, 31, 0.16);
+    scroll-margin-top: 96px;
+}
+
+/* Keep the existing indicator above the incoming surface, including mobile. */
+.portfolio-home #home > .simple-hero-scroll {
+    bottom: calc(var(--hero-about-overlap) + var(--hero-about-scroll-gap));
+}
+
+/* These classes are added by the existing reveal observer, never by HTML.
+   About content therefore stays visible if JavaScript is unavailable. */
+.portfolio-home #about .about-slide-one .reveal {
+    transform: translateY(16px);
+    transition-duration: 600ms;
+}
+.portfolio-home #about .about-slide-one .reveal.reveal-active {
+    transform: none;
+}
+.portfolio-home #about .simple-about-content > h2.reveal { transition-delay: 60ms; }
+.portfolio-home #about .simple-about-lead.reveal { transition-delay: 140ms; }
+.portfolio-home #about .simple-about-description.reveal { transition-delay: 220ms; }
+.portfolio-home #about .simple-about-interest.reveal { transition-delay: 300ms; }
+
+@media (max-width: 1050px) {
+    .portfolio-home #mainContent {
+        --hero-about-overlap: 56px;
+        --hero-about-radius: 24px;
+        --hero-about-scroll-gap: 16px;
+    }
+}
+@media (max-width: 650px) {
+    .portfolio-home #mainContent {
+        --hero-about-overlap: 32px;
+        --hero-about-radius: 18px;
+    }
+}
+@media (max-height: 700px) {
+    .portfolio-home #mainContent {
+        --hero-about-overlap: 24px;
+        --hero-about-radius: 16px;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .portfolio-home #about .about-slide-one .reveal {
+        opacity: 1;
+        transform: none;
+        transition: none;
+    }
 }
 
 
@@ -768,10 +837,14 @@ nav {
 ========================================= */
 
 .about-organization-layout {
-    grid-template-columns:
-        50% 50%;
+    --org-label-height: 1.5rem;
+    --org-label-gap: 18px;
 
-    gap: 75px;
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    align-items: start;
+    gap: clamp(24px, 4vw, 48px);
 }
 
 
@@ -781,11 +854,38 @@ nav {
 
 .about-org-visual {
     position: relative;
+    width: 100%;
+    min-width: 0;
+    justify-self: center;
+}
+
+
+.about-org-content {
+    min-width: 0;
+    overflow-wrap: break-word;
+}
+
+
+.about-org-number,
+.about-org-content > .about-section-label {
+    min-height: var(--org-label-height);
+    margin-bottom: var(--org-label-gap);
+}
+
+
+@media (min-width: 1025px) {
+    .about-org-content {
+        /* Reserve the same label row occupied by 02 above the photo. */
+        padding-block-start: calc(var(--org-label-height) + var(--org-label-gap));
+    }
+
+    .about-org-content > .about-section-label {
+        align-items: flex-start;
+    }
 }
 
 
 .about-org-number {
-    margin-bottom: 15px;
 
     font-size: 11px;
     font-weight: 700;
@@ -822,13 +922,15 @@ nav {
 
 
 .about-org-photo {
-    min-width: 100%;
+    flex: 0 0 100%;
+    min-width: 0;
 }
 
 
 .about-org-photo img {
     width: 100%;
-    height: 500px;
+    height: auto;
+    aspect-ratio: 4 / 3;
 
     display: block;
 
@@ -1614,18 +1716,15 @@ nav {
     }
 
 
-    .about-profile-content,
-    .about-org-content {
+    .about-profile-content {
         max-width: 760px;
 
         margin: 0 auto;
     }
 
 
-    .about-org-gallery {
-        max-width: 650px;
-
-        margin: 0 auto;
+    .about-organization-layout {
+        gap: 32px;
     }
 
 
@@ -1694,11 +1793,6 @@ nav {
 
     .about-description {
         font-size: 14px;
-    }
-
-
-    .about-org-photo img {
-        height: 360px;
     }
 
 
@@ -5238,43 +5332,7 @@ nav.nav-scrolled {
 }
 
 
-/* Aturan .simple-hero-photo img dihapus (dulu di sini).
-
-   .simple-hero-photo hanya berisi hero photo stack, jadi selector
-   itu tidak pernah kena gambar lain — hanya <img> di dalam
-   .hero-photo-card. Isinya (object-fit: contain, max-height:
-   640px) bertentangan dengan cara kartu mengisi gambarnya, dan
-   max-height-nya tidak pernah ditimpa aturan kartu.
-
-   Semua styling gambar hero sekarang milik satu blok:
-   ".hero-photo-stack .hero-photo-card picture, ... img" di bawah. */
-
-
-.simple-hero-photo:hover {
-    transform: translateY(-7px);
-}
-
-
-/* =========================================
-   HERO PHOTO STACK (interactive feature)
-========================================= */
-
-.hero-photo-stage {
-    width: 100%;
-    height: 100%;
-
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-}
-
-.hero-photo-stack {
-    width: 100%;
-    aspect-ratio: 3 / 4;
-    max-height: 640px;
-
-    position: relative;
-}
+/* Shared base for the single Lanyard photo; its layout is in hero-lanyard.css. */
 
 .hero-photo-card {
     position: absolute;
@@ -5301,388 +5359,13 @@ nav.nav-scrolled {
         box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* ---- ISI KARTU: <picture> + <img> ----
-
-   Kartu adalah <button>. Anak sebuah <button> dibungkus kotak
-   anonim oleh browser, dan WebKit tidak selalu meregangkan kotak
-   itu setinggi tombolnya — di situ height:100% bisa jatuh ke
-   auto, gambar memakai tinggi aslinya, lalu latar kartu (#f5f5f7)
-   terlihat sebagai pita putih. Karena itu picture DAN img
-   dikeluarkan dari alur normal: keduanya position:absolute
-   inset:0, sehingga kotak pembatasnya adalah KARTU itu sendiri
-   (satu-satunya leluhur ber-position di rantai ini), bukan kotak
-   anonim tombol. Perilakunya jadi sama di semua mesin render.
-
-   max-width/max-height sengaja di-none-kan: aturan lama
-   .simple-hero-photo img pernah memasang batas 340px/420px/430px
-   yang tidak pernah ditimpa aturan ini, dan itulah penyebab asli
-   pita putih di HP lebar dan di tablet. Aturan-aturan tersebut
-   sudah dihapus, reset ini menahan kalau ada yang kembali.
-
-   Selector menyebut .hero-photo-stack supaya spesifisitasnya
-   (0,2,1) selalu di atas .simple-hero-photo img / picture
-   (0,1,1) — menang karena spesifisitas, bukan karena urutan. */
-
-.hero-photo-stack .hero-photo-card picture,
-.hero-photo-stack .hero-photo-card img {
-    position: absolute;
-    inset: 0;
-
-    width: 100%;
-    height: 100%;
-
-    max-width: none;
-    max-height: none;
-
-    display: block;
-}
-
-.hero-photo-stack .hero-photo-card img {
-    object-fit: cover;
-    object-position: center top;
-
-    user-select: none;
-    -webkit-user-drag: none;
-}
-
-.hero-photo-card-placeholder {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    background: repeating-linear-gradient(
-        135deg,
-        #f5f5f7,
-        #f5f5f7 10px,
-        #e8e8ed 10px,
-        #e8e8ed 20px
-    );
-}
-
-.hero-photo-card-placeholder span {
-    font-size: 28px;
-    font-weight: 700;
-
-    color: #86868b;
-}
-
-/* IDLE / COLLAPSED positions, keyed by stack order (0 = front) */
-
-.hero-photo-card[data-position="0"] {
-    transform: translate(0, 0) rotate(0deg) scale(1);
-    z-index: 3;
-}
-
-.hero-photo-card[data-position="1"] {
-    transform: translate(-32px, 16px) rotate(-7deg) scale(0.94);
-    z-index: 2;
-}
-
-.hero-photo-card[data-position="2"] {
-    transform: translate(32px, 16px) rotate(7deg) scale(0.92);
-    z-index: 1;
-}
-
-/* SPREAD state */
-
-.hero-photo-stack.is-spread .hero-photo-card[data-position="0"] {
-    transform: translate(0, 0) rotate(0deg) scale(1.02);
-}
-
-.hero-photo-stack.is-spread .hero-photo-card[data-position="1"] {
-    transform: translate(-34%, 4%) rotate(-6deg) scale(0.95);
-}
-
-.hero-photo-stack.is-spread .hero-photo-card[data-position="2"] {
-    transform: translate(34%, 4%) rotate(6deg) scale(0.95);
-}
-
-.hero-photo-stack.is-spread .hero-photo-card {
-    box-shadow:
-        0 18px 34px rgba(29, 29, 31, 0.14),
-        0 4px 10px rgba(29, 29, 31, 0.08);
-}
-
-/* Individual hover/focus lift while spread.
-   No rotation/translate change on hover, only scale — keeps rapid
-   cursor movement between cards from fighting multiple animated
-   axes at once, and stays on the same transition timing as the
-   base card rule so nothing feels out of sync. */
-
-.hero-photo-stack.is-spread .hero-photo-card:hover,
-.hero-photo-stack.is-spread .hero-photo-card:focus-visible {
+.hero-photo-card:focus-visible {
     z-index: 4;
     box-shadow:
         0 22px 40px rgba(29, 29, 31, 0.18),
         0 6px 14px rgba(29, 29, 31, 0.1);
 }
 
-.hero-photo-stack.is-spread .hero-photo-card[data-position="0"]:hover,
-.hero-photo-stack.is-spread .hero-photo-card[data-position="0"]:focus-visible {
-    transform: translate(0, 0) rotate(0deg) scale(1.06);
-}
-
-.hero-photo-stack.is-spread .hero-photo-card[data-position="1"]:hover,
-.hero-photo-stack.is-spread .hero-photo-card[data-position="1"]:focus-visible {
-    transform: translate(-34%, 4%) rotate(-6deg) scale(1);
-}
-
-.hero-photo-stack.is-spread .hero-photo-card[data-position="2"]:hover,
-.hero-photo-stack.is-spread .hero-photo-card[data-position="2"]:focus-visible {
-    transform: translate(34%, 4%) rotate(6deg) scale(1);
-}
-
-.hero-photo-card:focus-visible {
-    outline: 2px solid #0071e3;
-    outline-offset: 3px;
-}
-
-/* SELECTING (short premium flourish before settling as front card) */
-
-.hero-photo-card.is-selecting {
-    transition:
-        transform 0.6s cubic-bezier(0.22, 1.06, 0.36, 1),
-        box-shadow 0.6s cubic-bezier(0.22, 1.06, 0.36, 1);
-    z-index: 5;
-}
-
-/* Tablet / mobile: tighter, compact spread to avoid overflow */
-
-@media (max-width: 900px) {
-
-    .hero-photo-stack.is-spread .hero-photo-card[data-position="1"],
-    .hero-photo-stack.is-spread .hero-photo-card[data-position="1"]:hover,
-    .hero-photo-stack.is-spread .hero-photo-card[data-position="1"]:focus-visible {
-        transform: translate(-22%, 4%) rotate(-5deg) scale(0.95);
-    }
-
-    .hero-photo-stack.is-spread .hero-photo-card[data-position="2"],
-    .hero-photo-stack.is-spread .hero-photo-card[data-position="2"]:hover,
-    .hero-photo-stack.is-spread .hero-photo-card[data-position="2"]:focus-visible {
-        transform: translate(22%, 4%) rotate(5deg) scale(0.95);
-    }
-
-}
-
-@media (max-width: 650px) {
-
-    .hero-photo-stack {
-        aspect-ratio: 3 / 4;
-        max-height: 420px;
-    }
-
-    .hero-photo-stack.is-spread .hero-photo-card[data-position="1"],
-    .hero-photo-stack.is-spread .hero-photo-card[data-position="1"]:hover,
-    .hero-photo-stack.is-spread .hero-photo-card[data-position="1"]:focus-visible {
-        transform: translate(-13%, 3%) rotate(-4deg) scale(0.95);
-    }
-
-    .hero-photo-stack.is-spread .hero-photo-card[data-position="2"],
-    .hero-photo-stack.is-spread .hero-photo-card[data-position="2"]:hover,
-    .hero-photo-stack.is-spread .hero-photo-card[data-position="2"]:focus-visible {
-        transform: translate(13%, 3%) rotate(4deg) scale(0.95);
-    }
-
-}
-
-@media (prefers-reduced-motion: reduce) {
-
-    .hero-photo-card,
-    .hero-photo-card.is-selecting {
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .hero-photo-card[data-position="1"],
-    .hero-photo-stack.is-spread .hero-photo-card[data-position="1"] {
-        transform: translate(-16px, 0) rotate(0deg) scale(0.96);
-    }
-
-    .hero-photo-card[data-position="2"],
-    .hero-photo-stack.is-spread .hero-photo-card[data-position="2"] {
-        transform: translate(16px, 0) rotate(0deg) scale(0.94);
-    }
-
-}
-
-
-/* =========================================
-   HERO PHOTO STACK — JUMLAH KARTU ADAPTIF
-
-   Foto 2 dan 3 bisa disembunyikan dari Admin. Kalau disembunyikan,
-   kartunya benar-benar dihapus dari DOM (bukan disembunyikan pakai
-   CSS), jadi stack bisa berisi 1, 2, atau 3 kartu.
-
-   js/hero-photo-stack.js menulis data-count dari JUMLAH KARTU YANG
-   BENAR-BENAR ADA di DOM, bukan dari data CMS, sehingga geometri di
-   bawah ini tidak mungkin berbeda dengan isi stack-nya.
-
-   Semua aturan di atas adalah kasus TIGA KARTU dan sengaja tidak
-   diubah sedikit pun — tampilan itu sudah disetujui. Blok ini hanya
-   MENAMBAH kasus 2 dan 1 kartu, dengan spesifisitas yang lebih
-   tinggi ([data-count] menambah satu attribute selector), jadi
-   menang tanpa bergantung urutan file.
-========================================= */
-
-
-/* -----------------------------------------
-   DUA KARTU
-
-   Geometri tiga kartu tidak bisa dipakai apa adanya: posisi 1 di
-   sana digeser ke KIRI dengan asumsi ada kartu ketiga yang
-   mengimbangi di kanan. Dengan dua kartu, asumsi itu hilang dan
-   komposisinya jadi berat sebelah.
-
-   Diam: kartu belakang duduk di tengah, sedikit turun dan diputar
-   kecil — sudutnya mengintip di KEDUA sisi, jadi terbaca sebagai
-   tumpukan yang seimbang, bukan satu kartu yang melenceng.
-
-   Terbuka: keduanya bergerak menjauh sama besar dari sumbu tengah,
-   sehingga titik berat komposisinya tetap di tengah panggung.
------------------------------------------ */
-
-.hero-photo-stack[data-count="2"] .hero-photo-card[data-position="1"] {
-    transform: translate(0, 18px) rotate(-4deg) scale(0.94);
-    z-index: 2;
-}
-
-.hero-photo-stack[data-count="2"].is-spread
-.hero-photo-card[data-position="0"] {
-    transform: translate(-19%, 0) rotate(-4deg) scale(1);
-}
-
-.hero-photo-stack[data-count="2"].is-spread
-.hero-photo-card[data-position="1"] {
-    transform: translate(19%, 2%) rotate(4deg) scale(0.97);
-}
-
-.hero-photo-stack[data-count="2"].is-spread
-.hero-photo-card[data-position="0"]:hover,
-.hero-photo-stack[data-count="2"].is-spread
-.hero-photo-card[data-position="0"]:focus-visible {
-    transform: translate(-19%, 0) rotate(-4deg) scale(1.04);
-}
-
-.hero-photo-stack[data-count="2"].is-spread
-.hero-photo-card[data-position="1"]:hover,
-.hero-photo-stack[data-count="2"].is-spread
-.hero-photo-card[data-position="1"]:focus-visible {
-    transform: translate(19%, 2%) rotate(4deg) scale(1.01);
-}
-
-
-/* -----------------------------------------
-   SATU KARTU
-
-   Bukan tumpukan, jadi jangan berpura-pura jadi tumpukan: tidak ada
-   offset, tidak ada rotasi, tidak ada spread. Kartunya juga sudah
-   di-disable di JS sehingga keluar dari tab order — di sini tinggal
-   menghapus isyarat visual bahwa ia bisa diklik.
------------------------------------------ */
-
-.hero-photo-stack[data-count="1"] .hero-photo-card,
-.hero-photo-stack[data-count="1"].is-spread .hero-photo-card,
-.hero-photo-stack[data-count="1"] .hero-photo-card:hover,
-.hero-photo-stack[data-count="1"] .hero-photo-card[data-position="0"] {
-    transform: none;
-    cursor: default;
-}
-
-/* Bayangannya tetap ada supaya kartunya tidak terlihat "datar",
-   tapi tidak ikut menguat seperti saat stack terbuka. */
-.hero-photo-stack[data-count="1"].is-spread .hero-photo-card {
-    box-shadow:
-        0 10px 24px rgba(29, 29, 31, 0.10),
-        0 2px 6px rgba(29, 29, 31, 0.06);
-}
-
-
-/* -----------------------------------------
-   TABLET / MOBILE — DUA KARTU
-
-   Sejalan dengan kasus tiga kartu: makin sempit layarnya, makin
-   rapat rentangnya supaya kartu tidak menyentuh tepi panggung.
------------------------------------------ */
-
-@media (max-width: 900px) {
-
-    .hero-photo-stack[data-count="2"].is-spread
-    .hero-photo-card[data-position="0"],
-    .hero-photo-stack[data-count="2"].is-spread
-    .hero-photo-card[data-position="0"]:hover,
-    .hero-photo-stack[data-count="2"].is-spread
-    .hero-photo-card[data-position="0"]:focus-visible {
-        transform: translate(-14%, 0) rotate(-3deg) scale(1);
-    }
-
-    .hero-photo-stack[data-count="2"].is-spread
-    .hero-photo-card[data-position="1"],
-    .hero-photo-stack[data-count="2"].is-spread
-    .hero-photo-card[data-position="1"]:hover,
-    .hero-photo-stack[data-count="2"].is-spread
-    .hero-photo-card[data-position="1"]:focus-visible {
-        transform: translate(14%, 2%) rotate(3deg) scale(0.97);
-    }
-
-}
-
-
-@media (max-width: 650px) {
-
-    .hero-photo-stack[data-count="2"] .hero-photo-card[data-position="1"] {
-        transform: translate(0, 13px) rotate(-3deg) scale(0.95);
-    }
-
-    .hero-photo-stack[data-count="2"].is-spread
-    .hero-photo-card[data-position="0"],
-    .hero-photo-stack[data-count="2"].is-spread
-    .hero-photo-card[data-position="0"]:hover,
-    .hero-photo-stack[data-count="2"].is-spread
-    .hero-photo-card[data-position="0"]:focus-visible {
-        transform: translate(-9%, 0) rotate(-3deg) scale(1);
-    }
-
-    .hero-photo-stack[data-count="2"].is-spread
-    .hero-photo-card[data-position="1"],
-    .hero-photo-stack[data-count="2"].is-spread
-    .hero-photo-card[data-position="1"]:hover,
-    .hero-photo-stack[data-count="2"].is-spread
-    .hero-photo-card[data-position="1"]:focus-visible {
-        transform: translate(9%, 2%) rotate(3deg) scale(0.96);
-    }
-
-}
-
-
-/* -----------------------------------------
-   GERAK MINIMAL
-
-   Aturan reduced-motion di atas menyebut [data-position] saja, jadi
-   spesifisitasnya kalah dari blok dua-kartu ini. Kasus 2 kartu
-   diulang di sini supaya preferensi pengguna tetap yang menang.
------------------------------------------ */
-
-@media (prefers-reduced-motion: reduce) {
-
-    .hero-photo-stack[data-count="2"] .hero-photo-card[data-position="1"],
-    .hero-photo-stack[data-count="2"].is-spread
-    .hero-photo-card[data-position="1"],
-    .hero-photo-stack[data-count="2"].is-spread
-    .hero-photo-card[data-position="1"]:hover,
-    .hero-photo-stack[data-count="2"].is-spread
-    .hero-photo-card[data-position="1"]:focus-visible {
-        transform: translate(0, 10px) rotate(0deg) scale(0.96);
-    }
-
-    .hero-photo-stack[data-count="2"].is-spread
-    .hero-photo-card[data-position="0"],
-    .hero-photo-stack[data-count="2"].is-spread
-    .hero-photo-card[data-position="0"]:hover,
-    .hero-photo-stack[data-count="2"].is-spread
-    .hero-photo-card[data-position="0"]:focus-visible {
-        transform: none;
-    }
-
-}
 
 
 /* =========================================
@@ -9129,7 +8812,7 @@ a.footer-contact-item:hover {
    yang lama di bawah file CSS kamu, lalu tempel yang ini
    di posisi PALING BAWAH.
 
-   Desktop (>1024px) dan mobile (<768px) tidak tersentuh.
+   Container tetap khusus tablet; aturan navbar mencakup 651?1024px.
    ========================================================== */
 
 @media (min-width: 768px) and (max-width: 1024px) {
@@ -9142,6 +8825,11 @@ a.footer-contact-item:hover {
         --page-width: 88%;
     }
 
+
+}
+
+/* Navbar links collapse below 1025px; keep the toggle available down to mobile. */
+@media (min-width: 651px) and (max-width: 1024px) {
 
     /* ======================================================
        NAVBAR
@@ -9158,7 +8846,7 @@ a.footer-contact-item:hover {
 }
 
 
-@media (min-width: 768px) and (max-width: 1024px) {
+@media (min-width: 651px) and (max-width: 1024px) {
 
     .portfolio-nav-links,
     .portfolio-nav-contact {
@@ -9214,7 +8902,7 @@ a.footer-contact-item:hover {
    icon that does nothing when tapped.
 ====================================================== */
 
-@media (min-width: 768px) and (max-width: 1024px) {
+@media (min-width: 651px) and (max-width: 1024px) {
 
     .portfolio-nav.is-mobile-open .mobile-nav-toggle span:nth-child(1) {
         transform: translateY(5.5px) rotate(45deg);
@@ -9228,7 +8916,7 @@ a.footer-contact-item:hover {
         transform: translateY(-5.5px) rotate(-45deg);
     }
 
-    .mobile-nav-menu {
+    .portfolio-nav .mobile-nav-menu {
         width: 100%;
         max-height: 0;
         padding: 0 16px;
@@ -9512,21 +9200,14 @@ a.footer-contact-item:hover {
         gap: 42px;
     }
 
-    .about-profile-content,
-    .about-org-content {
+    .about-profile-content {
         max-width: 720px;
 
         margin: 0 auto;
     }
 
-    .about-org-gallery {
-        max-width: 620px;
-
-        margin: 0 auto;
-    }
-
-    .about-org-photo img {
-        height: 400px;
+    .about-organization-layout {
+        gap: 32px;
     }
 
     .about-org-controls {
@@ -9570,6 +9251,19 @@ a.footer-contact-item:hover {
     }
 
 }
+/* Short landscape viewports must retain the toggle and all dropdown links. */
+@media (max-width: 1024px) {
+    .portfolio-home .portfolio-nav.is-mobile-open {
+        border-radius: 18px;
+    }
+    .portfolio-home .portfolio-nav.is-mobile-open .mobile-nav-menu {
+        max-height: min(420px, calc(100vh - 96px));
+        max-height: min(420px, calc(100dvh - 96px));
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+}
+
 /* =========================================
    MOBILE NAV MENU
 ========================================= */
@@ -9931,7 +9625,7 @@ a.footer-contact-item:hover {
    contents di dalam <button> termasuk sudut yang penanganannya
    berbeda-beda antar mesin render. Di sana picture dijadikan
    kotak absolut yang mengisi kartu — lihat
-   ".hero-photo-stack .hero-photo-card picture" di blok HERO PHOTO
+   "#home .hero-lanyard-front picture" di hero-lanyard.css
    STACK. Spesifisitasnya (0,2,1) lebih tinggi dari aturan di
    atas (0,1,1), jadi override-nya tidak bergantung urutan. */
 /* =========================================================

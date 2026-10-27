@@ -26,7 +26,7 @@ import {
 } from "../../core/document-processor.js";
 import { hasDocument, openDocument } from "../../core/document-storage.js";
 import { formatBytes } from "../../core/image-processor.js";
-import { t } from "../../core/i18n.js";
+import { tIndonesian as t } from "../../core/i18n.js";
 
 const TYPE_LABELS = {
   pdf: "certDoc.typePdf",

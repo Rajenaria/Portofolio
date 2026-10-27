@@ -24,17 +24,18 @@
 */
 
 import { supabaseClient } from "../../core/supabase.js";
+import { CMS_UPGRADE_READY, CMS_UPGRADE_NOTICE } from "../../../../js/cms/backend-compatibility.js";
 import { el, append, clear, pageHeader } from "../../core/dom.js";
 import { confirmDialog, closeAllModals } from "../../core/modal.js";
 import { toast } from "../../core/toast.js";
-import { t } from "../../core/i18n.js";
+import { tIndonesian as t } from "../../core/i18n.js";
 import { registerNavigationGuard } from "../../core/navigation-guard.js";
 
 import { createCertificateList } from "./list-view.js";
 import { createCertificateEditor } from "./editor-view.js";
 
 const SELECT_COLUMNS =
-  "id, title, publisher, period, category, issuer_line, badge_text, description, status, sort_order, published_at, archived_at, deleted_at, created_at, updated_at, document_bucket, document_path, document_type, external_url";
+  "id, title, publisher, period, category, issuer_line, badge_text, description, status, sort_order, published_at, archived_at, deleted_at, created_at, updated_at, document_bucket, document_path, document_type, external_url, credential_id";
 
 export const certificatesRoute = {
   name: "certificates",
@@ -43,6 +44,12 @@ export const certificatesRoute = {
 };
 
 async function render(container, { signal }) {
+  if (!CMS_UPGRADE_READY) {
+    const notice = el("p", "empty-state", CMS_UPGRADE_NOTICE);
+    notice.setAttribute("role", "status");
+    append(container, pageHeader({title:"Certificates",subtitle:"Pengelolaan sementara tidak tersedia"}), notice);
+    return () => {};
+  }
   const headerSlot = el("div", "route-header-slot");
   const viewSlot = el("div", "route-view-slot");
 

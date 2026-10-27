@@ -20,8 +20,8 @@
 /* ---------------------------------------------------------
    ENVIRONMENT
 
-   Opening the site locally must read the local Supabase stack;
-   anything else uses the deployed project.
+   Localhost HTTP previews use the deployed public CMS.
+   Other local contexts retain the local Supabase stack.
 --------------------------------------------------------- */
 
 const LOCAL_HOSTS = ["127.0.0.1", "localhost", "0.0.0.0", "[::1]", ""];
@@ -44,6 +44,10 @@ function resolveEnvironment() {
     */
 
     const host = window.location.hostname;
+
+    if (["localhost", "127.0.0.1", "[::1]"].includes(host)) {
+        return PRODUCTION;
+    }
 
     return LOCAL_HOSTS.includes(host) ? LOCAL : PRODUCTION;
 

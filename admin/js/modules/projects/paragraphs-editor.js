@@ -19,7 +19,7 @@
 import { el, append, clear } from "../../core/dom.js";
 import { openModal, confirmDialog } from "../../core/modal.js";
 import { textareaField, trimmed } from "../../core/form.js";
-import { t } from "../../core/i18n.js";
+import { tIndonesian as t } from "../../core/i18n.js";
 
 let localIdCounter = 0;
 
@@ -182,7 +182,7 @@ export function createParagraphsEditor({ initialParagraphs = [], onChange }) {
   function openEditor(existing) {
     const isNew = !existing;
 
-    const form = el("form", "modal-form");
+    const form = el("form", "modal-form project-editor-modal-body");
     form.noValidate = true;
 
     const content = textareaField({

@@ -1,51 +1,16 @@
-/*
-  Certificate editor (Phase C).
-
-  Full-page Add/Edit form, never a modal, matching the Experience and Projects
-  editors. Five groups, in the order the owner fills them in:
-
-      BASIC INFORMATION   title, publisher, period, category (-> icon)
-      CARD DETAILS        issuer line, badge, description
-      DOCUMENT            the certificate file, plus the issuer URL
-      VISIBILITY          where this record currently stands
-      PREVIEW             both faces of the card
-
-  The group help text still says which face each field lands on, because that
-  is what the owner is really deciding — the grouping just no longer forces
-  them to think in terms of card geometry first.
-
-  `title` appears once. The public card renders it on both faces; giving it two
-  inputs would let the two sides drift apart.
-
-  VISIBILITY IS READ-ONLY HERE
-  ----------------------------
-  Status is shown, never edited. Publishing is an explicit action in the list
-  view, where the minimum-published rule is explained and enforced; a status
-  dropdown buried in a form would let the owner trip that rule with no context.
-
-  REQUIRED FIELDS
-  --------------
-  Only Title and Category are required, and they are required to save at all,
-  not merely to publish. Everything the front and back render is optional in
-  the public markup: js/certificates.js emits the year, publisher and subtitle
-  nodes unconditionally (an empty one simply renders empty) and skips the badge
-  and description entirely when they are blank. So a certificate with just a
-  title and a category renders coherently, and marking more fields with a red
-  asterisk would be inventing a rule the card does not have.
-
-  The certificate document is uploaded here through core/document-storage.js,
-  which never deletes the previous object until the database has accepted the
-  new reference.
+/* Certificate editor: public card fields, existing document pipeline and lifecycle.
+   Historical issuer_line/description remain in the database and are omitted from
+   writes. Front/back preview uses the same category mapping and public face CSS.
 */
 
 import { supabaseClient } from "../../core/supabase.js";
+import { requireCmsUpgrade } from "../../../../js/cms/backend-compatibility.js";
 import { el, append, clear, statusBadge } from "../../core/dom.js";
 import { toast } from "../../core/toast.js";
-import { t } from "../../core/i18n.js";
+import { tIndonesian as t } from "../../core/i18n.js";
 
 import {
   textField,
-  textareaField,
   selectField,
   applyValidation,
   trimmed,
@@ -59,20 +24,20 @@ import { replaceDocument, removeDocument, hasDocument } from "../../core/documen
 
 /* Mirrors the column widths in 20260818110000_certificates_schema.sql. */
 const LIMITS = {
-  title: 180,
-  publisher: 140,
+  title: 80,
+  publisher: 64,
   period: 60,
-  issuerLine: 180,
   badgeText: 60,
-  description: 400,
   externalUrl: 500
 };
 
 const HTTP_URL = /^https?:\/\/[^\s]+$/i;
 
 export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack }) {
+  requireCmsUpgrade();
   const isNew = !record;
   const root = el("div", "certificate-editor-view");
+  root.lang = "id";
 
   const fields = {
     title: textField({
@@ -81,15 +46,15 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
       required: true,
       maxLength: LIMITS.title,
       value: record ? record.title : "",
-      help: t("certEditor.fieldTitleHelp")
+      help: "Maksimal 80 karakter. Tampil pada sisi depan dan belakang kartu."
     }),
 
     publisher: textField({
       id: "certificate-publisher",
-      label: t("certEditor.fieldPublisher"),
+      label: "Penerbit / Penyelenggara (opsional)",
       maxLength: LIMITS.publisher,
       value: record ? record.publisher : "",
-      help: t("certEditor.fieldPublisherHelp")
+      help: "Maksimal 64 karakter. Tampil bersama kategori sertifikat."
     }),
 
     period: textField({
@@ -112,29 +77,17 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
       help: t("certEditor.fieldCategoryHelp")
     }),
 
-    issuerLine: textField({
-      id: "certificate-issuer-line",
-      label: t("certEditor.fieldIssuer"),
-      maxLength: LIMITS.issuerLine,
-      value: record ? record.issuer_line : "",
-      help: t("certEditor.fieldIssuerHelp")
-    }),
-
     badgeText: textField({
       id: "certificate-badge-text",
-      label: t("certEditor.fieldBadge"),
+      label: "Nilai / Hasil (opsional)",
       maxLength: LIMITS.badgeText,
       value: record ? record.badge_text : "",
-      help: t("certEditor.fieldBadgeHelp")
+      help: "Maksimal 60 karakter. Kosongkan jika tidak diperlukan."
     }),
 
-    description: textareaField({
-      id: "certificate-description",
-      label: t("certEditor.fieldDescription"),
-      maxLength: LIMITS.description,
-      value: record ? record.description : "",
-      rows: 4,
-      help: t("certEditor.fieldDescriptionHelp")
+    credentialId: textField({
+      id: "certificate-credential-id", label: "ID Kredensial (opsional)",
+      maxLength: 80, value: record?.credential_id || ""
     }),
 
     externalUrl: textField({
@@ -173,7 +126,7 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
   backButton.type = "button";
   backButton.addEventListener("click", () => onBack());
 
-  append(root, backButton);
+  append(root, backButton, el("p","form-help","Kolom bertanda * wajib diisi. Kolom lainnya opsional; ID kredensial dan nilai/hasil hanya tampil jika diisi. Ikon kartu mengikuti kategori secara otomatis."));
 
   /* One shape for every group, so the five sections read as one form rather
      than five improvised panels. */
@@ -202,8 +155,8 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
   const detailsSection = group("certEditor.details", "certEditor.detailsHelp");
 
   const detailsGrid = el("div", "form-grid");
-  append(detailsGrid, fields.issuerLine.node, fields.badgeText.node);
-  append(detailsSection, detailsGrid, fields.description.node);
+  append(detailsGrid, fields.credentialId.node, fields.badgeText.node);
+  append(detailsSection, detailsGrid);
 
   const documentSection = group("certEditor.document", "certEditor.documentHelp");
   append(documentSection, documentField.element, fields.externalUrl.node);
@@ -264,9 +217,8 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
       publisher: trimmed(fields.publisher.value),
       period: trimmed(fields.period.value),
       category: fields.category.value,
-      issuerLine: trimmed(fields.issuerLine.value),
       badgeText: trimmed(fields.badgeText.value),
-      description: trimmed(fields.description.value),
+      credentialId: trimmed(fields.credentialId.value),
       externalUrl: trimmed(fields.externalUrl.value),
       /* Pending files are not uploaded yet, so the preview links to what is
          actually reachable today: the stored document, or the issuer URL. */
@@ -279,9 +231,15 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
     };
   }
 
+  let renderedPreview = null;
   function renderPreview() {
+    const data = currentData(), signature = JSON.stringify(data);
+    // A text field's blur/change must not replace the preview button being clicked.
+    if (signature === renderedPreview) return;
+    const face = previewHost.querySelector(".cert-preview")?.dataset.face;
     clear(previewHost);
-    append(previewHost, buildCertificatePreview(currentData()));
+    append(previewHost, buildCertificatePreview(data,face));
+    renderedPreview = signature;
   }
 
   /* ---------------- dirty tracking ---------------- */
@@ -320,6 +278,7 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
 
   function setSaving(next) {
     saving = next;
+    root.inert = next;
     saveButton.disabled = next;
     backButton.disabled = next;
     saveButton.textContent = next ? t("common.saving") : t("certEditor.save");
@@ -341,18 +300,11 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
         maxLength: LIMITS.publisher
       },
       period: { label: t("certEditor.fieldPeriod"), maxLength: LIMITS.period },
-      issuerLine: {
-        label: t("certEditor.fieldIssuer"),
-        maxLength: LIMITS.issuerLine
-      },
       badgeText: {
-        label: t("certEditor.fieldBadge"),
+        label: "Nilai / Hasil (opsional)",
         maxLength: LIMITS.badgeText
       },
-      description: {
-        label: t("certEditor.fieldDescription"),
-        maxLength: LIMITS.description
-      },
+      credentialId: { label: "Credential ID", maxLength: 80 },
       externalUrl: {
         label: t("certEditor.fieldExternalUrl"),
         maxLength: LIMITS.externalUrl
@@ -361,6 +313,18 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
 
     if (!valid) {
       toast(t("certEditor.errFields"), "error");
+      return false;
+    }
+
+    // Validate the live card before persisting; never silently cut stored text.
+    // Measure both faces synchronously, then restore the selected face before paint.
+    const previewOverflow = [...previewHost.querySelectorAll(".cert-preview-column")].map(column => {
+      const hidden = column.hidden; column.hidden = false;
+      const overflow = [...column.querySelectorAll(".cert-preview-title,.cert-preview-back-title,.cert-preview-publisher,.cert-preview-back-subtitle,.cert-preview-details dd,.cert-preview-back-inner")].some(node => node.scrollHeight > node.clientHeight + 2);
+      column.hidden = hidden; return overflow;
+    }).some(Boolean);
+    if (previewOverflow) {
+      toast("Teks melebihi ruang kartu. Ringkas judul, penerbit, atau detail opsional sebelum menyimpan.", "error");
       return false;
     }
 
@@ -385,9 +349,8 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
       publisher: trimmedOrNull(fields.publisher.value),
       period: trimmedOrNull(fields.period.value),
       category: fields.category.value,
-      issuer_line: trimmedOrNull(fields.issuerLine.value),
       badge_text: trimmedOrNull(fields.badgeText.value),
-      description: trimmedOrNull(fields.description.value),
+      credential_id: trimmedOrNull(fields.credentialId.value),
       external_url: trimmedOrNull(fields.externalUrl.value)
     };
 
@@ -516,9 +479,8 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
       return false;
     }
 
-    setSaving(false);
-
     if (!result || result.error || !result.data) {
+      setSaving(false);
       if (result && result.error) {
         console.error(result.error);
       }
@@ -529,6 +491,7 @@ export function createCertificateEditor({ record, onDirtyChange, onSaved, onBack
 
     documentField.commit(committedDocument);
 
+    setSaving(false);
     baseline = snapshot();
     dirty = false;
     onDirtyChange(false);

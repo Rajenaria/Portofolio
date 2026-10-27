@@ -16,9 +16,9 @@
 
 import { el, append, clear } from "../../core/dom.js";
 import { openModal } from "../../core/modal.js";
-import { t } from "../../core/i18n.js";
+import { tIndonesian as t } from "../../core/i18n.js";
 import { openDocument } from "../../core/document-storage.js";
-import { buildCategoryIcon, categoryLabel } from "./categories.js";
+import { buildCategoryIcon, categoryLabel, categoryEntry } from "./categories.js";
 
 const ACCENT = "#2997ff";
 
@@ -39,7 +39,8 @@ function buildFront(data) {
   append(face, el("span", "cert-preview-accent-line"));
 
   const icon = buildCategoryIcon(data.category, "cert-preview-icon", ACCENT);
-  append(face, icon);
+  const iconWrap = el("div", "cert-preview-icon-wrap");
+  append(iconWrap, icon); append(face, iconWrap);
 
   const text = el("div", "cert-preview-front-text");
 
@@ -47,7 +48,7 @@ function buildFront(data) {
     text,
     line("cert-preview-year", data.period),
     el("h4", "cert-preview-title", data.title || t("certificates.untitled")),
-    line("cert-preview-publisher", data.publisher)
+    line("cert-preview-publisher", [data.publisher, categoryEntry(data.category).label].filter(Boolean).join(" \u00b7 "))
   );
 
   append(face, text);
@@ -65,20 +66,20 @@ function buildBack(data) {
 
   append(
     inner,
+    el("p", "cert-preview-details-heading", "Certificate Details"),
     el("h4", "cert-preview-back-title", data.title || t("certificates.untitled")),
-    line("cert-preview-back-subtitle", data.issuerLine)
+    line("cert-preview-back-subtitle", [data.publisher, categoryEntry(data.category).label].filter(Boolean).join(" \u00b7 "))
   );
 
-  if (data.badgeText) {
-    append(inner, el("span", "cert-preview-badge", data.badgeText));
-  }
-
-  if (data.description) {
-    append(inner, el("p", "cert-preview-desc", data.description));
-  }
+  const details = el("dl", "cert-preview-details");
+  [["Period", data.period], ["Credential ID", data.credentialId], ["Grade / Result", data.badgeText]].forEach(([label,value]) => {
+    if (!value) return;
+    const row = el("div"); append(row, el("dt", "", label), el("dd", "", value)); append(details, row);
+  });
+  append(inner, details);
 
   /*
-    The public back carries a "LIHAT SERTIFIKAT" button. It becomes a real link
+    The public back carries a "VIEW CERTIFICATE" button. It becomes a real link
     once a document is uploaded, preferring the stored file and falling back to
     the issuer's own verification URL.
 
@@ -89,7 +90,7 @@ function buildBack(data) {
   const href = data.document ? "#" : data.externalUrl || null;
 
   if (href) {
-    const cta = el("a", "cert-preview-link", "LIHAT SERTIFIKAT");
+    const cta = el("a", "cert-preview-link", "VIEW CERTIFICATE");
     cta.href = href;
     if (data.document) cta.addEventListener("click", event => {
       event.preventDefault();
@@ -99,7 +100,7 @@ function buildBack(data) {
     cta.rel = "noopener noreferrer";
     append(inner, cta);
   } else {
-    append(inner, el("span", "cert-preview-link is-empty", "LIHAT SERTIFIKAT"));
+    append(inner, el("span", "cert-preview-link is-empty", "VIEW CERTIFICATE"));
   }
 
   append(face, inner);
@@ -107,8 +108,10 @@ function buildBack(data) {
   return face;
 }
 
-export function buildCertificatePreview(data) {
+export function buildCertificatePreview(data, selectedFace = "front") {
   const wrap = el("div", "cert-preview");
+  wrap.classList.add("has-face-switch");
+  const controls = el("div","cert-preview-controls"); controls.setAttribute("role","group"); controls.setAttribute("aria-label","Sisi pratinjau sertifikat");
 
   const frontColumn = el("div", "cert-preview-column");
   append(
@@ -124,7 +127,16 @@ export function buildCertificatePreview(data) {
     buildBack(data)
   );
 
-  append(wrap, frontColumn, backColumn);
+  const switches = ["front","back"].map((face,index) => {
+    const control = el("button","admin-button admin-button-secondary",index ? "Belakang" : "Depan"); control.type = "button";
+    control.addEventListener("click",() => show(face)); controls.append(control); return control;
+  });
+  function show(face) {
+    wrap.dataset.face = face;
+    frontColumn.hidden = face === "back"; backColumn.hidden = face !== "back";
+    switches.forEach((control,index) => control.setAttribute("aria-pressed",String(face === (index ? "back" : "front"))));
+  }
+  append(wrap, controls, frontColumn, backColumn); show(selectedFace === "back" ? "back" : "front");
 
   const meta = el(
     "p",
@@ -140,7 +152,7 @@ export function openCertificatePreview(data) {
   const body = el("div", "cert-preview-body");
   append(body, buildCertificatePreview(data));
 
-  openModal({
+  const controller = openModal({
     title: t("certPreview.title"),
     description: t("certPreview.description"),
     body,
@@ -152,6 +164,7 @@ export function openCertificatePreview(data) {
       }
     ]
   });
+  controller.dialog.classList.add("certificate-preview-dialog");
 }
 
 export function refreshPreview(host, data) {

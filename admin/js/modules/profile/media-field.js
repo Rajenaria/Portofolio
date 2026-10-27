@@ -1,8 +1,8 @@
 /*
   Media field: current image + "Replace Image" flow (Phase 6).
 
-  Used by all five image slots in Profile & About: Hero 01-03, the About photo
-  and every gallery item. It owns three things and nothing else:
+  Used by the primary Hero photo, the About photo and each Organization
+  gallery item. It owns three things and nothing else:
 
     1. showing what is currently stored (public URL derived for display only),
     2. running the shared Image Picker so the owner SEES the optimisation,

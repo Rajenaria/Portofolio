@@ -27,3 +27,16 @@ export function missingCoverSchema(error) {
     return ["42703", "PGRST204"].includes(error?.code) &&
         /\bcover_(?:fit|position_x|position_y)\b/.test(error?.message || "");
 }
+
+// Homepage cards and detail media keep separate fixed crop frames.
+export const PROJECT_FRAME_RATIO = 16 / 10;
+export const PROJECT_DETAIL_FRAME_RATIO = 16 / 9;
+export function cropPosition(value = {}) {
+    const bounded = n => Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : 50;
+    return { x: bounded(value?.x), y: bounded(value?.y) };
+}
+export function applyImageCrop(image, value) {
+    if (!image) return;
+    const { x, y } = cropPosition(value);
+    Object.assign(image.style, { width:"100%", height:"100%", objectFit:"cover", objectPosition:`${x}% ${y}%` });
+}

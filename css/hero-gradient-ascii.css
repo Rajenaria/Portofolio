@@ -1,0 +1,49 @@
+/* Homepage scroll surface: prevent boundary bounce/glow without locking scroll.
+   Matching the Hero also covers the sticky navbar's small flow remainder. */
+html.portfolio-home,
+.portfolio-home body {
+  background-color: #f5f5f7;
+  overscroll-behavior-y: none;
+}
+
+/* Decorative only: keep all existing Hero dimensions and content styles. */
+#home.simple-hero { isolation: isolate; }
+#home > .simple-hero-container,
+#home > .simple-hero-scroll { z-index: 1; }
+
+#home .hero-gradient-ascii {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: .72;
+  background:
+    radial-gradient(ellipse at 70% 95%, #a5d8ff88, transparent 65%),
+    linear-gradient(175deg, #ffffff00 48%, #f6f8ff66 68%, #0071e344 100%);
+  -webkit-mask-image: linear-gradient(90deg, #0002, #0004 45%, #000 90%);
+  mask-image: linear-gradient(90deg, #0002, #0004 45%, #000 90%);
+}
+#home .hero-gradient-ascii canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  pointer-events: none;
+}
+#home .hero-gradient-ascii[data-renderer="webgl"] { background: transparent; }
+#home .hero-gradient-ascii[data-renderer="webgl"] canvas { opacity: 1; }
+
+@media (max-width: 650px) {
+  #home .hero-gradient-ascii {
+    opacity: .58;
+    -webkit-mask-image: linear-gradient(180deg, #0009, #000b 34%, #0003 65%, #0006);
+    mask-image: linear-gradient(180deg, #0009, #000b 34%, #0003 65%, #0006);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #home .hero-gradient-ascii[data-renderer="webgl"] canvas { opacity: 0; }
+  #home .hero-gradient-ascii[data-renderer="webgl"] {
+    background: linear-gradient(175deg, #ffffff00 48%, #a5d8ff55 80%, #0071e333);
+  }
+}

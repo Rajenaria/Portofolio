@@ -1,7 +1,7 @@
 /*
   Profile & About route (Phase 6).
 
-  Loads the two singletons plus the three hero slots once, then mounts three
+  Loads the two singletons plus the primary Hero photo once, then mounts three
   internal tabs. Tab state is local page state: switching tabs never remounts
   the authenticated shell and never touches the router, so the hash stays
   #/profile throughout.
@@ -122,6 +122,21 @@ async function render(container, { signal }) {
 
     TABS.forEach(tab => {
       const button = el("button", "tab-button", t(tab.key));
+      if (tab.id === "cv") {
+        const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        icon.setAttribute("class", "sidebar-icon cv-tab-icon");
+        icon.setAttribute("viewBox", "0 0 20 20");
+        icon.setAttribute("aria-hidden", "true");
+        icon.setAttribute("focusable", "false");
+        const path = document.createElementNS(icon.namespaceURI, "path");
+        path.setAttribute("d", "M11.5 2.5H5A1.5 1.5 0 0 0 3.5 4v12A1.5 1.5 0 0 0 5 17.5h10a1.5 1.5 0 0 0 1.5-1.5V7.5Z M11.5 2.5v5h5 M6.5 10.5h7 M6.5 13.5h5");
+        path.setAttribute("fill", "none");
+        path.setAttribute("stroke", "currentColor");
+        path.setAttribute("stroke-width", "1.4");
+        path.setAttribute("stroke-linecap", "round");
+        path.setAttribute("stroke-linejoin", "round");
+        icon.append(path); button.prepend(icon);
+      }
       button.type = "button";
       button.id = `profile-tab-${tab.id}`;
       button.setAttribute("role", "tab");
@@ -223,17 +238,12 @@ async function render(container, { signal }) {
         .maybeSingle(),
 
       supabaseClient
-        /*
-          is_visible is read here so the Hero tab can show hidden slots.
-          The owner + aal2 SELECT policy is permissive and separate from the
-          public one, so hidden rows still come back for the Admin even though
-          the public site never sees them.
-        */
+        // Only the primary photo is editable; legacy slots stay stored.
         .from("hero_media")
         .select(
           "slot_number, bucket_name, desktop_path, mobile_path, alt_text, is_visible"
         )
-        .order("slot_number", { ascending: true }),
+        .eq("slot_number", 1),
 
       supabaseClient
         .from("about_organization")

@@ -1,0 +1,160 @@
+/* One public Hero photo, bound to the existing primary CMS slot. */
+#home.simple-hero {
+  min-height: 100vh;
+  min-height: 100svh;
+  display: grid;
+  align-items: center;
+}
+/* The section owns viewport height; do not add it again inside its padding. */
+#home > .simple-hero-container { min-height: 0; }
+#home > .simple-hero-scroll { display: flex; }
+@media (min-width: 1051px) {
+  #home.simple-hero { padding-block: 88px 64px; }
+}
+#home .simple-hero-visual { align-items: center; padding-block: 80px 24px; }
+#home .simple-hero-photo.hero-lanyard {
+  --lanyard-card-top: 20%;
+  display: block;
+  position: relative;
+  width: min(100%, 500px);
+  aspect-ratio: 4 / 5;
+  margin: 0 auto;
+  perspective: 1000px;
+  isolation: isolate;
+  transform: none;
+}
+#home .hero-lanyard > .hero-lanyard-strap {
+  position: absolute;
+  top: calc(0px - var(--lanyard-top-reach, 0px));
+  left: 0;
+  z-index: 0;
+  width: 100%;
+  height: calc(100% + var(--lanyard-top-reach, 0px));
+  overflow: hidden;
+  pointer-events: none;
+  /* Occlude only the header end of the continuous band, including when its
+     anchor lies outside the floating navbar capsule. Never mask the photo. */
+  -webkit-mask-image: linear-gradient(to bottom, transparent var(--lanyard-hide-until, 48px), #000 var(--lanyard-reveal-at, 72px));
+  mask-image: linear-gradient(to bottom, transparent var(--lanyard-hide-until, 48px), #000 var(--lanyard-reveal-at, 72px));
+}
+#home .hero-lanyard-strap path { fill: none; stroke-linecap: round; }
+#home .hero-lanyard-strap .lanyard-strap-shadow { stroke: #1d1d1f0b; stroke-width: 10; }
+#home .hero-lanyard-strap .lanyard-strap-band { stroke: #34363b; stroke-width: 6; }
+#home .hero-lanyard-strap .lanyard-strap-stitch { stroke: #ffffff3d; stroke-width: .6; stroke-dasharray: 1 6; }
+#home .hero-lanyard-anchor {
+  display: none;
+}
+#home .hero-lanyard .hero-lanyard-card {
+  z-index: 1;
+  inset: auto;
+  left: 17%;
+  top: var(--lanyard-card-top);
+  width: 66%;
+  height: auto;
+  aspect-ratio: 3 / 4;
+  padding: 0;
+  border: 1px solid #fff;
+  border-radius: 20px;
+  background: #fff;
+  overflow: visible;
+  box-shadow: 0 18px 36px #1d1d1f18, 0 3px 7px #1d1d1f14, inset 0 0 0 1px #e8e8ed;
+  transform-origin: 50% 0;
+  transition: none;
+  cursor: grab;
+  touch-action: pan-y;
+  user-select: none;
+}
+#home .hero-lanyard-card[data-dragging="true"] { cursor: grabbing; }
+#home .hero-lanyard-card:disabled { opacity: 1; }
+#home .hero-lanyard.is-motion-active .hero-lanyard-card { will-change: transform; }
+#home .hero-lanyard-card:focus-visible { outline: 3px solid #0071e3; outline-offset: 5px; }
+#home .hero-lanyard-card::before {
+  content: "";
+  position: absolute;
+  top: 9px;
+  left: calc(50% - 19px);
+  width: 38px;
+  height: 5px;
+  border-radius: 8px;
+  background: #45454a;
+  box-shadow: inset 0 1px 2px #0008, 0 1px 0 #fff;
+}
+#home .hero-lanyard-front {
+  position: absolute;
+  inset: 25px 9px 10px;
+  display: block;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #f5f5f7;
+  pointer-events: none;
+}
+#home .hero-lanyard-front picture,
+#home .hero-lanyard-front img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+}
+#home .hero-lanyard-front img { object-fit: cover; object-position: center top; -webkit-user-drag: none; }
+#home .hero-lanyard-metal {
+  position: absolute;
+  left: calc(50% - 11px);
+  top: -23px;
+  width: 22px;
+  height: 36px;
+  border: 3px solid #c1c4cb;
+  border-radius: 10px 10px 5px 5px;
+  background: linear-gradient(100deg, #7c818a, #fafbfc 28%, #a2a6ae 46%, #f6f7f9 68%, #737983);
+  box-shadow: 1px 2px 3px #1d1d1f26, inset 0 0 0 1px #fff9;
+  pointer-events: none;
+}
+#home .hero-lanyard-metal::before {
+  content: "";
+  position: absolute;
+  inset: 1px 2px 14px;
+  border-radius: 6px;
+  background: #f5f5f7;
+  box-shadow: inset 0 0 0 1px #7b8088;
+}
+#home .hero-lanyard-gloss {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(118deg, #fff7, #fff0 32%, #fff0 58%, #ffffff19 78%, #fff0);
+  box-shadow: inset 0 1px 0 #fff, inset 1px 0 0 #fff9;
+  pointer-events: none;
+}
+#home .hero-lanyard-help {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+@media (max-width: 1050px) {
+  #home .simple-hero-visual { padding-block: 30px 20px; }
+}
+@media (max-width: 800px) {
+  #home .simple-hero-visual { min-height: 0; padding-block: 0; }
+  #home .simple-hero-photo.hero-lanyard { width: min(100%, 420px); }
+}
+@media (max-width: 650px) {
+  /* Leave room for the indicator after the naturally stacked content. */
+  #home.simple-hero { padding-bottom: 76px; }
+  #home .simple-hero-photo.hero-lanyard {
+    --lanyard-card-top: 10%;
+    width: min(78vw, 300px, 100%);
+    aspect-ratio: 5 / 6;
+  }
+  #home .hero-lanyard .hero-lanyard-card { left: 12%; width: 76%; border-radius: 16px; }
+  #home .hero-lanyard-front { inset: 23px 7px 8px; border-radius: 10px; }
+  #home .hero-lanyard-strap { opacity: .65; }
+  #home .hero-lanyard-strap .lanyard-strap-band { stroke-width: 4; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #home .hero-lanyard .hero-lanyard-card { cursor: default; }
+}

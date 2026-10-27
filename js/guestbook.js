@@ -5,6 +5,20 @@
 
 document.addEventListener("DOMContentLoaded", () => {
 
+    // Localize known server messages without changing the API response contract.
+    const guestbookMessages = {
+        "Pesan yang sama baru saja dikirim. Silakan tunggu sebelum mengirim ulang.": "You recently sent this message. Please wait before sending it again.",
+        "Method tidak diizinkan.": "This request method is not allowed.",
+        "Nama harus 2 sampai 30 karakter.": "Your name must be between 2 and 30 characters long.",
+        "Pesan harus 3 sampai 500 karakter.": "Your message must be between 3 and 500 characters long.",
+        "Terlalu banyak mengirim pesan. Silakan coba lagi dalam beberapa menit.": "Too many messages. Please try again in a few minutes.",
+        "Pesan tidak dapat dikirim karena terdeteksi sebagai spam atau mengandung kata yang tidak diperbolehkan.": "Your message could not be sent because it was flagged as spam or contains prohibited words.",
+        "Pesan berhasil diterima dan sedang diperiksa.": "Your message has been received and is awaiting review.",
+        "Pesan berhasil dikirim.": "Your message has been sent.",
+        "Permintaan tidak valid.": "Invalid request.",
+        "Terjadi kesalahan pada server.": "A server error occurred. Please try again later."
+    };
+
 
     /* =====================================================
        ELEMENT
@@ -349,7 +363,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (name.length < 2) {
 
             showStatus(
-                "Nama minimal 2 karakter.",
+                "Your name must be at least 2 characters long.",
                 "error"
             );
 
@@ -362,7 +376,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (name.length > 30) {
 
             showStatus(
-                "Nama maksimal 30 karakter.",
+                "Your name must be no more than 30 characters long.",
                 "error"
             );
 
@@ -379,7 +393,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (message.length < 3) {
 
             showStatus(
-                "Pesan minimal 3 karakter.",
+                "Your message must be at least 3 characters long.",
                 "error"
             );
 
@@ -392,7 +406,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (message.length > 500) {
 
             showStatus(
-                "Pesan maksimal 500 karakter.",
+                "Your message must be no more than 500 characters long.",
                 "error"
             );
 
@@ -418,7 +432,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
         return date.toLocaleDateString(
-            "id-ID",
+            "en-US",
             {
                 day: "2-digit",
                 month: "short",
@@ -579,11 +593,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
 
                 <h4>
-                    Belum ada pesan.
+                    No messages yet.
                 </h4>
 
                 <p>
-                    Jadilah orang pertama yang meninggalkan pesan.
+                    Be the first to leave a message.
                 </p>
 
             </div>
@@ -691,7 +705,7 @@ function setupCommentSlider() {
 
             dot.setAttribute(
                 "aria-label",
-                `Lihat komentar ${index + 1}`
+                `View comment ${index + 1}`
             );
 
 
@@ -964,7 +978,7 @@ function setupCommentSlider() {
 
             pinButton.setAttribute(
                 "aria-label",
-                "Sematkan komentar ini"
+                "Pin this comment"
             );
 
 
@@ -1074,7 +1088,7 @@ setupCommentSlider();
             if (!response.ok) {
 
                 throw new Error(
-                    "Gagal mengambil komentar."
+                    "Comments could not be retrieved."
                 );
 
             }
@@ -1105,11 +1119,11 @@ setupCommentSlider();
                     </div>
 
                     <h4>
-                        Pesan gagal dimuat.
+                        Messages could not be loaded.
                     </h4>
 
                     <p>
-                        Silakan refresh halaman.
+                        Please refresh the page.
                     </p>
 
                 </div>
@@ -1155,11 +1169,14 @@ setupCommentSlider();
        SUBMIT FORM
     ===================================================== */
 
+    let submitting = false;
+
     form.addEventListener(
         "submit",
         async (event) => {
 
             event.preventDefault();
+            if (submitting) return;
 
 
             /* =============================================
@@ -1190,17 +1207,18 @@ setupCommentSlider();
                LOADING
             ============================================= */
 
+            submitting = true;
             submitButton.disabled =
                 true;
 
 
             submitButton.innerHTML = `
-                <span>Mengirim...</span>
+                <span>Sending...</span>
             `;
 
 
             showStatus(
-                "Sedang mengirim pesan..."
+                "Sending your message..."
             );
 
 
@@ -1249,12 +1267,6 @@ setupCommentSlider();
                     await response.json();
 
 
-                console.log(
-                    "Guestbook response:",
-                    result
-                );
-
-
                 /* =========================================
                    BLOCKED / SERVER ERROR
 
@@ -1268,8 +1280,8 @@ setupCommentSlider();
                 if (!response.ok) {
 
                     throw new Error(
-                        result.message ||
-                        "Pesan gagal dikirim."
+                        guestbookMessages[result.message] || result.message ||
+                        "Your message could not be sent."
                     );
 
                 }
@@ -1278,8 +1290,8 @@ setupCommentSlider();
                 if (!result.success) {
 
                     throw new Error(
-                        result.message ||
-                        "Pesan gagal dikirim."
+                        guestbookMessages[result.message] || result.message ||
+                        "Your message could not be sent."
                     );
 
                 }
@@ -1300,7 +1312,7 @@ setupCommentSlider();
                 ) {
 
                     showStatus(
-                        "Pesan berhasil terkirim. Terima kasih!",
+                        "Your message has been sent. Thank you!",
                         "success"
                     );
 
@@ -1352,7 +1364,7 @@ setupCommentSlider();
                 ) {
 
                     showStatus(
-                        "Pesan terpending. akan di check dulu yaa",
+                        "Your message has been submitted and is awaiting review.",
                         "success"
                     );
 
@@ -1377,8 +1389,8 @@ setupCommentSlider();
                 ========================================= */
 
                 showStatus(
-                    result.message ||
-                    "Pesan berhasil dikirim.",
+                    guestbookMessages[result.message] || result.message ||
+                    "Your message has been sent.",
                     "success"
                 );
 
@@ -1416,7 +1428,7 @@ setupCommentSlider();
 
                 showStatus(
                     error.message ||
-                    "Terjadi kesalahan. Coba lagi.",
+                    "Something went wrong. Please try again.",
                     "error"
                 );
 
@@ -1428,12 +1440,13 @@ setupCommentSlider();
                    RESTORE BUTTON
                 ========================================= */
 
+                submitting = false;
                 submitButton.disabled =
                     false;
 
 
                 submitButton.innerHTML = `
-                    Kirim
+                    Send
                     <span>→</span>
                 `;
 
