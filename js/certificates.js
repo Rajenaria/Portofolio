@@ -77,6 +77,12 @@
 
     function buildCertificateIcon(name) {
         const icon = document.createElement("iconify-icon");
+        // The carousel owns visibility. Iconify's viewport observer removes the
+        // shadow SVG offscreen (also hiding the light-DOM fallback). Keep this
+        // small glyph mounted through 3D rotations and delayed observer events.
+        // Set before connection: changing this after upgrade can leave an
+        // already-running Iconify observer attached.
+        icon.setAttribute("noobserver", "");
         icon.className = "cert-icon";
         icon.setAttribute("aria-hidden", "true");
         const fallback = document.createElementNS("http://www.w3.org/2000/svg", "svg");
