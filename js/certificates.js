@@ -69,6 +69,37 @@
         certificate: "tabler:certificate"
     };
 
+    // Existing Tabler certificate glyph, available even if Iconify/API fails.
+    const FALLBACK_ICON = {
+        width: 24, height: 24,
+        body: '<g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M12 15a3 3 0 1 0 6 0a3 3 0 1 0-6 0"/><path d="M13 17.5V22l2-1.5l2 1.5v-4.5"/><path d="M10 19H5a2 2 0 0 1-2-2V7c0-1.1.9-2 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-1 1.73M6 9h12M6 12h3m-3 3h2"/></g>'
+    };
+
+    function buildCertificateIcon(name) {
+        const icon = document.createElement("iconify-icon");
+        icon.className = "cert-icon";
+        icon.setAttribute("aria-hidden", "true");
+        const fallback = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        fallback.setAttribute("viewBox", "0 0 24 24");
+        fallback.setAttribute("width", "1em");
+        fallback.setAttribute("height", "1em");
+        // Constant artwork only; no CMS markup or SVG is inserted here.
+        fallback.innerHTML = FALLBACK_ICON.body;
+        icon.appendChild(fallback);
+        function ready() {
+            icon.icon = FALLBACK_ICON;
+            if (typeof icon.loadIcon !== "function" || !/^tabler:[a-z0-9-]+$/.test(name || "")) return;
+            icon.loadIcon(name).then(data => {
+                if (icon.isConnected) icon.icon = data;
+            }).catch(() => { /* Keep the local glyph; never leave an empty badge. */ });
+        }
+        if (customElements.get("iconify-icon")) ready();
+        else customElements.whenDefined("iconify-icon").then(() => {
+            if (icon.isConnected) ready();
+        });
+        return icon;
+    }
+
     const CERTIFICATES = [
 
         {
@@ -305,10 +336,7 @@
         const front = document.createElement("div");
         front.className = "cert-face cert-face-front";
 
-        const icon = document.createElement("iconify-icon");
-        icon.className = "cert-icon";
-        icon.setAttribute("icon", cert.icon);
-        icon.setAttribute("aria-hidden", "true");
+        const icon = buildCertificateIcon(cert.icon);
 
         const iconWrap = document.createElement("div");
         iconWrap.className = "cert-category-icon-wrap";
@@ -400,7 +428,12 @@
             }
 
             try {
-                const url = new URL(cert.link.trim(), window.location.href);
+                const value = cert.link.trim();
+                if (/[\s\\\u0000-\u001f\u007f]/u.test(value)) return "";
+                const relative = /^(?:\/(?!\/)|\.\.?\/)/.test(value);
+                if (!relative && !/^https?:\/\//i.test(value)) return "";
+                const url = new URL(value, window.location.href);
+                if (url.username || url.password || (relative && url.origin !== window.location.origin)) return "";
 
                 return url.protocol === "https:" || url.protocol === "http:"
                     ? url.href
@@ -452,6 +485,7 @@
                ke kartu, sehingga kartu tetap bisa dibalik
                kembali walau tombol kosong ini yang tersentuh. */
             link.classList.add("is-empty");
+            link.setAttribute("aria-disabled", "true");
             link.setAttribute("aria-hidden", "true");
             link.title = "Certificate link is not available";
         }
@@ -605,7 +639,7 @@
                 card.back.setAttribute("aria-hidden", !isActive || !flipped ? "true" : "false");
                 card.slot.setAttribute("aria-label", `${data[card.index].title}. ${flipped ? "Details" : "Front"}. Press Enter or Space to flip.`);
                 card.link.tabIndex = isActive && flipped && card.hasLink ? 0 : -1;
-                card.frontText.tabIndex = -1;
+                card.frontText.tabIndex = isActive && !flipped ? 0 : -1;
                 card.backInner.tabIndex = -1;
                 card.faces.forEach(function (face) {
                     const selected = face === (flipped ? card.back : card.front);
@@ -1318,6 +1352,7 @@
                     card.slot.classList.toggle("is-flipped",flipped);
                     card.front.inert = flipped; card.back.inert = !flipped;
                     card.front.setAttribute("aria-hidden",String(flipped)); card.back.setAttribute("aria-hidden",String(!flipped));
+                    card.frontText.tabIndex = flipped ? -1 : 0;
                     card.slot.setAttribute("aria-label",`${cert.title}. ${flipped ? "Details" : "Front"}. Press Enter or Space to flip.`);
                     card.link.tabIndex = flipped && card.hasLink ? 0 : -1;
                     if (focus) card.slot.focus({preventScroll:true});

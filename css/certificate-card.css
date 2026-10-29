@@ -115,6 +115,32 @@
 
 .cert-preview .cert-preview-face { max-width: 100%; }
 
+/* The public section is .certificates-section, not the .certificates above.
+   Keep its existing dimensions/type while containing each face's own layers. */
+.certificates-section .cert-face-front {
+    transform: rotateY(0deg);
+    justify-content: flex-start;
+}
+.certificates-section .cert-category-icon-wrap {
+    z-index: auto;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+}
+.certificates-section .cert-icon {
+    display: block;
+    width: 1em;
+    height: 1em;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+}
+.certificates-section .cert-front-text {
+    flex: 1 1 auto;
+    width: 100%;
+    touch-action: pan-y;
+    scrollbar-width: none;
+}
+.certificates-section .cert-front-text::-webkit-scrollbar { display: none; }
+
 /* Public back face: keep the CTA outside the readable overflow area.
    Scope to the actual section without changing shared Admin preview styles. */
 .certificates-section .cert-back-inner {
@@ -128,6 +154,7 @@
     min-height: 0;
     width: 100%;
     overflow-y: auto;
+    touch-action: pan-y;
     overscroll-behavior: contain;
     scrollbar-width: none;
 }
