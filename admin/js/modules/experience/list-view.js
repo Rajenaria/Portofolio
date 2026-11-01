@@ -32,6 +32,7 @@ import {
 } from "../../core/dom.js";
 
 import { openModal, confirmDialog } from "../../core/modal.js";
+import { openFloatingRowMenu } from "../../core/floating-row-menu.js";
 import { toast } from "../../core/toast.js";
 import { textField, trimmed } from "../../core/form.js";
 import { t } from "../../core/i18n.js";
@@ -64,27 +65,6 @@ export function createExperienceList({ onEdit, onCreate, onChanged }) {
       closeOpenMenu = null;
     }
   }
-
-  function handlePointerDown(event) {
-    if (!closeOpenMenu) {
-      return;
-    }
-
-    const menu = root.querySelector(".row-actions.is-open");
-
-    if (menu && !menu.contains(event.target)) {
-      closeMenu();
-    }
-  }
-
-  function handleKeydown(event) {
-    if (event.key === "Escape" && closeOpenMenu) {
-      closeMenu();
-    }
-  }
-
-  document.addEventListener("pointerdown", handlePointerDown);
-  document.addEventListener("keydown", handleKeydown);
 
   /* ---------------- toolbar ---------------- */
 
@@ -423,103 +403,33 @@ export function createExperienceList({ onEdit, onCreate, onChanged }) {
 
   function buildActionsMenu(row, index, visible) {
     const wrap = el("div", "row-actions");
-
     const trigger = el("button", "icon-button", "⋯");
     trigger.type = "button";
-    trigger.setAttribute("aria-haspopup", "true");
+    trigger.setAttribute("aria-haspopup", "menu");
     trigger.setAttribute("aria-expanded", "false");
-    trigger.setAttribute(
-      "aria-label",
-      t("exp.actionsFor", { title: rowTitle(row) })
-    );
+    trigger.setAttribute("aria-label", t("exp.actionsFor", { title: rowTitle(row) }));
 
-    trigger.addEventListener("click", () => {
-      const isOpen = wrap.classList.contains("is-open");
+    function openMenu(last = false) {
       closeMenu();
-
-      if (!isOpen) {
-        openMenu();
-      }
-    });
-
-    append(wrap, trigger);
-
-    function openMenu() {
-      const menu = el("div", "row-menu");
-      menu.setAttribute("role", "menu");
-
-      const entries = isTrashView()
-        ? trashEntries(row)
-        : normalEntries(row, index, visible);
-
-      const buttons = [];
-
-      entries.forEach(entry => {
-        const button = el("button", "row-menu-item", entry.label);
-        button.type = "button";
-        button.setAttribute("role", "menuitem");
-
-        if (entry.danger) {
-          button.classList.add("is-danger");
-        }
-
-        if (entry.disabled) {
-          button.disabled = true;
-
-          if (entry.hint) {
-            button.title = entry.hint;
-          }
-        } else {
-          button.addEventListener("click", () => {
-            closeMenu();
-            entry.onSelect();
-          });
-        }
-
-        buttons.push(button);
-        append(menu, button);
+      closeOpenMenu = openFloatingRowMenu({
+        trigger,
+        last,
+        entries: isTrashView() ? trashEntries(row) : normalEntries(row, index, visible),
+        onClose: () => { closeOpenMenu = null; }
       });
-
-      menu.addEventListener("keydown", event => {
-        if (event.key !== "ArrowDown" && event.key !== "ArrowUp") {
-          return;
-        }
-
-        event.preventDefault();
-
-        const enabled = buttons.filter(button => !button.disabled);
-
-        if (enabled.length === 0) {
-          return;
-        }
-
-        const current = enabled.indexOf(document.activeElement);
-        const step = event.key === "ArrowDown" ? 1 : -1;
-        enabled[(current + step + enabled.length) % enabled.length].focus();
-      });
-
-      append(wrap, menu);
-      wrap.classList.add("is-open");
-      trigger.setAttribute("aria-expanded", "true");
-
-      const first = buttons.find(button => !button.disabled);
-
-      if (first) {
-        first.focus();
-      }
-
-      closeOpenMenu = () => {
-        const focusWasInMenu = menu.contains(document.activeElement);
-        menu.remove();
-        wrap.classList.remove("is-open");
-        trigger.setAttribute("aria-expanded", "false");
-
-        if (focusWasInMenu && document.contains(trigger)) {
-          trigger.focus();
-        }
-      };
     }
 
+    trigger.addEventListener("click", () => {
+      if (trigger.getAttribute("aria-expanded") === "true") closeMenu();
+      else openMenu();
+    });
+    trigger.addEventListener("keydown", event => {
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        openMenu(event.key === "ArrowUp");
+      }
+    });
+    append(wrap, trigger);
     return wrap;
   }
 
@@ -902,8 +812,6 @@ export function createExperienceList({ onEdit, onCreate, onChanged }) {
     element: root,
     load,
     destroy() {
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeydown);
       closeMenu();
     }
   };
