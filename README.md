@@ -8,9 +8,7 @@ The project emphasizes lightweight frontend development, responsive design, reus
 
 **HTML5** · **CSS3** · **Vanilla JavaScript** · **Supabase** · **Responsive Design**
 
-[Live Website](YOUR_LIVE_WEBSITE_URL) · [Explore Projects](YOUR_LIVE_WEBSITE_URL) · [LinkedIn](YOUR_LINKEDIN_URL)
-
-> Replace the placeholder links above with your actual URLs before publishing.
+[Live Website](https://portofolio-rajenaria.vercel.app/) · [Explore Projects](https://portofolio-rajenaria.vercel.app/#portfolio) · [LinkedIn](https://linkedin.com/in/rajenaria)
 
 ---
 
@@ -37,19 +35,19 @@ The portfolio combines a single-page homepage with standalone project detail pag
 
 ### Homepage
 
-![Portfolio Homepage](YOUR_HOMEPAGE_SCREENSHOT_PATH)
+![Portfolio Homepage](docs/screenshots/homepage.png)
 
 *The main portfolio interface highlighting my profile, navigation, and featured sections.*
 
 ### Projects & Case Studies
 
-![Project Showcase](YOUR_PROJECT_SCREENSHOT_PATH)
+![Project Showcase](docs/screenshots/project-detail.png)
 
 *Selected projects and dedicated detail pages presenting technical work.*
 
 ### Responsive Experience
 
-![Responsive Preview](YOUR_RESPONSIVE_SCREENSHOT_PATH)
+![Responsive Preview](docs/screenshots/mobile.png)
 
 *Layouts optimized for desktop and mobile viewing.*
 
@@ -400,9 +398,9 @@ These are ongoing development goals rather than claims of completed optimization
 
 I'm open to connecting with developers, recruiters, and professionals interested in my work.
 
-- **Portfolio:** [Visit Website](YOUR_LIVE_WEBSITE_URL)
-- **LinkedIn:** [Connect on LinkedIn](YOUR_LINKEDIN_URL)
-- **GitHub:** [Explore My Repositories](YOUR_GITHUB_PROFILE_URL)
+- **Portfolio:** [Visit Website](https://portofolio-rajenaria.vercel.app/)
+- **LinkedIn:** [Connect on LinkedIn](https://linkedin.com/in/rajenaria)
+- **GitHub:** [Explore My Repositories](https://github.com/Rajenaria)
 
 ---
 
