@@ -1,0 +1,4 @@
+User-agent: *
+Disallow: /admin
+
+Sitemap: https://portofolio-rajenaria.vercel.app/sitemap.xml

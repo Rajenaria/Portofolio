@@ -70,7 +70,24 @@ function render(project, all) {
   }}));
   stopRoadmap=() => cleanup.forEach(dispose => dispose());
   document.title = `${project.title} — Rajendra Aria Nismara`;
-  document.querySelector('meta[name="description"]').content = text(project.short_description) || `${project.title} — Project case study by Rajendra Aria Nismara.`;
+  const description = text(project.short_description) || `${project.title} — Project case study by Rajendra Aria Nismara.`;
+  document.querySelector('meta[name="description"]').content = description;
+  [
+    ['meta[property="og:title"]', document.title],
+    ['meta[property="og:description"]', description],
+    ['meta[name="twitter:title"]', document.title],
+    ['meta[name="twitter:description"]', description]
+  ].forEach(([selector,value]) => { document.querySelector(selector).content = value; });
+  // Distinct published case studies keep their slug, dropping tracking params.
+  // No generic canonical in initial HTML: it would conflict across projects.
+  const url = new URL("https://portofolio-rajenaria.vercel.app/project.html");
+  url.searchParams.set("slug",project.slug);
+  let canonical = document.querySelector('link[rel="canonical"]');
+  if (!canonical) { canonical = document.createElement("link"); canonical.rel = "canonical"; document.head.append(canonical); }
+  canonical.href = url.href;
+  let ogUrl = document.querySelector('meta[property="og:url"]');
+  if (!ogUrl) { ogUrl = document.createElement("meta"); ogUrl.setAttribute("property","og:url"); document.head.append(ogUrl); }
+  ogUrl.content = url.href;
 }
 async function load() {
   const slug = new URLSearchParams(window.location.search).get("slug") || "";
