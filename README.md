@@ -35,19 +35,19 @@ The portfolio combines a single-page homepage with standalone project detail pag
 
 ### Homepage
 
-![Portfolio Homepage](docs/screenshots/homepage.png)
+![Portfolio Homepage](docs/Screenshots/homepage.png)
 
 *The main portfolio interface highlighting my profile, navigation, and featured sections.*
 
 ### Projects & Case Studies
 
-![Project Showcase](docs/screenshots/project-detail.png)
+![Project Showcase](docs/Screenshots/project-detail.png)
 
 *Selected projects and dedicated detail pages presenting technical work.*
 
 ### Responsive Experience
 
-![Responsive Preview](docs/screenshots/mobile.png)
+![Responsive Preview](docs/Screenshots/mobile.png)
 
 *Layouts optimized for desktop and mobile viewing.*
 
